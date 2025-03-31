@@ -1,22 +1,3 @@
-# Define groups of useragents to use later below for matching
-user-agents:
-  default-browser:
-    - "^Mozilla/"
-    - "^Opera/"
-  bad-crawlers:
-    - "Amazonbot"
-  headless-browser:
-    - "HeadlessChrome"
-    - "HeadlessChromium"
-    - "^Lightpanda/"
-    - "^$"
-  rss:
-    - "FeedFetcher-Google"
-  git:
-    - "^git/"
-    - "^go-git/"
-    - "^JGit[/-]"
-    - "^GoModuleMirror/"
 
 # Define networks to be used later below
 networks:
@@ -70,23 +51,6 @@ networks:
       regex: "(?P<prefix>[0-9a-f:]+::/[0-9]+)"
 
 
-conditions:
-  # Checks to detect a headless chromium via headers only
-  is-headless-chromium:
-    - 'userAgent.contains("HeadlessChrome") || userAgent.contains("HeadlessChromium")'
-    - 'headers["Sec-Ch-Ua"].contains("HeadlessChrome") || headers["Sec-Ch-Ua"].contains("HeadlessChromium")'
-    - '(userAgent.contains("Chrome/") || userAgent.contains("Chromium/")) && (headers["Accept-Language"] == "" || headers["Accept-Encoding"] == "")'
-  is-static-asset:
-    - 'path == "/robots.txt"'
-    - 'path == "/favicon.ico"'
-    - 'path == "/apple-touch-icon.png"'
-    - 'path == "/apple-touch-icon-precomposed.png"'
-    - 'path.startsWith("/assets/")'
-    - 'path.startsWith("/repo-avatars/")'
-    - 'path.startsWith("/avatars/")'
-    - 'path.startsWith("/avatar/")'
-
-
 # todo: define interface
 challenges:
   js-pow-sha256:
@@ -95,7 +59,7 @@ challenges:
     mode: js
     asset: load.mjs
     parameters:
-      difficulty: 4
+      difficulty: 5
     runtime:
       mode: wasm
       # Verify must be under challenges/{name}/runtime/{asset}
@@ -131,15 +95,139 @@ challenges:
       http-method: GET
       http-code: 200
 
+conditions:
+  # Conditions will get replaced on rules AST when found as ($condition-name)
+  # Checks to detect a headless chromium via headers only
+  is-headless-chromium:
+    - 'userAgent.contains("HeadlessChrome") || userAgent.contains("HeadlessChromium")'
+    - '"Sec-Ch-Ua" in headers && (headers["Sec-Ch-Ua"].contains("HeadlessChrome") || headers["Sec-Ch-Ua"].contains("HeadlessChromium"))'
+    - '(userAgent.contains("Chrome/") || userAgent.contains("Chromium/")) && (!("Accept-Language" in headers) || !("Accept-Encoding" in headers))'
+  is-static-asset:
+    - 'path == "/robots.txt"'
+    - 'path == "/favicon.ico"'
+    - 'path == "/apple-touch-icon.png"'
+    - 'path == "/apple-touch-icon-precomposed.png"'
+    - 'path.startsWith("/assets/")'
+    - 'path.startsWith("/repo-avatars/")'
+    - 'path.startsWith("/avatars/")'
+    - 'path.startsWith("/avatar/")'
+  is-git-ua:
+    - 'userAgent.startsWith("git/")'
+    - 'userAgent.startsWith("go-git")'
+    - 'userAgent.startsWith("JGit/") || userAgent.startsWith("JGit-")'
+    # Golang proxy and initial fetch
+    - 'userAgent.startsWith("GoModuleMirror/")'
+    - 'userAgent.startsWith("Go-http-client/") && "go-get" in query && query["go-get"] == "1" && (path.matches("^/[^/]+/[^/]+$") || path.matches("^/[^/]+/[^/]+/v[0-9]+$"))'
+  is-git-path:
+    - 'path.matches("^/[^/]+/[^/]+/(git-upload-pack|git-receive-pack|HEAD|info/refs|info/lfs|objects)")'
+
 rules:
-  - name: blocked-networks
+  - name: undesired-networks
     conditions:
       - 'inNetwork("huawei-cloud", remoteAddress) || inNetwork("alibaba-cloud", remoteAddress)'
     action: deny
 
-  - name: golang-proxy
+  - name: undesired-crawlers
     conditions:
-      - 'userAgent.startsWith("GoModuleMirror/") || (userAgent.startsWith("Go-http-client/") && query["go-get"] == "1")'
+      - '($is-headless-chromium)'
+      - 'userAgent == ""'
+      - 'userAgent.startsWith("Lightpanda/")'
+      # Typo'd opera botnet
+      - 'userAgent.matches("^Opera/[0-9.]+\\.\\(")'
+      # AI bullshit stuff, they do not respect robots.txt even while they read it
+      - 'userAgent.contains("Amazonbot") || userAgent.contains("Bytespider") || userAgent.contains("ClaudeBot") || userAgent.contains("meta-externalagent/")'
+    action: deny
+
+  - name: suspicious-crawlers
+    conditions:
+      - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
+      # Old IE browsers
+      - 'userAgent.matches("MSIE ([4-9]|10|11)\\.")'
+      # Old Linux browsers
+      - 'userAgent.contains("Linux i686")'
+      # Old Windows browsers
+      - 'userAgent.matches("Windows (95|98)") || userAgent.matches("Windows NT [1-4]\\.")'
+      # Old mobile browsers
+      - 'userAgent.matches("Android [1-9]\\.") || userAgent.matches("(iPad|iPhone) OS [1-9]_")'
+      # Old Opera browsers
+      - 'userAgent.startsWith("Opera/")'
+    # check to continue below
+    action: check
+    challenges: [js-pow-sha256, http-cookie-check]
+
+  - name: always-pow-challenge
+    conditions:
+      - 'path.startsWith("/user/sign_up") || path.startsWith("/user/login")'
+      # Match archive downloads from browsers and not tools
+      - 'path.matches("^/[^/]+/[^/]+/archive/.*\\.(bundle|zip|tar\\.gz)") && (userAgent.startsWith("Opera/") || userAgent.startsWith("Mozilla/"))'
+    action: challenge
+    challenges: [js-pow-sha256]
+
+
+  - name: allow-static-resources
+    conditions:
+      - '($is-static-asset)'
+    action: pass
+
+  - name: allow-git-operations
+    conditions:
+      - '($is-git-path)'
+      - 'path.matches("^/[^/]+/[^/]+\\.git")'
+      - 'path.matches("^/[^/]+/[^/]+/") && ($is-git-ua)'
+    action: pass
+
+  - name: sitemap
+    conditions:
+      - 'path == "/sitemap.xml" || path.matches("^/explore/(users|repos)/sitemap-[0-9]+\\.xml$")'
+    action: pass
+
+    # TODO: rss
+
+  - name: source-download
+    conditions:
+      - 'path.matches("^/[^/]+/[^/]+/raw/branch/")'
+      - 'path.matches("^/[^/]+/[^/]+/archive/")'
+      - 'path.matches("^/[^/]+/[^/]+/media/")'
+    action: pass
+
+  - name: api-call
+    conditions:
+      - 'path.startsWith("/.well-known")'
+      - 'path.startsWith("/api/v1/") || path.startsWith("/api/forgejo/v1/")'
+      - 'path.startsWith("/login/oauth/")'
+      - 'path.startsWith("/captcha/")'
+      - 'path.startsWith("/metrics/")'
+      # todo: post only
+      - 'path == "/-/markup"'
+      - 'path == "/user/events"'
+      - 'path == "/ssh_info"'
+      - 'path == "/api/healthz"'
+      # user pubkeys
+      - 'path.matches("^/[^/]+\\.keys$")'
+      - 'path.matches("^/[^/]+\\.gpg")'
+    action: pass
+
+  - name: preview-fetchers
+    conditions:
+      - 'path.endsWith("/-/summary-card")'
+      - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("Twitterbot/")'
+      - '"X-Purpose" in headers && headers["X-Purpose"] == "preview"'
+    action: pass
+
+  - name: desired-crawlers
+    conditions:
+      - 'userAgent.contains("+https://kagi.com/bot") && inNetwork("kagibot", remoteAddress)'
+      - 'userAgent.contains("+http://www.google.com/bot.html") && inNetwork("googlebot", remoteAddress)'
+      - 'userAgent.contains("+http://www.bing.com/bingbot.htm") && inNetwork("bingbot", remoteAddress)'
+      - 'userAgent.contains("+http://duckduckgo.com/duckduckbot.html") && inNetwork("duckduckbot", remoteAddress)'
+      - 'userAgent.contains("+https://help.qwant.com/bot/") && inNetwork("qwantbot", remoteAddress)'
+      - 'userAgent.contains("+http://yandex.com/bots") && inNetwork("yandexbot", remoteAddress)'
+    action: pass
+
+  - name: homesite
+    conditions:
+      - 'path == "/"'
+      - 'path.matches("(?i)^/(WeebDataHoarder|P2Pool|mirror|git|S\\.O\\.N\\.G|FM10K|Sillycom|pwgen2155|kaitou|metonym)/[^/]+$")'
     action: pass
 
   - name: standard-browser

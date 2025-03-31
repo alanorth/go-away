@@ -84,6 +84,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, rule := range state.Rules {
+	nextRule:
 		if out, _, err := rule.Program.Eval(env); err != nil {
 			//TODO error
 			panic(err)
@@ -93,10 +94,9 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 				default:
 					panic(fmt.Errorf("unknown action %s", rule.Action))
 				case PolicyRuleActionPASS:
-					//fallback, proxy!
 					state.Backend.ServeHTTP(w, r)
 					return
-				case PolicyRuleActionCHALLENGE:
+				case PolicyRuleActionCHALLENGE, PolicyRuleActionCHECK:
 					expiry := time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
 
 					for _, challengeName := range rule.Challenges {
@@ -107,6 +107,9 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 								ClearCookie(CookiePrefix+challengeName, w)
 							}
 						} else {
+							if rule.Action == PolicyRuleActionCHECK {
+								goto nextRule
+							}
 							// we passed the challenge!
 							//TODO log?
 							state.Backend.ServeHTTP(w, r)
@@ -125,6 +128,9 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 							case ChallengeResultContinue:
 								continue
 							case ChallengeResultPass:
+								if rule.Action == PolicyRuleActionCHECK {
+									goto nextRule
+								}
 								// we pass the challenge early!
 								state.Backend.ServeHTTP(w, r)
 								return
@@ -145,6 +151,9 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	state.Backend.ServeHTTP(w, r)
+	return
 }
 
 func (state *State) setupRoutes() error {

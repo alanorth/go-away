@@ -23,7 +23,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -38,15 +37,12 @@ type State struct {
 
 	Networks map[string]cidranger.Ranger
 
-	UserAgents map[string][]*regexp.Regexp
-
 	WasmRuntime wazero.Runtime
 	WasmContext context.Context
 
 	Challenges map[string]ChallengeState
 
-	RulesEnv   *cel.Env
-	Conditions map[string]*cel.Ast
+	RulesEnv *cel.Env
 
 	Rules []RuleState
 
@@ -59,6 +55,7 @@ type RuleState struct {
 
 	Program    cel.Program
 	Action     PolicyRuleAction
+	Continue   bool
 	Challenges []string
 }
 
@@ -100,16 +97,6 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 	state.UrlPath = "/.well-known/." + state.PackagePath
 	state.Backend = backend
 
-	state.UserAgents = make(map[string][]*regexp.Regexp)
-	for k, v := range policy.UserAgents {
-		for _, str := range v {
-			expr, err := regexp.Compile(str)
-			if err != nil {
-				return nil, fmt.Errorf("user-agent %s: invalid regex expression %s: %v", k, str, err)
-			}
-			state.UserAgents[k] = append(state.UserAgents[k], expr)
-		}
-	}
 	state.Networks = make(map[string]cidranger.Ranger)
 	for k, network := range policy.Networks {
 		ranger := cidranger.NewPCTrieRanger()
@@ -459,14 +446,22 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 		return nil, err
 	}
 
-	state.Conditions = make(map[string]*cel.Ast)
+	var replacements []string
 	for k, entries := range policy.Conditions {
 		ast, err := ConditionFromStrings(state.RulesEnv, OperatorOr, entries...)
 		if err != nil {
 			return nil, fmt.Errorf("conditions %s: error compiling conditions: %v", k, err)
 		}
-		state.Conditions[k] = ast
+
+		cond, err := cel.AstToString(ast)
+		if err != nil {
+			return nil, fmt.Errorf("conditions %s: error printing condition: %v", k, err)
+		}
+
+		replacements = append(replacements, fmt.Sprintf("($%s)", k))
+		replacements = append(replacements, "("+cond+")")
 	}
+	conditionReplacer := strings.NewReplacer(replacements...)
 
 	for _, rule := range policy.Rules {
 		r := RuleState{
@@ -475,12 +470,18 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 			Challenges: rule.Challenges,
 		}
 
-		if r.Action == PolicyRuleActionCHALLENGE && len(r.Challenges) == 0 {
+		if (r.Action == PolicyRuleActionCHALLENGE || r.Action == PolicyRuleActionCHECK) && len(r.Challenges) == 0 {
 			return nil, fmt.Errorf("no challenges found in rule %s", rule.Name)
 		}
 
-		//TODO: nesting conditions via decorator!
-		ast, err := ConditionFromStrings(state.RulesEnv, OperatorOr, rule.Conditions...)
+		// allow nesting
+		var conditions []string
+		for _, cond := range rule.Conditions {
+			cond = conditionReplacer.Replace(cond)
+			conditions = append(conditions, cond)
+		}
+
+		ast, err := ConditionFromStrings(state.RulesEnv, OperatorOr, conditions...)
 		if err != nil {
 			return nil, fmt.Errorf("rules %s: error compiling conditions: %v", rule.Name, err)
 		}

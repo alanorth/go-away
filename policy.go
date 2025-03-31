@@ -40,8 +40,7 @@ func parseCIDROrIP(value string) (net.IPNet, error) {
 }
 
 type Policy struct {
-	// UserAgents map of a list of user-agent regex
-	UserAgents map[string][]string `yaml:"user-agents"`
+
 	// Networks map of networks and prefixes to be loaded
 	Networks map[string][]PolicyNetwork `yaml:"networks"`
 
@@ -59,6 +58,7 @@ const (
 	PolicyRuleActionDENY      PolicyRuleAction = "DENY"
 	PolicyRuleActionBLOCK     PolicyRuleAction = "BLOCK"
 	PolicyRuleActionCHALLENGE PolicyRuleAction = "CHALLENGE"
+	PolicyRuleActionCHECK     PolicyRuleAction = "CHECK"
 )
 
 type PolicyRule struct {
