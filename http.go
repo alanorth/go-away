@@ -84,7 +84,6 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, rule := range state.Rules {
-	nextRule:
 		if out, _, err := rule.Program.Eval(env); err != nil {
 			//TODO error
 			panic(err)
@@ -150,6 +149,8 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+
+	nextRule:
 	}
 
 	state.Backend.ServeHTTP(w, r)
