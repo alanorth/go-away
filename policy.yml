@@ -169,7 +169,7 @@ rules:
       # Typo'd opera botnet
       - 'userAgent.matches("^Opera/[0-9.]+\\.\\(")'
       # AI bullshit stuff, they do not respect robots.txt even while they read it
-      - 'userAgent.contains("Amazonbot") || userAgent.contains("Bytespider")|| userAgent.contains("CCBot") || userAgent.contains("ClaudeBot") || userAgent.contains("meta-externalagent/")'
+      - 'userAgent.contains("Amazonbot") || userAgent.contains("Bytespider") || userAgent.contains("CCBot") || userAgent.contains("GPTBot") || userAgent.contains("ClaudeBot") || userAgent.contains("meta-externalagent/")'
     action: deny
 
   - name: suspicious-crawlers
@@ -216,13 +216,6 @@ rules:
     action: pass
 
     # TODO: rss
-
-  - name: source-download
-    conditions:
-      - 'path.matches("^/[^/]+/[^/]+/raw/branch/")'
-      - 'path.matches("^/[^/]+/[^/]+/archive/")'
-      - 'path.matches("^/[^/]+/[^/]+/media/")'
-    action: pass
 
   - name: api-call
     conditions:
@@ -272,6 +265,34 @@ rules:
     conditions:
       - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
 
+
+  - name: heavy-operations
+    action: check
+    # check we are logged in, or force PoW
+    challenges: [js-pow-sha256, http-cookie-check]
+    conditions:
+      - 'path.startsWith("/explore/")'
+      - 'path.matches("^/[^/]+/[^/]+/src/commit/")'
+      - 'path.matches("^/[^/]+/[^/]+/compare/")'
+      - 'path.matches("^/[^/]+/[^/]+/commits/commit/")'
+      - 'path.matches("^/[^/]+/[^/]+/blame/")'
+      - 'path.matches("^/[^/]+/[^/]+/search/")'
+      - 'path.matches("^/[^/]+/[^/]+/find/")'
+      - 'path.matches("^/[^/]+/[^/]+/activity")'
+      # any search with a custom query
+      - '"q" in query && query.q != ""'
+      # user activity tab
+      - 'path.matches("^/[^/]") && "tab" in query && query.tab == "activity"'
+
+  # Allow all source downloads not caught in browser above
+  # todo: limit this as needed?
+  - name: source-download
+    conditions:
+      - 'path.matches("^/[^/]+/[^/]+/raw/branch/")'
+      - 'path.matches("^/[^/]+/[^/]+/archive/")'
+      - 'path.matches("^/[^/]+/[^/]+/media/")'
+      - 'path.matches("^/[^/]+/[^/]+/releases/download/")'
+    action: pass
 
   - name: standard-browser
     action: challenge

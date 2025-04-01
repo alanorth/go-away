@@ -5,12 +5,6 @@ let _target;
 let _difficulty;
 
 async function setup(config) {
-
-    const status = document.getElementById('status');
-    const image = document.getElementById('image');
-    const title = document.getElementById('title');
-    const spinner = document.getElementById('spinner');
-
     const { challenge, target, difficulty } = await fetch(config.Path + "/make-challenge", { method: "POST" })
         .then(r => {
             if (!r.ok) {
