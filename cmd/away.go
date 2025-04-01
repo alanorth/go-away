@@ -91,6 +91,7 @@ func main() {
 	target := flag.String("target", "http://localhost:80", "target to reverse proxy to")
 
 	policyFile := flag.String("policy", "", "path to policy YAML file")
+	challengeTemplate := flag.String("challenge-template", "anubis", "name of the challenge template to use")
 
 	flag.Parse()
 
@@ -129,7 +130,11 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to create reverse proxy for %s: %w", *target, err))
 	}
 
-	state, err := lib.NewState(policy, "git.gammaspectra.live/git/go-away/cmd", backend)
+	state, err := lib.NewState(policy, lib.StateSettings{
+		Backend:           backend,
+		PackagePath:       "git.gammaspectra.live/git/go-away/cmd",
+		ChallengeTemplate: *challengeTemplate,
+	})
 
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to create state: %w", err))

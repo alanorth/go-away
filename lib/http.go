@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"bytes"
 	"codeberg.org/meta/gzipped/v2"
 	"crypto/rand"
 	"encoding/base64"
@@ -10,6 +11,7 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/google/cel-go/common/types"
 	"html/template"
+	"maps"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -50,6 +52,54 @@ func init() {
 		}
 		templates[e.Name()] = tpl
 	}
+}
+
+func (state *State) challengePage(w http.ResponseWriter, status int, challenge string, params map[string]any) error {
+	input := make(map[string]any)
+	input["Random"] = cacheBust
+	input["Challenge"] = challenge
+	input["Path"] = state.UrlPath
+
+	maps.Copy(input, params)
+
+	if _, ok := input["Title"]; !ok {
+		input["Title"] = "Checking you are not a bot"
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	buf := bytes.NewBuffer(make([]byte, 0, 8192))
+
+	err := templates["challenge-"+state.Settings.ChallengeTemplate+".gohtml"].Execute(buf, input)
+	if err != nil {
+		_ = state.errorPage(w, http.StatusInternalServerError, err)
+	} else {
+		w.WriteHeader(status)
+		_, _ = w.Write(buf.Bytes())
+	}
+	return nil
+}
+
+func (state *State) errorPage(w http.ResponseWriter, status int, err error) error {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	buf := bytes.NewBuffer(make([]byte, 0, 8192))
+
+	err2 := templates["challenge-"+state.Settings.ChallengeTemplate+".gohtml"].Execute(buf, map[string]any{
+		"Random":      cacheBust,
+		"Error":       err.Error(),
+		"Path":        state.UrlPath,
+		"Title":       "Oh no! " + http.StatusText(status),
+		"HideSpinner": true,
+		"Challenge":   "",
+	})
+	if err2 != nil {
+		panic(err2)
+	} else {
+		w.WriteHeader(status)
+		_, _ = w.Write(buf.Bytes())
+	}
+	return nil
 }
 
 func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
@@ -132,11 +182,12 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 					}
 				case policy.RuleActionDENY:
 					//TODO: config error code
-					http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+					_ = state.errorPage(w, http.StatusForbidden, fmt.Errorf("access denied: denied by administrative rule %s", rule.Hash))
 					return
 				case policy.RuleActionBLOCK:
 					//TODO: config error code
-					http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+					//TODO: configure block
+					_ = state.errorPage(w, http.StatusForbidden, fmt.Errorf("access denied: blocked by administrative rule %s", rule.Hash))
 					return
 				}
 			}
@@ -179,7 +230,7 @@ func (state *State) setupRoutes() error {
 						return err
 					} else if !ok {
 						ClearCookie(CookiePrefix+challengeName, w)
-						http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+						_ = state.errorPage(w, http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
 						return nil
 					}
 
@@ -195,7 +246,7 @@ func (state *State) setupRoutes() error {
 				}()
 				if err != nil {
 					ClearCookie(CookiePrefix+challengeName, w)
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					_ = state.errorPage(w, http.StatusInternalServerError, err)
 					return
 				}
 			})

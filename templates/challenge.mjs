@@ -16,7 +16,7 @@ const u = (url = "", params = {}) => {
     const title = document.getElementById('title');
     const spinner = document.getElementById('spinner');
 
-    status.innerText = 'Starting...';
+    status.innerText = 'Starting challenge {{ .Challenge }}...';
 
     try {
         const info = await setup({
@@ -44,7 +44,7 @@ const u = (url = "", params = {}) => {
         const t1 = Date.now();
         console.log({ result, info });
 
-        title.innerHTML = "Success!";
+        title.innerHTML = "Challenge success!";
         if (info != "") {
             status.innerHTML = `Done! Took ${t1 - t0}ms, ${info}`;
         } else {

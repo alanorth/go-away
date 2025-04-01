@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
@@ -34,11 +35,11 @@ import (
 )
 
 type State struct {
-	Client      *http.Client
-	PackagePath string
-	UrlPath     string
-	Mux         *http.ServeMux
-	Backend     http.Handler
+	Client   *http.Client
+	Settings StateSettings
+	UrlPath  string
+	Mux      *http.ServeMux
+	Backend  http.Handler
 
 	Networks map[string]cidranger.Ranger
 
@@ -57,10 +58,10 @@ type State struct {
 
 type RuleState struct {
 	Name string
+	Hash string
 
 	Program    cel.Program
 	Action     policy.RuleAction
-	Continue   bool
 	Challenges []string
 }
 
@@ -91,16 +92,36 @@ type ChallengeState struct {
 	Verify            func(key []byte, result string) (bool, error)
 }
 
-func NewState(p policy.Policy, packagePath string, backend http.Handler) (state *State, err error) {
+type StateSettings struct {
+	Backend           http.Handler
+	PackagePath       string
+	ChallengeTemplate string
+}
+
+func NewState(p policy.Policy, settings StateSettings) (state *State, err error) {
 	state = new(State)
+	state.Settings = settings
 	state.Client = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
-	state.PackagePath = packagePath
-	state.UrlPath = "/.well-known/." + state.PackagePath
-	state.Backend = backend
+	state.UrlPath = "/.well-known/." + state.Settings.PackagePath
+	state.Backend = settings.Backend
+
+	state.PublicKey, state.PrivateKey, err = ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	privateKeyFingerprint := sha256.Sum256(state.PrivateKey)
+
+	if state.Settings.ChallengeTemplate == "" {
+		state.Settings.ChallengeTemplate = "anubis"
+	}
+
+	if templates["challenge-"+state.Settings.ChallengeTemplate+".gohtml"] == nil {
+		return nil, fmt.Errorf("no template defined for %s", settings.ChallengeTemplate)
+	}
 
 	state.Networks = make(map[string]cidranger.Ranger)
 	for k, network := range p.Networks {
@@ -236,19 +257,12 @@ func NewState(p policy.Policy, packagePath string, backend http.Handler) (state 
 
 				redirectUri.RawQuery = values.Encode()
 
-				// self redirect!
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				w.WriteHeader(http.StatusTeapot)
-
-				_ = templates["challenge.gohtml"].Execute(w, map[string]any{
-					"Title":     "Bot",
-					"Path":      state.UrlPath,
-					"Random":    cacheBust,
-					"Challenge": "",
+				_ = state.challengePage(w, http.StatusTeapot, "", map[string]any{
 					"Meta": map[string]string{
 						"refresh": "0; url=" + redirectUri.String(),
 					},
 				})
+
 				return ChallengeResultStop
 			}
 		case "header-refresh":
@@ -264,40 +278,24 @@ func NewState(p policy.Policy, packagePath string, backend http.Handler) (state 
 
 				// self redirect!
 				w.Header().Set("Refresh", "0; url="+redirectUri.String())
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				w.WriteHeader(http.StatusTeapot)
 
-				_ = templates["challenge.gohtml"].Execute(w, map[string]any{
-					"Title":     "Bot",
-					"Path":      state.UrlPath,
-					"Random":    cacheBust,
-					"Challenge": "",
-				})
+				_ = state.challengePage(w, http.StatusTeapot, "", nil)
+
 				return ChallengeResultStop
 			}
 		case "js":
 			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				w.WriteHeader(http.StatusTeapot)
+				_ = state.challengePage(w, http.StatusTeapot, challengeName, nil)
 
-				err := templates["challenge.gohtml"].Execute(w, map[string]any{
-					"Title":     "Bot",
-					"Path":      state.UrlPath,
-					"Random":    cacheBust,
-					"Challenge": challengeName,
-				})
-				if err != nil {
-					//TODO: log
-				}
 				return ChallengeResultStop
 			}
 			c.ChallengeScriptPath = c.Path + "/challenge.mjs"
 			c.ChallengeScript = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				params, _ := json.Marshal(p.Parameters)
+
+				//TODO: move this to http.go as a template
 				w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 				w.WriteHeader(http.StatusOK)
-
-				params, _ := json.Marshal(p.Parameters)
-				context.Background()
 
 				err := templates["challenge.mjs"].Execute(w, map[string]any{
 					"Path":       c.Path,
@@ -377,7 +375,7 @@ func NewState(p policy.Policy, packagePath string, backend http.Handler) (state 
 					return nil
 				})
 				if err != nil {
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					_ = state.errorPage(w, http.StatusInternalServerError, err)
 					return
 				}
 			})
@@ -484,8 +482,14 @@ func NewState(p policy.Policy, packagePath string, backend http.Handler) (state 
 	conditionReplacer := strings.NewReplacer(replacements...)
 
 	for _, rule := range p.Rules {
+		hasher := sha256.New()
+		hasher.Write([]byte(rule.Name))
+		hasher.Write(privateKeyFingerprint[:])
+		sum := hasher.Sum(nil)
+
 		r := RuleState{
 			Name:       rule.Name,
+			Hash:       hex.EncodeToString(sum[:8]),
 			Action:     policy.RuleAction(strings.ToUpper(rule.Action)),
 			Challenges: rule.Challenges,
 		}
@@ -511,15 +515,12 @@ func NewState(p policy.Policy, packagePath string, backend http.Handler) (state 
 		}
 		r.Program = program
 
+		slog.Info("loaded rule", "rule", r.Name, "hash", r.Hash, "action", rule.Action)
+
 		state.Rules = append(state.Rules, r)
 	}
 
 	state.Mux = http.NewServeMux()
-
-	state.PublicKey, state.PrivateKey, err = ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		return nil, err
-	}
 
 	if err = state.setupRoutes(); err != nil {
 		return nil, err

@@ -150,10 +150,15 @@
                 style="width:100%;max-width:256px;"
                 src="{{ .Path }}/assets/static/logo.png?cacheBust={{ .Random }}"
         />
-        <p id="status">Loading...</p>
         {{if .Challenge }}
+        <p id="status">Loading challenge <em>{{ .Challenge }}</em>...</p>
         <script async type="module" src="{{ .Path }}/challenge/{{ .Challenge }}/challenge.mjs?cacheBust={{ .Random }}"></script>
+        {{else if .Error}}
+        <p id="status">Error: {{ .Error }}</p>
+        {{else}}
+        <p id="status">Loading...</p>
         {{end}}
+        {{if not .HideSpinner }}
         <div id="spinner" class="lds-roller">
             <div></div>
             <div></div>
@@ -164,14 +169,15 @@
             <div></div>
             <div></div>
         </div>
+        {{end}}
         <details>
             <summary>Why am I seeing this?</summary>
             <p>You are seeing this because the administrator of this website has set up <a href="https://git.gammaspectra.live/git/go-away">go-away</a> to protect the server against the scourge of <a href="https://thelibre.news/foss-infrastructure-is-under-attack-by-ai-companies/">AI companies aggressively scraping websites</a>. This can and does cause downtime for the websites, which makes their resources inaccessible for everyone.</p>
-            <p>Please note that this challenge requires the use of modern JavaScript features that plugins like <a href="https://jshelter.org/">JShelter</a> will disable. Please disable JShelter or other such plugins for this domain.</p>
+            <p>Please note that some challenges requires the use of modern JavaScript features and some plugins may will disable. Please disable such plugins for this domain (for example, JShelter).</p>
         </details>
         <noscript>
             <p>
-                Sadly, you must enable JavaScript to get past this challenge. This is required because AI companies have changed
+                Sadly, you may need to enable JavaScript to get past this challenge. This is required because AI companies have changed
                 the social contract around how website hosting works.
             </p>
         </noscript>
