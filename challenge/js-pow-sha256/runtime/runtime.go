@@ -70,9 +70,13 @@ func VerifyChallenge(in challenge.Allocation) (out challenge.VerifyChallengeOutp
 		result := make([]byte, inline.DecodedLen(len(in.Result)))
 		n, err := inline.Decode(result, in.Result)
 		if err != nil {
-			panic(err)
+			return challenge.VerifyChallengeOutputError
 		}
 		result = result[:n]
+
+		if len(result) < 8 {
+			return challenge.VerifyChallengeOutputError
+		}
 
 		// verify we used same challenge
 		if subtle.ConstantTimeCompare(result[:len(result)-8], c) != 1 {
