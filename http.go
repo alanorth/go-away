@@ -180,9 +180,9 @@ func (state *State) setupRoutes() error {
 				err := func() (err error) {
 					expiry := time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
 					key := state.GetChallengeKeyForRequest(challengeName, expiry, r)
-					result := []byte(r.FormValue("result"))
+					result := r.FormValue("result")
 
-					if ok, err := c.Verify(key, string(result)); err != nil {
+					if ok, err := c.Verify(key, result); err != nil {
 						return err
 					} else if !ok {
 						ClearCookie(CookiePrefix+challengeName, w)
@@ -190,7 +190,7 @@ func (state *State) setupRoutes() error {
 						return nil
 					}
 
-					token, err := state.IssueChallengeToken(challengeName, key, result, expiry)
+					token, err := state.IssueChallengeToken(challengeName, key, []byte(result), expiry)
 					if err != nil {
 						ClearCookie(CookiePrefix+challengeName, w)
 					} else {

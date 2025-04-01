@@ -93,7 +93,7 @@ type PolicyNetwork struct {
 	Prefixes []string `yaml:"prefixes,omitempty"`
 }
 
-func (n PolicyNetwork) FetchPrefixes() (output []net.IPNet, err error) {
+func (n PolicyNetwork) FetchPrefixes(c *http.Client) (output []net.IPNet, err error) {
 	if len(n.Prefixes) > 0 {
 		for _, prefix := range n.Prefixes {
 			ipNet, err := parseCIDROrIP(prefix)
@@ -106,7 +106,7 @@ func (n PolicyNetwork) FetchPrefixes() (output []net.IPNet, err error) {
 
 	var reader io.Reader
 	if n.Url != nil {
-		response, err := http.DefaultClient.Get(*n.Url)
+		response, err := c.Get(*n.Url)
 		if err != nil {
 			return nil, err
 		}

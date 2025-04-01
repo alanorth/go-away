@@ -1,13 +1,9 @@
 package challenge
 
 import (
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
-	"net/http"
+	"git.gammaspectra.live/git/go-away/challenge/inline"
 )
-
-const ChallengeKeySize = sha256.Size
 
 type MakeChallenge func(in Allocation) (out Allocation)
 
@@ -36,7 +32,7 @@ func MakeChallengeDecode(callback func(in MakeChallengeInput, out *MakeChallenge
 		outStruct.Error = err.Error()
 	} else {
 		outStruct.Code = 200
-		outStruct.Headers = make(http.Header)
+		outStruct.Headers = make(inline.MIMEHeader)
 
 		func() {
 			// encapsulate err
@@ -48,7 +44,7 @@ func MakeChallengeDecode(callback func(in MakeChallengeInput, out *MakeChallenge
 					if err, ok := recovered.(error); ok {
 						outStruct.Error = err.Error()
 					} else {
-						outStruct.Error = fmt.Sprintf("%v", recovered)
+						outStruct.Error = "error"
 					}
 				}
 			}()
@@ -92,26 +88,26 @@ func VerifyChallengeDecode(callback func(in VerifyChallengeInput) VerifyChalleng
 }
 
 type MakeChallengeInput struct {
-	Key []byte `json:"key"`
+	Key []byte
 
-	Parameters map[string]string `json:"parameters,omitempty"`
+	Parameters map[string]string
 
-	Headers http.Header `json:"headers,omitempty"`
-	Data    []byte      `json:"data,omitempty"`
+	Headers inline.MIMEHeader
+	Data    []byte
 }
 
 type MakeChallengeOutput struct {
-	Data    []byte      `json:"data"`
-	Code    int         `json:"code"`
-	Headers http.Header `json:"headers,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Data    []byte
+	Code    int
+	Headers inline.MIMEHeader
+	Error   string
 }
 
 type VerifyChallengeInput struct {
-	Key        []byte            `json:"key"`
-	Parameters map[string]string `json:"parameters,omitempty"`
+	Key        []byte
+	Parameters map[string]string
 
-	Result []byte `json:"result,omitempty"`
+	Result []byte
 }
 
 type VerifyChallengeOutput uint64

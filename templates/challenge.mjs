@@ -54,7 +54,7 @@ const u = (url = "", params = {}) => {
         setTimeout(() => {
             const redir = window.location.href;
             window.location.href = u("{{ .Path }}/verify-challenge", {
-                result: JSON.stringify(result),
+                result: result,
                 redirect: redir,
                 elapsedTime: t1 - t0,
             });

@@ -1,7 +1,8 @@
 
 # Define networks to be used later below
 networks:
-  # todo: support ASN lookups
+  # todo: support direct ASN lookups
+  # todo: cache these values
   huawei-cloud:
     # AS136907
     - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/136907/aggregated.json
@@ -10,6 +11,44 @@ networks:
     # AS45102
     - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/45102/aggregated.json
       jq-path: '.subnets.ipv4[], .subnets.ipv6[]'
+  aws-cloud:
+    - url: https://ip-ranges.amazonaws.com/ip-ranges.json
+      jq-path: '(.prefixes[] | select(has("ip_prefix")) | .ip_prefix), (.prefixes[] | select(has("ipv6_prefix")) | .ipv6_prefix)'
+  google-cloud:
+    - url: https://www.gstatic.com/ipranges/cloud.json
+      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
+  oracle-cloud:
+    - url: https://docs.oracle.com/en-us/iaas/tools/public_ip_ranges.json
+      jq-path: '.regions[] | .cidrs[] | .cidr'
+  azure-cloud:
+    # todo: https://www.microsoft.com/en-us/download/details.aspx?id=56519 does not provide direct JSON
+    - url: https://raw.githubusercontent.com/femueller/cloud-ip-ranges/refs/heads/master/microsoft-azure-ip-ranges.json
+      jq-path: '.values[] | .properties.addressPrefixes[]'
+
+  digitalocean:
+    - url: https://www.digitalocean.com/geo/google.csv
+      regex: "(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+),"
+  linode:
+    - url: https://geoip.linode.com/
+      regex: "(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+),"
+  vultr:
+    - url: "https://geofeed.constant.com/?json"
+      jq-path: '.subnets[] | .ip_prefix'
+  cloudflare:
+    - url: https://www.cloudflare.com/ips-v4
+      regex: "(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
+    - url: https://www.cloudflare.com/ips-v6
+      regex: "(?P<prefix>[0-9a-f:]+::/[0-9]+)"
+
+  icloud-private-relay:
+    - url: https://mask-api.icloud.com/egress-ip-ranges.csv
+      regex: "(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+),"
+  tunnelbroker-relay:
+    # HE Tunnelbroker
+    - url: https://tunnelbroker.net/export/google
+      regex: "(?P<prefix>([0-9a-f:]+::)/[0-9]+),"
+
+
   googlebot:
     - url: https://developers.google.com/static/search/apis/ipranges/googlebot.json
       jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
@@ -27,28 +66,23 @@ networks:
     # - url: https://yandex.com/ips
     #  regex: "<span>(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+)[ \\\\t]*</span><br/>"
     - prefixes:
-      - "5.45.192.0/18"
-      - "5.255.192.0/18"
-      - "37.9.64.0/18"
-      - "37.140.128.0/18"
-      - "77.88.0.0/18"
-      - "84.252.160.0/19"
-      - "87.250.224.0/19"
-      - "90.156.176.0/22"
-      - "93.158.128.0/18"
-      - "95.108.128.0/17"
-      - "141.8.128.0/18"
-      - "178.154.128.0/18"
-      - "185.32.187.0/24"
-      - "2a02:6b8::/29"
+        - "5.45.192.0/18"
+        - "5.255.192.0/18"
+        - "37.9.64.0/18"
+        - "37.140.128.0/18"
+        - "77.88.0.0/18"
+        - "84.252.160.0/19"
+        - "87.250.224.0/19"
+        - "90.156.176.0/22"
+        - "93.158.128.0/18"
+        - "95.108.128.0/17"
+        - "141.8.128.0/18"
+        - "178.154.128.0/18"
+        - "185.32.187.0/24"
+        - "2a02:6b8::/29"
   kagibot:
     - url: https://kagi.com/bot
       regex: "\\n(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+) "
-  cloudflare:
-    - url: https://www.cloudflare.com/ips-v4
-      regex: "(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
-    - url: https://www.cloudflare.com/ips-v6
-      regex: "(?P<prefix>[0-9a-f:]+::/[0-9]+)"
 
 
 # todo: define interface
@@ -59,7 +93,7 @@ challenges:
     mode: js
     asset: load.mjs
     parameters:
-      difficulty: 5
+      difficulty: 20
     runtime:
       mode: wasm
       # Verify must be under challenges/{name}/runtime/{asset}
@@ -88,7 +122,7 @@ challenges:
 
   http-cookie-check:
     mode: http
-    url: http://172.20.5.5:3002/user/stopwatches
+    url: http://gitea:3000/user/stopwatches
     # url: http://gitea:3000/repo/search
     # url: http://gitea:3000/notifications/new
     parameters:
@@ -135,7 +169,7 @@ rules:
       # Typo'd opera botnet
       - 'userAgent.matches("^Opera/[0-9.]+\\.\\(")'
       # AI bullshit stuff, they do not respect robots.txt even while they read it
-      - 'userAgent.contains("Amazonbot") || userAgent.contains("Bytespider") || userAgent.contains("ClaudeBot") || userAgent.contains("meta-externalagent/")'
+      - 'userAgent.contains("Amazonbot") || userAgent.contains("Bytespider")|| userAgent.contains("CCBot") || userAgent.contains("ClaudeBot") || userAgent.contains("meta-externalagent/")'
     action: deny
 
   - name: suspicious-crawlers
@@ -210,7 +244,8 @@ rules:
   - name: preview-fetchers
     conditions:
       - 'path.endsWith("/-/summary-card")'
-      - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("Twitterbot/")'
+      #- 'userAgent.contains("facebookexternalhit/")'
+      - 'userAgent.contains("Twitterbot/")'
       - '"X-Purpose" in headers && headers["X-Purpose"] == "preview"'
     action: pass
 
@@ -229,6 +264,13 @@ rules:
       - 'path == "/"'
       - 'path.matches("(?i)^/(WeebDataHoarder|P2Pool|mirror|git|S\\.O\\.N\\.G|FM10K|Sillycom|pwgen2155|kaitou|metonym)/[^/]+$")'
     action: pass
+
+  - name: suspicious-fetchers
+    action: challenge
+    challenges: [js-pow-sha256, http-cookie-check]
+    conditions:
+      - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
+
 
   - name: standard-browser
     action: challenge

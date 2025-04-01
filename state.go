@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/challenge"
+	"git.gammaspectra.live/git/go-away/challenge/inline"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
@@ -20,6 +21,7 @@ import (
 	"github.com/yl2chen/cidranger"
 	"io"
 	"io/fs"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -101,7 +103,10 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 	for k, network := range policy.Networks {
 		ranger := cidranger.NewPCTrieRanger()
 		for _, e := range network {
-			prefixes, err := e.FetchPrefixes()
+			if e.Url != nil {
+				slog.Debug("loading network url list", "network", k, "url", *e.Url)
+			}
+			prefixes, err := e.FetchPrefixes(state.Client)
 			if err != nil {
 				return nil, fmt.Errorf("networks %s: error fetching prefixes: %v", k, err)
 			}
@@ -335,7 +340,7 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 					in := challenge.MakeChallengeInput{
 						Key:        state.GetChallengeKeyForRequest(challengeName, time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity), r),
 						Parameters: p.Parameters,
-						Headers:    r.Header,
+						Headers:    inline.MIMEHeader(r.Header),
 					}
 					in.Data, err = io.ReadAll(r.Body)
 					if err != nil {
