@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="forgejo-dark">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{{ .Title }}</title>
+    <meta name="referrer" content="no-referrer">
+
+    {{ range $key, $value := .Meta }}
+        {{ if eq $key "refresh"}}
+            <meta http-equiv="{{ $key }}" content="{{ $value }}"/>
+        {{else}}
+            <meta name="{{ $key }}" content="{{ $value }}"/>
+        {{end}}
+    {{ end }}
+
+
+    <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+    <link rel="alternate icon" href="/assets/img/favicon.png" type="image/png">
+
+    <script src="/assets/js/webcomponents.js"></script>
+
+    <noscript>
+        <style>
+            .dropdown:hover > .menu { display: block; }
+            .ui.secondary.menu .dropdown.item > .menu { margin-top: 0; }
+        </style>
+    </noscript>
+
+    <link rel="stylesheet" href="/assets/css/index.css">
+    <link rel="stylesheet" href="/assets/css/theme-forgejo-dark.css">
+
+
+</head>
+<body hx-swap="outerHTML" hx-ext="morph" hx-push-url="false">
+
+
+<div class="full height">
+    <nav id="navbar" aria-label="Navigation bar">
+        <div class="navbar-left ui secondary menu">
+            <a class="item" id="navbar-logo" href="/" aria-label="Home">
+                <img width="30" height="30" src="/assets/img/logo.svg" alt="Logo" aria-hidden="true">
+            </a>
+        </div>
+    </nav>
+
+    <div class="home">
+        <div class="ui stackable middle very relaxed page grid">
+            <div class="sixteen wide center aligned centered column">
+                <div>
+                    <img class="logo" id="image" src="/assets/img/logo.png" />
+                </div>
+                <div class="hero">
+                    <h2 class="ui icon header title" id="title">
+                        {{ .Title }}
+                    </h2>
+
+                    {{if .Challenge }}
+                    <h3 id="status">Loading challenge <em>{{ .Challenge }}</em>...</h3>
+                    <script async type="module" src="{{ .Path }}/challenge/{{ .Challenge }}/challenge.mjs?cacheBust={{ .Random }}"></script>
+                    {{else if .Error}}
+                    <h3 id="status">Error: {{ .Error }}</h3>
+                    {{else}}
+                    <h3 id="status">Loading...</h3>
+                    {{end}}
+                    <div id="spinner"></div>
+
+                    <details>
+                        <summary>Why am I seeing this?</summary>
+                        <p>You are seeing this because the administrator of this website has set up <a href="https://git.gammaspectra.live/git/go-away">go-away</a> to protect the server against the scourge of <a href="https://thelibre.news/foss-infrastructure-is-under-attack-by-ai-companies/">AI companies aggressively scraping websites</a>. This can and does cause downtime for the websites, which makes their resources inaccessible for everyone.</p>
+                        <p>Please note that some challenges requires the use of modern JavaScript features and some plugins may will disable. Please disable such plugins for this domain (for example, JShelter).</p>
+                    </details>
+
+
+                    <div id="testarea"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+</div>
+
+
+
+<footer class="page-footer" role="group" aria-label="">
+    <div class="left-links" role="contentinfo" aria-label="">
+        Protected by <a href="https://git.gammaspectra.live/git/go-away">go-away</a>
+    </div>
+</footer>
+
+</body>
+</html>
