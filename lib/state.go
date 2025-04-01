@@ -1,4 +1,4 @@
-package go_away
+package lib
 
 import (
 	"codeberg.org/meta/gzipped/v2"
@@ -10,8 +10,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	go_away "git.gammaspectra.live/git/go-away"
 	"git.gammaspectra.live/git/go-away/challenge"
 	"git.gammaspectra.live/git/go-away/challenge/inline"
+	"git.gammaspectra.live/git/go-away/lib/condition"
+	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
@@ -56,7 +59,7 @@ type RuleState struct {
 	Name string
 
 	Program    cel.Program
-	Action     PolicyRuleAction
+	Action     policy.RuleAction
 	Continue   bool
 	Challenges []string
 }
@@ -88,7 +91,7 @@ type ChallengeState struct {
 	Verify            func(key []byte, result string) (bool, error)
 }
 
-func NewState(policy Policy, packagePath string, backend http.Handler) (state *State, err error) {
+func NewState(p policy.Policy, packagePath string, backend http.Handler) (state *State, err error) {
 	state = new(State)
 	state.Client = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -100,7 +103,7 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 	state.Backend = backend
 
 	state.Networks = make(map[string]cidranger.Ranger)
-	for k, network := range policy.Networks {
+	for k, network := range p.Networks {
 		ranger := cidranger.NewPCTrieRanger()
 		for _, e := range network {
 			if e.Url != nil {
@@ -129,7 +132,7 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 
 	state.Challenges = make(map[string]ChallengeState)
 
-	for challengeName, p := range policy.Challenges {
+	for challengeName, p := range p.Challenges {
 		c := ChallengeState{
 			Path:              fmt.Sprintf("%s/challenge/%s", state.UrlPath, challengeName),
 			VerifyProbability: p.Runtime.Probability,
@@ -143,7 +146,7 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 		}
 
 		assetPath := c.Path + "/static/"
-		subFs, err := fs.Sub(challengesFs, fmt.Sprintf("challenge/%s/static", challengeName))
+		subFs, err := fs.Sub(go_away.ChallengeFs, fmt.Sprintf("challenge/%s/static", challengeName))
 		if err == nil {
 			c.Static = http.StripPrefix(
 				assetPath,
@@ -294,6 +297,7 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 				w.WriteHeader(http.StatusOK)
 
 				params, _ := json.Marshal(p.Parameters)
+				context.Background()
 
 				err := templates["challenge.mjs"].Execute(w, map[string]any{
 					"Path":       c.Path,
@@ -336,7 +340,7 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 			}
 
 		case "wasm":
-			wasmData, err := challengesFs.ReadFile(fmt.Sprintf("challenge/%s/runtime/%s", challengeName, p.Runtime.Asset))
+			wasmData, err := go_away.ChallengeFs.ReadFile(fmt.Sprintf("challenge/%s/runtime/%s", challengeName, p.Runtime.Asset))
 			if err != nil {
 				return nil, fmt.Errorf("c %s: could not load runtime: %w", challengeName, err)
 			}
@@ -463,8 +467,8 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 	}
 
 	var replacements []string
-	for k, entries := range policy.Conditions {
-		ast, err := ConditionFromStrings(state.RulesEnv, OperatorOr, entries...)
+	for k, entries := range p.Conditions {
+		ast, err := condition.FromStrings(state.RulesEnv, condition.OperatorOr, entries...)
 		if err != nil {
 			return nil, fmt.Errorf("conditions %s: error compiling conditions: %v", k, err)
 		}
@@ -479,14 +483,14 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 	}
 	conditionReplacer := strings.NewReplacer(replacements...)
 
-	for _, rule := range policy.Rules {
+	for _, rule := range p.Rules {
 		r := RuleState{
 			Name:       rule.Name,
-			Action:     PolicyRuleAction(strings.ToUpper(rule.Action)),
+			Action:     policy.RuleAction(strings.ToUpper(rule.Action)),
 			Challenges: rule.Challenges,
 		}
 
-		if (r.Action == PolicyRuleActionCHALLENGE || r.Action == PolicyRuleActionCHECK) && len(r.Challenges) == 0 {
+		if (r.Action == policy.RuleActionCHALLENGE || r.Action == policy.RuleActionCHECK) && len(r.Challenges) == 0 {
 			return nil, fmt.Errorf("no challenges found in rule %s", rule.Name)
 		}
 
@@ -497,7 +501,7 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 			conditions = append(conditions, cond)
 		}
 
-		ast, err := ConditionFromStrings(state.RulesEnv, OperatorOr, conditions...)
+		ast, err := condition.FromStrings(state.RulesEnv, condition.OperatorOr, conditions...)
 		if err != nil {
 			return nil, fmt.Errorf("rules %s: error compiling conditions: %v", rule.Name, err)
 		}

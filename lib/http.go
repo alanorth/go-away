@@ -1,12 +1,13 @@
-package go_away
+package lib
 
 import (
 	"codeberg.org/meta/gzipped/v2"
 	"crypto/rand"
-	"embed"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	go_away "git.gammaspectra.live/git/go-away"
+	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/google/cel-go/common/types"
 	"html/template"
 	"net/http"
@@ -14,15 +15,6 @@ import (
 	"strings"
 	"time"
 )
-
-//go:embed assets
-var assetsFs embed.FS
-
-//go:embed challenge
-var challengesFs embed.FS
-
-//go:embed templates
-var templatesFs embed.FS
 
 var templates map[string]*template.Template
 
@@ -39,7 +31,7 @@ func init() {
 
 	templates = make(map[string]*template.Template)
 
-	dir, err := templatesFs.ReadDir("templates")
+	dir, err := go_away.TemplatesFs.ReadDir("templates")
 	if err != nil {
 		panic(err)
 	}
@@ -47,7 +39,7 @@ func init() {
 		if e.IsDir() {
 			continue
 		}
-		data, err := templatesFs.ReadFile(filepath.Join("templates", e.Name()))
+		data, err := go_away.TemplatesFs.ReadFile(filepath.Join("templates", e.Name()))
 		if err != nil {
 			panic(err)
 		}
@@ -92,10 +84,10 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 				switch rule.Action {
 				default:
 					panic(fmt.Errorf("unknown action %s", rule.Action))
-				case PolicyRuleActionPASS:
+				case policy.RuleActionPASS:
 					state.Backend.ServeHTTP(w, r)
 					return
-				case PolicyRuleActionCHALLENGE, PolicyRuleActionCHECK:
+				case policy.RuleActionCHALLENGE, policy.RuleActionCHECK:
 					expiry := time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
 
 					for _, challengeName := range rule.Challenges {
@@ -106,7 +98,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 								ClearCookie(CookiePrefix+challengeName, w)
 							}
 						} else {
-							if rule.Action == PolicyRuleActionCHECK {
+							if rule.Action == policy.RuleActionCHECK {
 								goto nextRule
 							}
 							// we passed the challenge!
@@ -127,7 +119,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 							case ChallengeResultContinue:
 								continue
 							case ChallengeResultPass:
-								if rule.Action == PolicyRuleActionCHECK {
+								if rule.Action == policy.RuleActionCHECK {
 									goto nextRule
 								}
 								// we pass the challenge early!
@@ -138,11 +130,11 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 							panic("challenge not found")
 						}
 					}
-				case PolicyRuleActionDENY:
+				case policy.RuleActionDENY:
 					//TODO: config error code
 					http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 					return
-				case PolicyRuleActionBLOCK:
+				case policy.RuleActionBLOCK:
 					//TODO: config error code
 					http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 					return
@@ -161,7 +153,7 @@ func (state *State) setupRoutes() error {
 
 	state.Mux.HandleFunc("/", state.handleRequest)
 
-	state.Mux.Handle("GET "+state.UrlPath+"/assets/", http.StripPrefix(state.UrlPath, gzipped.FileServer(gzipped.FS(assetsFs))))
+	state.Mux.Handle("GET "+state.UrlPath+"/assets/", http.StripPrefix(state.UrlPath, gzipped.FileServer(gzipped.FS(go_away.AssetsFs))))
 
 	for challengeName, c := range state.Challenges {
 		if c.Static != nil {
@@ -212,20 +204,4 @@ func (state *State) setupRoutes() error {
 	}
 
 	return nil
-}
-
-// UnixRoundTripper https://github.com/oauth2-proxy/oauth2-proxy/blob/master/pkg/upstream/http.go#L124
-type UnixRoundTripper struct {
-	Transport *http.Transport
-}
-
-// RoundTrip set bare minimum stuff
-func (t UnixRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req = req.Clone(req.Context())
-	if req.Host == "" {
-		req.Host = "localhost"
-	}
-	req.URL.Host = req.Host // proxy error: no Host in request URL
-	req.URL.Scheme = "http" // make http.Transport happy and avoid an infinite recursion
-	return t.Transport.RoundTrip(req)
 }

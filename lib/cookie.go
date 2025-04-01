@@ -1,4 +1,4 @@
-package go_away
+package lib
 
 import (
 	"net/http"

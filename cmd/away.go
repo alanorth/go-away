@@ -5,7 +5,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	go_away "git.gammaspectra.live/git/go-away"
+	"git.gammaspectra.live/git/go-away/lib"
+	"git.gammaspectra.live/git/go-away/lib/network"
+	"git.gammaspectra.live/git/go-away/lib/policy"
 	"gopkg.in/yaml.v3"
 	"log"
 	"log/slog"
@@ -36,7 +38,7 @@ func makeReverseProxy(target string) (http.Handler, error) {
 			return dialer.DialContext(ctx, "unix", addr)
 		}
 		// tell transport how to handle the unix url scheme
-		transport.RegisterProtocol("unix", go_away.UnixRoundTripper{Transport: transport})
+		transport.RegisterProtocol("unix", network.UnixRoundTripper{Transport: transport})
 	}
 
 	rp := httputil.NewSingleHostReverseProxy(u)
@@ -116,7 +118,7 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to read policy file: %w", err))
 	}
 
-	var policy go_away.Policy
+	var policy policy.Policy
 
 	if err = yaml.Unmarshal(policyData, &policy); err != nil {
 		log.Fatal(fmt.Errorf("failed to parse policy file: %w", err))
@@ -127,7 +129,7 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to create reverse proxy for %s: %w", *target, err))
 	}
 
-	state, err := go_away.NewState(policy, "git.gammaspectra.live/git/go-away/cmd", backend)
+	state, err := lib.NewState(policy, "git.gammaspectra.live/git/go-away/cmd", backend)
 
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to create state: %w", err))

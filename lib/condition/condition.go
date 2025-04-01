@@ -1,4 +1,4 @@
-package go_away
+package condition
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ const (
 	OperatorAnd = "&&"
 )
 
-func ConditionFromStrings(env *cel.Env, operator string, conditions ...string) (*cel.Ast, error) {
+func FromStrings(env *cel.Env, operator string, conditions ...string) (*cel.Ast, error) {
 	var asts []*cel.Ast
 	for _, c := range conditions {
 		ast, issues := env.Compile(c)
@@ -25,10 +25,10 @@ func ConditionFromStrings(env *cel.Env, operator string, conditions ...string) (
 		asts = append(asts, ast)
 	}
 
-	return MergeConditions(env, operator, asts...)
+	return Merge(env, operator, asts...)
 }
 
-func MergeConditions(env *cel.Env, operator string, conditions ...*cel.Ast) (*cel.Ast, error) {
+func Merge(env *cel.Env, operator string, conditions ...*cel.Ast) (*cel.Ast, error) {
 	if len(conditions) == 0 {
 		return nil, nil
 	} else if len(conditions) == 1 {
