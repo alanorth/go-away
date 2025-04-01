@@ -126,6 +126,7 @@ challenges:
     # url: http://gitea:3000/repo/search
     # url: http://gitea:3000/notifications/new
     parameters:
+      http-cookie: i_like_gitea
       http-method: GET
       http-code: 200
 
@@ -145,6 +146,7 @@ conditions:
     - 'path.startsWith("/repo-avatars/")'
     - 'path.startsWith("/avatars/")'
     - 'path.startsWith("/avatar/")'
+    - 'path.startsWith("/attachments/")'
   is-git-ua:
     - 'userAgent.startsWith("git/")'
     - 'userAgent.startsWith("go-git")'

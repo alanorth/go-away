@@ -118,6 +118,8 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 			}
 		}
 
+		slog.Debug("loaded network prefixes", "network", k, "count", ranger.Len())
+
 		state.Networks[k] = ranger
 	}
 
@@ -166,8 +168,16 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 				httpCode = http.StatusOK
 			}
 
+			expectedCookie := p.Parameters["http-cookie"]
+
 			//todo
 			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
+				if expectedCookie != "" {
+					if cookie, err := r.Cookie(expectedCookie); err != nil || cookie == nil || cookie.Expires.Before(time.Now()) {
+						// skip check if we don't have cookie or it's expired
+						return ChallengeResultContinue
+					}
+				}
 				request, err := http.NewRequest(method, *p.Url, nil)
 				if err != nil {
 					return ChallengeResultContinue
