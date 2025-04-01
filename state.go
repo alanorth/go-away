@@ -173,11 +173,12 @@ func NewState(policy Policy, packagePath string, backend http.Handler) (state *S
 			//todo
 			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
 				if expectedCookie != "" {
-					if cookie, err := r.Cookie(expectedCookie); err != nil || cookie == nil || cookie.Expires.Before(time.Now()) {
+					if cookie, err := r.Cookie(expectedCookie); err != nil || cookie == nil {
 						// skip check if we don't have cookie or it's expired
 						return ChallengeResultContinue
 					}
 				}
+
 				request, err := http.NewRequest(method, *p.Url, nil)
 				if err != nil {
 					return ChallengeResultContinue
