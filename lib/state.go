@@ -347,6 +347,21 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		case "":
 		case "http":
 		case "key":
+			mimeType := p.Parameters["key-mime"]
+			if mimeType == "" {
+				mimeType = "text/html; charset=utf-8"
+			}
+
+			httpCode, _ := strconv.Atoi(p.Parameters["key-code"])
+			if httpCode == 0 {
+				httpCode = http.StatusTemporaryRedirect
+			}
+
+			var content []byte
+			if data, ok := p.Parameters["key-content"]; ok {
+				content = []byte(data)
+			}
+
 			c.Verify = func(key []byte, result string) (bool, error) {
 				resultBytes, err := hex.DecodeString(result)
 				if err != nil {
@@ -358,6 +373,49 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				}
 				return true, nil
 			}
+
+			c.VerifyChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+				err := func() (err error) {
+					expiry := time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
+
+					key := state.GetChallengeKeyForRequest(challengeName, expiry, r)
+					result := r.FormValue("result")
+
+					if ok, err := c.Verify(key, result); err != nil {
+						return err
+					} else if !ok {
+						ClearCookie(CookiePrefix+challengeName, w)
+						_ = state.errorPage(w, http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
+						return nil
+					}
+
+					token, err := state.IssueChallengeToken(challengeName, key, []byte(result), expiry)
+					if err != nil {
+						ClearCookie(CookiePrefix+challengeName, w)
+					} else {
+						SetCookie(CookiePrefix+challengeName, token, expiry, w)
+					}
+
+					switch httpCode {
+					case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+						http.Redirect(w, r, r.FormValue("redirect"), httpCode)
+					default:
+						w.Header().Set("Content-Type", mimeType)
+						w.WriteHeader(httpCode)
+						if content != nil {
+							_, _ = w.Write(content)
+						}
+					}
+
+					return nil
+				}()
+				if err != nil {
+					ClearCookie(CookiePrefix+challengeName, w)
+					_ = state.errorPage(w, http.StatusInternalServerError, err)
+					return
+				}
+			})
 
 		case "wasm":
 			wasmData, err := go_away.ChallengeFs.ReadFile(fmt.Sprintf("challenge/%s/runtime/%s", challengeName, p.Runtime.Asset))

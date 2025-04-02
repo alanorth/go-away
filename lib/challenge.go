@@ -96,7 +96,7 @@ func (state *State) IssueChallengeToken(name string, key, result []byte, until t
 	return token, nil
 }
 
-func (state *State) VerifyChallengeToken(name string, expectedKey []byte, r *http.Request) (ok bool, err error) {
+func (state *State) VerifyChallengeToken(name string, expectedKey []byte, w http.ResponseWriter, r *http.Request) (ok bool, err error) {
 	c, ok := state.Challenges[name]
 	if !ok {
 		return false, errors.New("challenge not found")
@@ -104,7 +104,22 @@ func (state *State) VerifyChallengeToken(name string, expectedKey []byte, r *htt
 
 	cookie, err := r.Cookie(CookiePrefix + name)
 	if err != nil {
-		return false, err
+		// fallback: fetch cookie from response
+		if setCookies, ok := w.Header()["Set-Cookie"]; ok {
+			for _, setCookie := range setCookies {
+				newCookie, err := http.ParseSetCookie(setCookie)
+				if err != nil {
+					continue
+				}
+				// keep processing to find last set cookie
+				if newCookie.Name == name {
+					cookie = newCookie
+				}
+			}
+		}
+		if cookie == nil {
+			return false, err
+		}
 	}
 
 	token, err := jwt.ParseSigned(cookie.Value, []jose.SignatureAlgorithm{jose.EdDSA})

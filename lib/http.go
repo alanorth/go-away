@@ -143,7 +143,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 					for _, challengeName := range rule.Challenges {
 						key := state.GetChallengeKeyForRequest(challengeName, expiry, r)
-						ok, err := state.VerifyChallengeToken(challengeName, key, r)
+						ok, err := state.VerifyChallengeToken(challengeName, key, w, r)
 						if !ok || err != nil {
 							if !errors.Is(err, http.ErrNoCookie) {
 								ClearCookie(CookiePrefix+challengeName, w)

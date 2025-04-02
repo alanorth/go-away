@@ -127,6 +127,11 @@ challenges:
       # verifies that result = key
       mode: "key"
       probability: 0.1
+    parameters:
+      key-code: 200
+      key-mime: text/css
+      key-content: ""
+
 
   # Verifies the existence of a cookie and confirms it against some backend request, passing the entire client cookie contents
   http-cookie-check:
@@ -185,6 +190,33 @@ conditions:
     - 'userAgent.startsWith("Go-http-client/")'
     - 'userAgent.startsWith("node-fetch/")'
     - 'userAgent.startsWith("reqwest/")'
+  is-suspicious-crawler:
+    - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
+    # Old IE browsers
+    - 'userAgent.matches("MSIE ([2-9]|10|11)\\.")'
+    # Old Linux browsers
+    - 'userAgent.contains("Linux i686")'
+    # Old Windows browsers
+    - 'userAgent.matches("Windows (3|95|98|CE)") || userAgent.matches("Windows NT [1-5]\\.")'
+    # Old mobile browsers
+    - 'userAgent.matches("Android [1-5]\\.") || userAgent.matches("(iPad|iPhone) OS [1-9]_")'
+    # Old generic browsers
+    - 'userAgent.startsWith("Opera/")'
+    #- 'userAgent.matches("Gecko/(201[0-9]|200[0-9])")'
+    - 'userAgent.matches("^Mozilla/[1-4]")'
+  is-heavy-resource:
+    - 'path.startsWith("/explore/")'
+    - 'path.matches("^/[^/]+/[^/]+/src/commit/")'
+    - 'path.matches("^/[^/]+/[^/]+/compare/")'
+    - 'path.matches("^/[^/]+/[^/]+/commits/commit/")'
+    - 'path.matches("^/[^/]+/[^/]+/blame/")'
+    - 'path.matches("^/[^/]+/[^/]+/search/")'
+    - 'path.matches("^/[^/]+/[^/]+/find/")'
+    - 'path.matches("^/[^/]+/[^/]+/activity")'
+    # any search with a custom query
+    - '"q" in query && query.q != ""'
+    # user activity tab
+    - 'path.matches("^/[^/]") && "tab" in query && query.tab == "activity"'
 
 rules:
   - name: undesired-networks
@@ -215,33 +247,19 @@ rules:
       - 'userAgent.contains("Amazonbot") || userAgent.contains("Google-Extended") || userAgent.contains("PanguBot") || userAgent.contains("AI2Bot") || userAgent.contains("Diffbot") || userAgent.contains("cohere-training-data-crawler") || userAgent.contains("Applebot-Extended")'
     action: deny
 
-  - name: suspicious-crawlers
-    conditions:
-      - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
-      # Old IE browsers
-      - 'userAgent.matches("MSIE ([2-9]|10|11)\\.")'
-      # Old Linux browsers
-      - 'userAgent.contains("Linux i686")'
-      # Old Windows browsers
-      - 'userAgent.matches("Windows (3|95|98|CE)") || userAgent.matches("Windows NT [1-5]\\.")'
-      # Old mobile browsers
-      - 'userAgent.matches("Android [1-5]\\.") || userAgent.matches("(iPad|iPhone) OS [1-9]_")'
-      # Old generic browsers
-      - 'userAgent.startsWith("Opera/")'
-      #- 'userAgent.matches("Gecko/(201[0-9]|200[0-9])")'
-      - 'userAgent.matches("^Mozilla/[1-4]")'
-    # check to continue below
+  # check a sequence of challenges for non logged in
+  - name: suspicious-crawlers/0
+    conditions: ['($is-suspicious-crawler)']
     action: check
     challenges: [js-pow-sha256, http-cookie-check]
-
-  - name: always-pow-challenge
-    conditions:
-      - 'path.startsWith("/user/sign_up") || path.startsWith("/user/login")'
-      # Match archive downloads from browsers and not tools
-      - 'path.matches("^/[^/]+/[^/]+/archive/.*\\.(bundle|zip|tar\\.gz)") && ($is-generic-browser)'
-    action: challenge
-    challenges: [js-pow-sha256]
-
+  - name: suspicious-crawlers/1
+    conditions: ['($is-suspicious-crawler)']
+    action: check
+    challenges: [self-header-refresh]
+  - name: suspicious-crawlers/2
+    conditions: ['($is-suspicious-crawler)']
+    action: check
+    challenges: [self-resource-load]
 
   - name: allow-static-resources
     conditions:
@@ -311,23 +329,19 @@ rules:
       - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
 
 
-  - name: heavy-operations
+  # check a sequence of challenges
+  - name: heavy-operations/0
     action: check
-    # check we are logged in, or force PoW
     challenges: [js-pow-sha256, http-cookie-check]
-    conditions:
-      - 'path.startsWith("/explore/")'
-      - 'path.matches("^/[^/]+/[^/]+/src/commit/")'
-      - 'path.matches("^/[^/]+/[^/]+/compare/")'
-      - 'path.matches("^/[^/]+/[^/]+/commits/commit/")'
-      - 'path.matches("^/[^/]+/[^/]+/blame/")'
-      - 'path.matches("^/[^/]+/[^/]+/search/")'
-      - 'path.matches("^/[^/]+/[^/]+/find/")'
-      - 'path.matches("^/[^/]+/[^/]+/activity")'
-      # any search with a custom query
-      - '"q" in query && query.q != ""'
-      # user activity tab
-      - 'path.matches("^/[^/]") && "tab" in query && query.tab == "activity"'
+    conditions: ['($is-heavy-resource)']
+  - name: heavy-operations/1
+    action: check
+    challenges: [self-header-refresh, http-cookie-check]
+    conditions: ['($is-heavy-resource)']
+  - name: heavy-operations/2
+    action: check
+    challenges: [self-resource-load, http-cookie-check]
+    conditions: ['($is-heavy-resource)']
 
   # Allow all source downloads not caught in browser above
   # todo: limit this as needed?
@@ -347,7 +361,7 @@ rules:
 
   - name: standard-browser
     action: challenge
-    challenges: [http-cookie-check, self-meta-refresh, js-pow-sha256]
+    challenges: [http-cookie-check, self-resource-load, self-meta-refresh, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'
 
