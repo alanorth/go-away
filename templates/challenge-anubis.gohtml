@@ -11,6 +11,9 @@
         <meta name="{{ $key }}" content="{{ $value }}"/>
         {{end}}
     {{ end }}
+    {{ range .Tags }}
+        {{ . }}
+    {{ end }}
     <style>
         body,
         html {

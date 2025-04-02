@@ -13,6 +13,9 @@
             <meta name="{{ $key }}" content="{{ $value }}"/>
         {{end}}
     {{ end }}
+    {{ range .Tags }}
+        {{ . }}
+    {{ end }}
 
 
     <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">

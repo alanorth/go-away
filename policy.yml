@@ -100,11 +100,11 @@ challenges:
       asset: runtime.wasm
       probability: 0.02
 
-  # Challenges with a cookie, self redirect
+  # Challenges with a cookie, self redirect (non-JS, requires HTTP parsing)
   self-cookie:
     mode: "cookie"
 
-  # Challenges with a redirect via header
+  # Challenges with a redirect via header (non-JS, requires HTTP parsing and logic)
   self-header-refresh:
     mode: "header-refresh"
     runtime:
@@ -112,9 +112,17 @@ challenges:
       mode: "key"
       probability: 0.1
 
-  # Challenges with a redirect via meta
+  # Challenges with a redirect via meta (non-JS, requires HTML parsing and logic)
   self-meta-refresh:
     mode: "meta-refresh"
+    runtime:
+      # verifies that result = key
+      mode: "key"
+      probability: 0.1
+
+  # Challenges with loading a random CSS or image document (non-JS, requires HTML parsing and logic)
+  self-resource-load:
+    mode: "resource-load"
     runtime:
       # verifies that result = key
       mode: "key"
@@ -298,7 +306,7 @@ rules:
 
   - name: standard-browser
     action: challenge
-    challenges: [http-cookie-check, self-meta-refresh, js-pow-sha256]
+    challenges: [http-cookie-check, self-resource-load, self-meta-refresh, js-pow-sha256]
     conditions:
       - 'userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")'
 

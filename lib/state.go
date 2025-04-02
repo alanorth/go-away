@@ -23,6 +23,7 @@ import (
 	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 	"github.com/yl2chen/cidranger"
+	"html/template"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -280,6 +281,27 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				w.Header().Set("Refresh", "0; url="+redirectUri.String())
 
 				_ = state.challengePage(w, http.StatusTeapot, "", nil)
+
+				return ChallengeResultStop
+			}
+		case "resource-load":
+			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
+				redirectUri := new(url.URL)
+				redirectUri.Path = c.Path + "/verify-challenge"
+
+				values := make(url.Values)
+				values.Set("result", hex.EncodeToString(key))
+
+				redirectUri.RawQuery = values.Encode()
+
+				// self redirect!
+				w.Header().Set("Refresh", "2; url="+r.URL.String())
+
+				_ = state.challengePage(w, http.StatusTeapot, "", map[string]any{
+					"Tags": []template.HTML{
+						template.HTML(fmt.Sprintf("<link href=\"%s\" rel=\"stylesheet\" crossorigin=\"use-credentials\">", redirectUri.String())),
+					},
+				})
 
 				return ChallengeResultStop
 			}
