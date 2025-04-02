@@ -1,51 +1,19 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/lib"
-	"git.gammaspectra.live/git/go-away/lib/network"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"gopkg.in/yaml.v3"
 	"log"
 	"log/slog"
 	"net"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"strconv"
 )
-
-func makeReverseProxy(target string) (http.Handler, error) {
-	u, err := url.Parse(target)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse target URL: %w", err)
-	}
-
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-
-	// https://github.com/oauth2-proxy/oauth2-proxy/blob/4e2100a2879ef06aea1411790327019c1a09217c/pkg/upstream/http.go#L124
-	if u.Scheme == "unix" {
-		// clean path up so we don't use the socket path in proxied requests
-		addr := u.Path
-		u.Path = ""
-		// tell transport how to dial unix sockets
-		transport.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
-			dialer := net.Dialer{}
-			return dialer.DialContext(ctx, "unix", addr)
-		}
-		// tell transport how to handle the unix url scheme
-		transport.RegisterProtocol("unix", network.UnixRoundTripper{Transport: transport})
-	}
-
-	rp := httputil.NewSingleHostReverseProxy(u)
-	rp.Transport = transport
-
-	return rp, nil
-}
 
 func setupListener(network, address, socketMode string) (net.Listener, string) {
 	formattedAddress := ""
@@ -88,14 +56,10 @@ func main() {
 
 	slogLevel := flag.String("slog-level", "INFO", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
 
-	target := flag.String("target", "http://localhost:80", "target to reverse proxy to")
-
 	policyFile := flag.String("policy", "", "path to policy YAML file")
 	challengeTemplate := flag.String("challenge-template", "anubis", "name of the challenge template to use")
 
 	flag.Parse()
-
-	_, _, _, _ = bind, bindNetwork, socketMode, target
 
 	{
 		var programLevel slog.Level
@@ -119,19 +83,13 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to read policy file: %w", err))
 	}
 
-	var policy policy.Policy
+	var p policy.Policy
 
-	if err = yaml.Unmarshal(policyData, &policy); err != nil {
+	if err = yaml.Unmarshal(policyData, &p); err != nil {
 		log.Fatal(fmt.Errorf("failed to parse policy file: %w", err))
 	}
 
-	backend, err := makeReverseProxy(*target)
-	if err != nil {
-		log.Fatal(fmt.Errorf("failed to create reverse proxy for %s: %w", *target, err))
-	}
-
-	state, err := lib.NewState(policy, lib.StateSettings{
-		Backend:           backend,
+	state, err := lib.NewState(p, lib.StateSettings{
 		PackagePath:       "git.gammaspectra.live/git/go-away/cmd",
 		ChallengeTemplate: *challengeTemplate,
 	})
@@ -144,7 +102,6 @@ func main() {
 	slog.Info(
 		"listening",
 		"url", listenUrl,
-		"target", *target,
 	)
 
 	server := http.Server{

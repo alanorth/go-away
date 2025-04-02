@@ -1,4 +1,8 @@
 
+# Define backends to use. Rules can be done generally, or only applying to specific hosts
+backends:
+  git.gammaspectra.live: http://gitea:3000
+
 # Define networks to be used later below
 networks:
   # todo: support direct ASN lookups
@@ -218,6 +222,18 @@ conditions:
     # user activity tab
     - 'path.matches("^/[^/]") && "tab" in query && query.tab == "activity"'
 
+# Rules and conditions are served this environment
+#   remoteAddress (net.IP) - Connecting client remote address from headers or properties
+#   host (string) - HTTP Host
+#   method (string) - HTTP Method/Verb
+#   userAgent (string) - HTTP User-Agent header
+#   path (string) - HTTP request Path
+#   query (map[string]string) - HTTP request Query arguments
+#   headers (map[string]string) - HTTP request headers
+#
+# Additionally these functions are available
+#   inNetwork(networkName string, address net.IP) bool
+#   inNetwork(networkCIDR string, address net.IP) bool
 rules:
   - name: undesired-networks
     conditions:

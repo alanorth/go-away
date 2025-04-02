@@ -43,4 +43,6 @@ type Policy struct {
 	Challenges map[string]Challenge `yaml:"challenges"`
 
 	Rules []Rule `yaml:"rules"`
+
+	Backends map[string]string `json:"backends"`
 }

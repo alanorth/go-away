@@ -12,6 +12,7 @@ const (
 
 type Rule struct {
 	Name       string   `yaml:"name"`
+	Host       *string  `yaml:"host"`
 	Conditions []string `yaml:"conditions"`
 
 	Action string `yaml:"action"`

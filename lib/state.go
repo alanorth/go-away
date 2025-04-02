@@ -40,7 +40,7 @@ type State struct {
 	Settings StateSettings
 	UrlPath  string
 	Mux      *http.ServeMux
-	Backend  http.Handler
+	Backends map[string]http.Handler
 
 	Networks map[string]cidranger.Ranger
 
@@ -60,6 +60,8 @@ type State struct {
 type RuleState struct {
 	Name string
 	Hash string
+
+	Host *string
 
 	Program    cel.Program
 	Action     policy.RuleAction
@@ -94,7 +96,6 @@ type ChallengeState struct {
 }
 
 type StateSettings struct {
-	Backend           http.Handler
 	PackagePath       string
 	ChallengeTemplate string
 }
@@ -108,7 +109,16 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		},
 	}
 	state.UrlPath = "/.well-known/." + state.Settings.PackagePath
-	state.Backend = settings.Backend
+
+	state.Backends = make(map[string]http.Handler)
+
+	for k, v := range p.Backends {
+		backend, err := makeReverseProxy(v)
+		if err != nil {
+			return nil, fmt.Errorf("backend %s: failed to make reverse proxy: %w", k, err)
+		}
+		state.Backends[k] = backend
+	}
 
 	state.PublicKey, state.PrivateKey, err = ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -492,6 +502,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 	state.RulesEnv, err = cel.NewEnv(
 		cel.DefaultUTCTimeZone(true),
 		cel.Variable("remoteAddress", cel.BytesType),
+		cel.Variable("host", cel.StringType),
 		cel.Variable("method", cel.StringType),
 		cel.Variable("userAgent", cel.StringType),
 		cel.Variable("path", cel.StringType),
@@ -565,12 +576,18 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 	for _, rule := range p.Rules {
 		hasher := sha256.New()
 		hasher.Write([]byte(rule.Name))
+		hasher.Write([]byte{0})
+		if rule.Host != nil {
+			hasher.Write([]byte(*rule.Host))
+		}
+		hasher.Write([]byte{0})
 		hasher.Write(privateKeyFingerprint[:])
 		sum := hasher.Sum(nil)
 
 		r := RuleState{
 			Name:       rule.Name,
 			Hash:       hex.EncodeToString(sum[:8]),
+			Host:       rule.Host,
 			Action:     policy.RuleAction(strings.ToUpper(rule.Action)),
 			Challenges: rule.Challenges,
 		}
