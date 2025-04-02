@@ -106,6 +106,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	//TODO better matcher! combo ast?
 	env := map[string]any{
+		"method":        r.Method,
 		"remoteAddress": state.GetRequestAddress(r),
 		"userAgent":     r.UserAgent(),
 		"path":          r.URL.Path,
@@ -219,7 +220,9 @@ func (state *State) setupRoutes() error {
 			state.Mux.Handle(fmt.Sprintf("POST %s/make-challenge", c.Path), c.MakeChallenge)
 		}
 
-		if c.Verify != nil {
+		if c.VerifyChallenge != nil {
+			state.Mux.Handle(fmt.Sprintf("GET %s/verify-challenge", c.Path), c.VerifyChallenge)
+		} else if c.Verify != nil {
 			state.Mux.HandleFunc(fmt.Sprintf("GET %s/verify-challenge", c.Path), func(w http.ResponseWriter, r *http.Request) {
 				err := func() (err error) {
 					expiry := time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
@@ -250,7 +253,6 @@ func (state *State) setupRoutes() error {
 					return
 				}
 			})
-
 		}
 	}
 

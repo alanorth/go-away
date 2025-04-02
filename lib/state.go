@@ -88,9 +88,9 @@ type ChallengeState struct {
 	ChallengeScript     http.Handler
 	MakeChallenge       http.Handler
 	VerifyChallenge     http.Handler
+	Verify              func(key []byte, result string) (bool, error)
 
 	VerifyProbability float64
-	Verify            func(key []byte, result string) (bool, error)
 }
 
 type StateSettings struct {
@@ -434,6 +434,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 	state.RulesEnv, err = cel.NewEnv(
 		cel.DefaultUTCTimeZone(true),
 		cel.Variable("remoteAddress", cel.BytesType),
+		cel.Variable("method", cel.StringType),
 		cel.Variable("userAgent", cel.StringType),
 		cel.Variable("path", cel.StringType),
 		cel.Variable("query", cel.MapType(cel.StringType, cel.StringType)),

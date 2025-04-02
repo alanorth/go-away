@@ -128,14 +128,15 @@ challenges:
       mode: "key"
       probability: 0.1
 
+  # Verifies the existence of a cookie and confirms it against some backend request, passing the entire client cookie contents
   http-cookie-check:
     mode: http
     url: http://gitea:3000/user/stopwatches
     # url: http://gitea:3000/repo/search
     # url: http://gitea:3000/notifications/new
     parameters:
-      http-cookie: i_like_gitea
       http-method: GET
+      http-cookie: gammaspectra_session
       http-code: 200
 
 conditions:
@@ -144,7 +145,11 @@ conditions:
   is-headless-chromium:
     - 'userAgent.contains("HeadlessChrome") || userAgent.contains("HeadlessChromium")'
     - '"Sec-Ch-Ua" in headers && (headers["Sec-Ch-Ua"].contains("HeadlessChrome") || headers["Sec-Ch-Ua"].contains("HeadlessChromium"))'
-    - '(userAgent.contains("Chrome/") || userAgent.contains("Chromium/")) && (!("Accept-Language" in headers) || !("Accept-Encoding" in headers))'
+    #- '(userAgent.contains("Chrome/") || userAgent.contains("Chromium/")) && (!("Accept-Language" in headers) || !("Accept-Encoding" in headers))'
+
+  is-generic-browser:
+    - 'userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")'
+
   is-static-asset:
     - 'path == "/robots.txt"'
     - 'path == "/favicon.ico"'
@@ -155,6 +160,7 @@ conditions:
     - 'path.startsWith("/avatars/")'
     - 'path.startsWith("/avatar/")'
     - 'path.startsWith("/attachments/")'
+
   is-git-ua:
     - 'userAgent.startsWith("git/")'
     - 'userAgent.startsWith("go-git")'
@@ -164,6 +170,21 @@ conditions:
     - 'userAgent.startsWith("Go-http-client/") && "go-get" in query && query["go-get"] == "1" && (path.matches("^/[^/]+/[^/]+$") || path.matches("^/[^/]+/[^/]+/v[0-9]+$"))'
   is-git-path:
     - 'path.matches("^/[^/]+/[^/]+/(git-upload-pack|git-receive-pack|HEAD|info/refs|info/lfs|objects)")'
+
+  is-tool-ua:
+    - 'userAgent.startsWith("python-requests/")'
+    - 'userAgent.startsWith("Python-urllib/")'
+    - 'userAgent.startsWith("python-httpx/")'
+    - 'userAgent.startsWith("aoihttp/")'
+    - 'userAgent.startsWith("http.rb/")'
+    - 'userAgent.startsWith("curl/")'
+    - 'userAgent.startsWith("libcurl/")'
+    - 'userAgent.startsWith("okhttp/")'
+    - 'userAgent.startsWith("Java/")'
+    - 'userAgent.startsWith("Apache-HttpClient//")'
+    - 'userAgent.startsWith("Go-http-client/")'
+    - 'userAgent.startsWith("node-fetch/")'
+    - 'userAgent.startsWith("reqwest/")'
 
 rules:
   - name: undesired-networks
@@ -176,25 +197,39 @@ rules:
       - '($is-headless-chromium)'
       - 'userAgent == ""'
       - 'userAgent.startsWith("Lightpanda/")'
+      - 'userAgent.startsWith("masscan/")'
       # Typo'd opera botnet
       - 'userAgent.matches("^Opera/[0-9.]+\\.\\(")'
       # AI bullshit stuff, they do not respect robots.txt even while they read it
-      - 'userAgent.contains("Amazonbot") || userAgent.contains("Bytespider") || userAgent.contains("CCBot") || userAgent.contains("GPTBot") || userAgent.contains("ClaudeBot") || userAgent.contains("meta-externalagent/")'
+      # TikTok Bytedance AI training
+      - 'userAgent.contains("Bytedance") || userAgent.contains("Bytespider")'
+      # Meta AI training; The Meta-ExternalAgent crawler crawls the web for use cases such as training AI models or improving products by indexing content directly.
+      - 'userAgent.contains("meta-externalagent/") || userAgent.contains("meta-externalfetcher/") || userAgent.contains("FacebookBot")'
+      # Anthropic AI training and usage
+      - 'userAgent.contains("ClaudeBot") || userAgent.contains("Claude-User")|| userAgent.contains("Claude-SearchBot")'
+      # Common Crawl AI crawlers
+      - 'userAgent.contains("CCBot")'
+      # ChatGPT AI crawlers https://platform.openai.com/docs/bots
+      - 'userAgent.contains("GPTBot") || userAgent.contains("OAI-SearchBot") || userAgent.contains("ChatGPT-User")'
+      # Other AI crawlers
+      - 'userAgent.contains("Amazonbot") || userAgent.contains("Google-Extended") || userAgent.contains("PanguBot") || userAgent.contains("AI2Bot") || userAgent.contains("Diffbot") || userAgent.contains("cohere-training-data-crawler") || userAgent.contains("Applebot-Extended")'
     action: deny
 
   - name: suspicious-crawlers
     conditions:
       - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
       # Old IE browsers
-      - 'userAgent.matches("MSIE ([4-9]|10|11)\\.")'
+      - 'userAgent.matches("MSIE ([2-9]|10|11)\\.")'
       # Old Linux browsers
       - 'userAgent.contains("Linux i686")'
       # Old Windows browsers
-      - 'userAgent.matches("Windows (95|98)") || userAgent.matches("Windows NT [1-4]\\.")'
+      - 'userAgent.matches("Windows (3|95|98|CE)") || userAgent.matches("Windows NT [1-5]\\.")'
       # Old mobile browsers
-      - 'userAgent.matches("Android [1-9]\\.") || userAgent.matches("(iPad|iPhone) OS [1-9]_")'
-      # Old Opera browsers
+      - 'userAgent.matches("Android [1-5]\\.") || userAgent.matches("(iPad|iPhone) OS [1-9]_")'
+      # Old generic browsers
       - 'userAgent.startsWith("Opera/")'
+      #- 'userAgent.matches("Gecko/(201[0-9]|200[0-9])")'
+      - 'userAgent.matches("^Mozilla/[1-4]")'
     # check to continue below
     action: check
     challenges: [js-pow-sha256, http-cookie-check]
@@ -203,7 +238,7 @@ rules:
     conditions:
       - 'path.startsWith("/user/sign_up") || path.startsWith("/user/login")'
       # Match archive downloads from browsers and not tools
-      - 'path.matches("^/[^/]+/[^/]+/archive/.*\\.(bundle|zip|tar\\.gz)") && (userAgent.startsWith("Opera/") || userAgent.startsWith("Mozilla/"))'
+      - 'path.matches("^/[^/]+/[^/]+/archive/.*\\.(bundle|zip|tar\\.gz)") && ($is-generic-browser)'
     action: challenge
     challenges: [js-pow-sha256]
 
@@ -255,7 +290,7 @@ rules:
   - name: desired-crawlers
     conditions:
       - 'userAgent.contains("+https://kagi.com/bot") && inNetwork("kagibot", remoteAddress)'
-      - 'userAgent.contains("+http://www.google.com/bot.html") && inNetwork("googlebot", remoteAddress)'
+      - '(userAgent.contains("+http://www.google.com/bot.html") || userAgent.contains("Google-InspectionTool")) && inNetwork("googlebot", remoteAddress)'
       - 'userAgent.contains("+http://www.bing.com/bingbot.htm") && inNetwork("bingbot", remoteAddress)'
       - 'userAgent.contains("+http://duckduckgo.com/duckduckbot.html") && inNetwork("duckduckbot", remoteAddress)'
       - 'userAgent.contains("+https://help.qwant.com/bot/") && inNetwork("qwantbot", remoteAddress)'
@@ -304,9 +339,15 @@ rules:
       - 'path.matches("^/[^/]+/[^/]+/releases/download/")'
     action: pass
 
+  # Allow PUT/DELETE/PATCH/POST requests in general
+  - name: non-get-request
+    action: pass
+    conditions:
+      - '!(method == "HEAD" || method == "GET")'
+
   - name: standard-browser
     action: challenge
-    challenges: [http-cookie-check, self-resource-load, self-meta-refresh, js-pow-sha256]
+    challenges: [http-cookie-check, self-meta-refresh, js-pow-sha256]
     conditions:
-      - 'userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")'
+      - '($is-generic-browser)'
 
