@@ -98,6 +98,7 @@ type ChallengeState struct {
 }
 
 type StateSettings struct {
+	Debug                  bool
 	PackagePath            string
 	ChallengeTemplate      string
 	ChallengeTemplateTheme string
@@ -119,6 +120,10 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		backend, err := makeReverseProxy(v)
 		if err != nil {
 			return nil, fmt.Errorf("backend %s: failed to make reverse proxy: %w", k, err)
+		}
+		backend.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+			state.getLogger(r).Error(fmt.Errorf("backend %s error: %w", k, err).Error())
+			_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusBadGateway, err)
 		}
 		state.Backends[k] = backend
 	}
@@ -166,7 +171,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			}
 		}
 
-		slog.Debug("loaded network prefixes", "network", k, "count", ranger.Len())
+		slog.Info("loaded network prefixes", "network", k, "count", ranger.Len())
 
 		state.Networks[k] = ranger
 	}
@@ -218,7 +223,6 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 			expectedCookie := p.Parameters["http-cookie"]
 
-			//todo
 			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
 				if expectedCookie != "" {
 					if cookie, err := r.Cookie(expectedCookie); err != nil || cookie == nil {
@@ -278,10 +282,11 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				values := make(url.Values)
 				values.Set("result", hex.EncodeToString(key))
 				values.Set("redirect", r.URL.String())
+				values.Set("requestId", r.Header.Get("X-Away-Id"))
 
 				redirectUri.RawQuery = values.Encode()
 
-				_ = state.challengePage(w, http.StatusTeapot, "", map[string]any{
+				_ = state.challengePage(w, r.Header.Get("X-Away-Id"), http.StatusTeapot, "", map[string]any{
 					"Meta": map[string]string{
 						"refresh": "0; url=" + redirectUri.String(),
 					},
@@ -297,13 +302,14 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				values := make(url.Values)
 				values.Set("result", hex.EncodeToString(key))
 				values.Set("redirect", r.URL.String())
+				values.Set("requestId", r.Header.Get("X-Away-Id"))
 
 				redirectUri.RawQuery = values.Encode()
 
 				// self redirect!
 				w.Header().Set("Refresh", "0; url="+redirectUri.String())
 
-				_ = state.challengePage(w, http.StatusTeapot, "", nil)
+				_ = state.challengePage(w, r.Header.Get("X-Away-Id"), http.StatusTeapot, "", nil)
 
 				return ChallengeResultStop
 			}
@@ -314,13 +320,14 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 				values := make(url.Values)
 				values.Set("result", hex.EncodeToString(key))
+				values.Set("requestId", r.Header.Get("X-Away-Id"))
 
 				redirectUri.RawQuery = values.Encode()
 
 				// self redirect!
 				w.Header().Set("Refresh", "2; url="+r.URL.String())
 
-				_ = state.challengePage(w, http.StatusTeapot, "", map[string]any{
+				_ = state.challengePage(w, r.Header.Get("X-Away-Id"), http.StatusTeapot, "", map[string]any{
 					"Tags": []template.HTML{
 						template.HTML(fmt.Sprintf("<link href=\"%s\" rel=\"stylesheet\" crossorigin=\"use-credentials\">", redirectUri.String())),
 					},
@@ -330,7 +337,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			}
 		case "js":
 			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
-				_ = state.challengePage(w, http.StatusTeapot, challengeName, nil)
+				_ = state.challengePage(w, r.Header.Get("X-Away-Id"), http.StatusTeapot, challengeName, nil)
 
 				return ChallengeResultStop
 			}
@@ -405,13 +412,20 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					key := state.GetChallengeKeyForRequest(challengeName, expiry, r)
 					result := r.FormValue("result")
 
+					requestId, err := hex.DecodeString(r.FormValue("requestId"))
+					if err == nil {
+						r.Header.Set("X-Away-Id", hex.EncodeToString(requestId))
+					}
+
 					if ok, err := c.Verify(key, result); err != nil {
 						return err
 					} else if !ok {
+						state.getLogger(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 						ClearCookie(CookiePrefix+challengeName, w)
-						_ = state.errorPage(w, http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
+						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
 						return nil
 					}
+					state.getLogger(r).Warn("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 
 					token, err := state.IssueChallengeToken(challengeName, key, []byte(result), expiry)
 					if err != nil {
@@ -435,7 +449,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				}()
 				if err != nil {
 					ClearCookie(CookiePrefix+challengeName, w)
-					_ = state.errorPage(w, http.StatusInternalServerError, err)
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err)
 					return
 				}
 			})
@@ -478,7 +492,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					return nil
 				})
 				if err != nil {
-					_ = state.errorPage(w, http.StatusInternalServerError, err)
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err)
 					return
 				}
 			})
@@ -641,5 +655,10 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 }
 
 func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestId := make([]byte, 16)
+	_, _ = rand.Read(requestId)
+
+	r.Header.Set("X-Away-Id", hex.EncodeToString(requestId))
+
 	state.Mux.ServeHTTP(w, r)
 }

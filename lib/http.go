@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	go_away "git.gammaspectra.live/git/go-away"
@@ -13,12 +14,14 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/google/cel-go/common/types"
 	"html/template"
+	"log/slog"
 	"maps"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -67,7 +70,7 @@ func initTemplate(name, data string) error {
 	return nil
 }
 
-func makeReverseProxy(target string) (http.Handler, error) {
+func makeReverseProxy(target string) (*httputil.ReverseProxy, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse target URL: %w", err)
@@ -95,8 +98,9 @@ func makeReverseProxy(target string) (http.Handler, error) {
 	return rp, nil
 }
 
-func (state *State) challengePage(w http.ResponseWriter, status int, challenge string, params map[string]any) error {
+func (state *State) challengePage(w http.ResponseWriter, id string, status int, challenge string, params map[string]any) error {
 	input := make(map[string]any)
+	input["Id"] = id
 	input["Random"] = cacheBust
 	input["Challenge"] = challenge
 	input["Path"] = state.UrlPath
@@ -114,7 +118,7 @@ func (state *State) challengePage(w http.ResponseWriter, status int, challenge s
 
 	err := templates["challenge-"+state.Settings.ChallengeTemplate+".gohtml"].Execute(buf, input)
 	if err != nil {
-		_ = state.errorPage(w, http.StatusInternalServerError, err)
+		_ = state.errorPage(w, id, http.StatusInternalServerError, err)
 	} else {
 		w.WriteHeader(status)
 		_, _ = w.Write(buf.Bytes())
@@ -122,12 +126,13 @@ func (state *State) challengePage(w http.ResponseWriter, status int, challenge s
 	return nil
 }
 
-func (state *State) errorPage(w http.ResponseWriter, status int, err error) error {
+func (state *State) errorPage(w http.ResponseWriter, id string, status int, err error) error {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	buf := bytes.NewBuffer(make([]byte, 0, 8192))
 
 	err2 := templates["challenge-"+state.Settings.ChallengeTemplate+".gohtml"].Execute(buf, map[string]any{
+		"Id":          id,
 		"Random":      cacheBust,
 		"Error":       err.Error(),
 		"Path":        state.UrlPath,
@@ -145,8 +150,23 @@ func (state *State) errorPage(w http.ResponseWriter, status int, err error) erro
 	return nil
 }
 
-func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
+func (state *State) addTiming(w http.ResponseWriter, name, desc string, duration time.Duration) {
+	if state.Settings.Debug {
+		w.Header().Add("Server-Timing", fmt.Sprintf("%s;desc=%s;dur=%d", name, strconv.Quote(desc), duration.Milliseconds()))
+	}
+}
 
+func (state *State) getLogger(r *http.Request) *slog.Logger {
+	return slog.With(
+		"request_id", r.Header.Get("X-Away-Id"),
+		"remote_address", state.GetRequestAddress(r),
+		"user_agent", r.UserAgent(),
+		"host", r.Host,
+		"path", r.URL.Path,
+	)
+}
+
+func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 
 	backend, ok := state.Backends[host]
@@ -154,6 +174,10 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		return
 	}
+
+	lg := state.getLogger(r)
+
+	start := time.Now()
 
 	//TODO better matcher! combo ast?
 	env := map[string]any{
@@ -178,23 +202,55 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		}(),
 	}
 
+	state.addTiming(w, "rule-env", "Setup the rule environment", time.Since(start))
+
+	var (
+		ruleEvalDuration time.Duration
+	)
+
+	serve := func() {
+		state.addTiming(w, "rule-eval", "Evaluate access rules", ruleEvalDuration)
+		backend.ServeHTTP(w, r)
+	}
+
+	fail := func(code int, err error) {
+		state.addTiming(w, "rule-eval", "Evaluate access rules", ruleEvalDuration)
+		_ = state.errorPage(w, r.Header.Get("X-Away-Id"), code, err)
+	}
+
+	setAwayState := func(rule RuleState) {
+		r.Header.Set("X-Away-Rule", rule.Name)
+		r.Header.Set("X-Away-Hash", rule.Hash)
+		r.Header.Set("X-Away-Action", string(rule.Action))
+	}
+
 	for _, rule := range state.Rules {
 		// skip rules that have host match
 		if rule.Host != nil && *rule.Host != host {
 			continue
 		}
-		if out, _, err := rule.Program.Eval(env); err != nil {
-			//TODO error
+		start = time.Now()
+		out, _, err := rule.Program.Eval(env)
+		ruleEvalDuration += time.Since(start)
+
+		if err != nil {
+			fail(http.StatusInternalServerError, err)
+			lg.Error(err.Error(), "rule", rule.Name, "rule_hash", rule.Hash)
 			panic(err)
+			return
 		} else if out != nil && out.Type() == types.BoolType {
 			if out.Equal(types.True) == types.True {
 				switch rule.Action {
 				default:
 					panic(fmt.Errorf("unknown action %s", rule.Action))
 				case policy.RuleActionPASS:
-					backend.ServeHTTP(w, r)
+					lg.Debug("request passed", "rule", rule.Name, "rule_hash", rule.Hash)
+					setAwayState(rule)
+					serve()
 					return
 				case policy.RuleActionCHALLENGE, policy.RuleActionCHECK:
+					start = time.Now()
+
 					expiry := time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
 
 					for _, challengeName := range rule.Challenges {
@@ -209,11 +265,14 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 								goto nextRule
 							}
 							// we passed the challenge!
-							//TODO log?
-							backend.ServeHTTP(w, r)
+
+							lg.Debug("request passed", "rule", rule.Name, "rule_hash", rule.Hash, "challenge", challengeName)
+							setAwayState(rule)
+							serve()
 							return
 						}
 					}
+					state.addTiming(w, "challenge-token-check", "Verify client challenge tokens", time.Since(start))
 
 					// none matched, issue first challenge in priority
 					for _, challengeName := range rule.Challenges {
@@ -222,6 +281,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 							result := c.Challenge(w, r, state.GetChallengeKeyForRequest(challengeName, expiry, r), expiry)
 							switch result {
 							case ChallengeResultStop:
+								lg.Info("request challenged", "rule", rule.Name, "rule_hash", rule.Hash, "challenge", challengeName)
 								return
 							case ChallengeResultContinue:
 								continue
@@ -230,7 +290,11 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 									goto nextRule
 								}
 								// we pass the challenge early!
-								backend.ServeHTTP(w, r)
+								r.Header.Set(fmt.Sprintf("X-Away-Challenge-%s-Verify", challengeName), "PASS")
+
+								lg.Debug("request passed", "rule", rule.Name, "rule_hash", rule.Hash, "challenge", challengeName)
+								setAwayState(rule)
+								serve()
 								return
 							}
 						} else {
@@ -238,13 +302,15 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				case policy.RuleActionDENY:
+					lg.Info("request denied", "rule", rule.Name, "rule_hash", rule.Hash)
 					//TODO: config error code
-					_ = state.errorPage(w, http.StatusForbidden, fmt.Errorf("access denied: denied by administrative rule %s", rule.Hash))
+					fail(http.StatusForbidden, fmt.Errorf("access denied: denied by administrative rule %s/%s", r.Header.Get("X-Away-Id"), rule.Hash))
 					return
 				case policy.RuleActionBLOCK:
+					lg.Info("request blocked", "rule", rule.Name, "rule_hash", rule.Hash)
 					//TODO: config error code
 					//TODO: configure block
-					_ = state.errorPage(w, http.StatusForbidden, fmt.Errorf("access denied: blocked by administrative rule %s", rule.Hash))
+					fail(http.StatusForbidden, fmt.Errorf("access denied: blocked by administrative rule %s/%s", r.Header.Get("X-Away-Id"), rule.Hash))
 					return
 				}
 			}
@@ -253,7 +319,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 	nextRule:
 	}
 
-	backend.ServeHTTP(w, r)
+	serve()
 	return
 }
 
@@ -285,13 +351,25 @@ func (state *State) setupRoutes() error {
 					key := state.GetChallengeKeyForRequest(challengeName, expiry, r)
 					result := r.FormValue("result")
 
-					if ok, err := c.Verify(key, result); err != nil {
+					requestId, err := hex.DecodeString(r.FormValue("requestId"))
+					if err == nil {
+						r.Header.Set("X-Away-Id", hex.EncodeToString(requestId))
+					}
+
+					start := time.Now()
+					ok, err := c.Verify(key, result)
+					state.addTiming(w, "challenge-verify", "Verify client challenge", time.Since(start))
+
+					if err != nil {
+						state.getLogger(r).Error(fmt.Errorf("challenge error: %w", err).Error(), "challenge", challengeName, "redirect", r.FormValue("redirect"))
 						return err
 					} else if !ok {
+						state.getLogger(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 						ClearCookie(CookiePrefix+challengeName, w)
-						_ = state.errorPage(w, http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
+						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
 						return nil
 					}
+					state.getLogger(r).Info("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 
 					token, err := state.IssueChallengeToken(challengeName, key, []byte(result), expiry)
 					if err != nil {
@@ -305,7 +383,7 @@ func (state *State) setupRoutes() error {
 				}()
 				if err != nil {
 					ClearCookie(CookiePrefix+challengeName, w)
-					_ = state.errorPage(w, http.StatusInternalServerError, err)
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err)
 					return
 				}
 			})

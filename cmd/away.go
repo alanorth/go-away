@@ -54,7 +54,8 @@ func main() {
 	bindNetwork := flag.String("bind-network", "tcp", "network family to bind HTTP to, e.g. unix, tcp")
 	socketMode := flag.String("socket-mode", "0770", "socket mode (permissions) for unix domain sockets.")
 
-	slogLevel := flag.String("slog-level", "INFO", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
+	slogLevel := flag.String("slog-level", "WARN", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
+	debug := flag.Bool("debug", false, "debug mode with logs and server timings")
 
 	policyFile := flag.String("policy", "", "path to policy YAML file")
 	challengeTemplate := flag.String("challenge-template", "anubis", "name or path of the challenge template to use (anubis, forgejo)")
@@ -73,7 +74,7 @@ func main() {
 		leveler.Set(programLevel)
 
 		h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
-			AddSource: true,
+			AddSource: *debug,
 			Level:     leveler,
 		})
 		slog.SetDefault(slog.New(h))
@@ -91,6 +92,7 @@ func main() {
 	}
 
 	state, err := lib.NewState(p, lib.StateSettings{
+		Debug:                  *debug,
 		PackagePath:            "git.gammaspectra.live/git/go-away/cmd",
 		ChallengeTemplate:      *challengeTemplate,
 		ChallengeTemplateTheme: *challengeTemplateTheme,

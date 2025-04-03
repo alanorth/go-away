@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/tetratelabs/wazero"
@@ -117,9 +118,9 @@ func (state *State) VerifyChallengeToken(name string, expectedKey []byte, w http
 				}
 			}
 		}
-		if cookie == nil {
-			return false, err
-		}
+	}
+	if cookie == nil {
+		return false, err
 	}
 
 	token, err := jwt.ParseSigned(cookie.Value, []jose.SignatureAlgorithm{jose.EdDSA})
@@ -147,14 +148,20 @@ func (state *State) VerifyChallengeToken(name string, expectedKey []byte, w http
 		return false, errors.New("key mismatch")
 	}
 
-	if c.Verify != nil && rand.Float64() < c.VerifyProbability {
-		// random spot check
-		if ok, err := c.Verify(expectedKey, string(i.Result)); err != nil {
-			return false, err
-		} else if !ok {
-			return false, errors.New("failed challenge verification")
+	if c.Verify != nil {
+		if rand.Float64() < c.VerifyProbability {
+			// random spot check
+			if ok, err := c.Verify(expectedKey, string(i.Result)); err != nil {
+				return false, err
+			} else if !ok {
+				return false, errors.New("failed challenge verification")
+			}
+			r.Header.Set(fmt.Sprintf("X-Away-Challenge-%s-Verify", name), "FULL")
+		} else {
+			r.Header.Set(fmt.Sprintf("X-Away-Challenge-%s-Verify", name), "BRIEF")
 		}
 	}
+	r.Header.Set(fmt.Sprintf("X-Away-Challenge-%s-Verify", name), "CHECK")
 
 	return true, nil
 }

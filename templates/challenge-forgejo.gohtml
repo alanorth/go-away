@@ -74,6 +74,7 @@
                         <summary>Why am I seeing this?</summary>
                         <p>You are seeing this because the administrator of this website has set up <a href="https://git.gammaspectra.live/git/go-away">go-away</a> to protect the server against the scourge of <a href="https://thelibre.news/foss-infrastructure-is-under-attack-by-ai-companies/">AI companies aggressively scraping websites</a>. This can and does cause downtime for the websites, which makes their resources inaccessible for everyone.</p>
                         <p>Please note that some challenges requires the use of modern JavaScript features and some plugins may will disable. Please disable such plugins for this domain (for example, JShelter).</p>
+                        <p>If you have any issues contact the administrator and provide the request id: <em>{{ .Id }}</em></p>
                     </details>
 
 
@@ -92,7 +93,7 @@
 
 <footer class="page-footer" role="group" aria-label="">
     <div class="left-links" role="contentinfo" aria-label="">
-        Protected by <a href="https://git.gammaspectra.live/git/go-away">go-away</a>
+        Protected by <a href="https://git.gammaspectra.live/git/go-away">go-away</a> :: Request Id <em>{{ .Id }}</em>
     </div>
 </footer>
 

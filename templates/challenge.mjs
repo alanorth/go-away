@@ -56,6 +56,7 @@ const u = (url = "", params = {}) => {
             window.location.href = u("{{ .Path }}/verify-challenge", {
                 result: result,
                 redirect: redir,
+                requestId: "{{ .Id }}",
                 elapsedTime: t1 - t0,
             });
         }, 500);
