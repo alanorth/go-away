@@ -171,7 +171,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			}
 		}
 
-		slog.Info("loaded network prefixes", "network", k, "count", ranger.Len())
+		slog.Warn("loaded network prefixes", "network", k, "count", ranger.Len())
 
 		state.Networks[k] = ranger
 	}
@@ -640,7 +640,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		}
 		r.Program = program
 
-		slog.Info("loaded rule", "rule", r.Name, "hash", r.Hash, "action", rule.Action)
+		slog.Warn("loaded rule", "rule", r.Name, "hash", r.Hash, "action", rule.Action)
 
 		state.Rules = append(state.Rules, r)
 	}

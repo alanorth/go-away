@@ -103,7 +103,7 @@ func main() {
 	}
 
 	listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode)
-	slog.Info(
+	slog.Warn(
 		"listening",
 		"url", listenUrl,
 	)
