@@ -57,7 +57,8 @@ func main() {
 	slogLevel := flag.String("slog-level", "INFO", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
 
 	policyFile := flag.String("policy", "", "path to policy YAML file")
-	challengeTemplate := flag.String("challenge-template", "anubis", "name of the challenge template to use")
+	challengeTemplate := flag.String("challenge-template", "anubis", "name or path of the challenge template to use (anubis, forgejo)")
+	challengeTemplateTheme := flag.String("challenge-template-theme", "", "name of the challenge template theme to use (forgejo => [forgejo-dark, forgejo-light, gitea...])")
 
 	flag.Parse()
 
@@ -90,8 +91,9 @@ func main() {
 	}
 
 	state, err := lib.NewState(p, lib.StateSettings{
-		PackagePath:       "git.gammaspectra.live/git/go-away/cmd",
-		ChallengeTemplate: *challengeTemplate,
+		PackagePath:            "git.gammaspectra.live/git/go-away/cmd",
+		ChallengeTemplate:      *challengeTemplate,
+		ChallengeTemplateTheme: *challengeTemplateTheme,
 	})
 
 	if err != nil {

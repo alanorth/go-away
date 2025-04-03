@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="en-US" data-theme="forgejo-dark">
+{{$theme := "forgejo-dark"}}
+{{ if .Theme }}
+    {{$theme = .Theme}}
+{{ end }}
+<html lang="en-US" data-theme="{{ $theme }}">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -21,8 +25,6 @@
     <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
     <link rel="alternate icon" href="/assets/img/favicon.png" type="image/png">
 
-    <script src="/assets/js/webcomponents.js"></script>
-
     <noscript>
         <style>
             .dropdown:hover > .menu { display: block; }
@@ -31,7 +33,7 @@
     </noscript>
 
     <link rel="stylesheet" href="/assets/css/index.css">
-    <link rel="stylesheet" href="/assets/css/theme-forgejo-dark.css">
+    <link rel="stylesheet" href="/assets/css/theme-{{$theme}}.css">
 
 
 </head>

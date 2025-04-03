@@ -30,6 +30,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -96,8 +98,9 @@ type ChallengeState struct {
 }
 
 type StateSettings struct {
-	PackagePath       string
-	ChallengeTemplate string
+	PackagePath            string
+	ChallengeTemplate      string
+	ChallengeTemplateTheme string
 }
 
 func NewState(p policy.Policy, settings StateSettings) (state *State, err error) {
@@ -131,6 +134,16 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 	}
 
 	if templates["challenge-"+state.Settings.ChallengeTemplate+".gohtml"] == nil {
+
+		if data, err := os.ReadFile(state.Settings.ChallengeTemplate); err == nil && len(data) > 0 {
+			name := path.Base(state.Settings.ChallengeTemplate)
+			err := initTemplate(name, string(data))
+			if err != nil {
+				return nil, fmt.Errorf("error loading template %s: %w", settings.ChallengeTemplate, err)
+			}
+			state.Settings.ChallengeTemplate = name
+		}
+
 		return nil, fmt.Errorf("no template defined for %s", settings.ChallengeTemplate)
 	}
 

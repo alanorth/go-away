@@ -50,13 +50,21 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		tpl := template.New(e.Name())
-		_, err = tpl.Parse(string(data))
+		err = initTemplate(e.Name(), string(data))
 		if err != nil {
 			panic(err)
 		}
-		templates[e.Name()] = tpl
 	}
+}
+
+func initTemplate(name, data string) error {
+	tpl := template.New(name)
+	_, err := tpl.Parse(data)
+	if err != nil {
+		return err
+	}
+	templates[name] = tpl
+	return nil
 }
 
 func makeReverseProxy(target string) (http.Handler, error) {
