@@ -100,6 +100,7 @@ func (state *State) challengePage(w http.ResponseWriter, status int, challenge s
 	input["Random"] = cacheBust
 	input["Challenge"] = challenge
 	input["Path"] = state.UrlPath
+	input["Theme"] = state.Settings.ChallengeTemplateTheme
 
 	maps.Copy(input, params)
 
@@ -130,6 +131,7 @@ func (state *State) errorPage(w http.ResponseWriter, status int, err error) erro
 		"Random":      cacheBust,
 		"Error":       err.Error(),
 		"Path":        state.UrlPath,
+		"Theme":       state.Settings.ChallengeTemplateTheme,
 		"Title":       "Oh no! " + http.StatusText(status),
 		"HideSpinner": true,
 		"Challenge":   "",
