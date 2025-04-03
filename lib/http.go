@@ -289,6 +289,8 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 								if rule.Action == policy.RuleActionCHECK {
 									goto nextRule
 								}
+								state.getLogger(r).Warn("challenge passed", "rule", rule.Name, "rule_hash", rule.Hash, "challenge", challengeName)
+
 								// we pass the challenge early!
 								r.Header.Set(fmt.Sprintf("X-Away-Challenge-%s-Verify", challengeName), "PASS")
 
