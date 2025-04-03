@@ -282,6 +282,14 @@ rules:
       - '($is-static-asset)'
     action: pass
 
+  - name: always-pow-challenge
+    conditions:
+      - 'path.startsWith("/user/sign_up") || path.startsWith("/user/login")|| path.startsWith("/user/oauth2/")'
+      # Match archive downloads from browsers and not tools
+      - 'path.matches("^/[^/]+/[^/]+/archive/.*\\.(bundle|zip|tar\\.gz)") && ($is-generic-browser)'
+    action: challenge
+    challenges: [ js-pow-sha256 ]
+
   - name: allow-git-operations
     conditions:
       - '($is-git-path)'
