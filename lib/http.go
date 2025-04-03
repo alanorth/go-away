@@ -14,12 +14,14 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/google/cel-go/common/types"
 	"html/template"
+	"io"
 	"log/slog"
 	"maps"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -313,6 +315,47 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 					//TODO: config error code
 					//TODO: configure block
 					fail(http.StatusForbidden, fmt.Errorf("access denied: blocked by administrative rule %s/%s", r.Header.Get("X-Away-Id"), rule.Hash))
+					return
+				case policy.RuleActionPOISON:
+					lg.Info("request poisoned", "rule", rule.Name, "rule_hash", rule.Hash)
+
+					mime := "text/html"
+					switch path.Ext(r.URL.Path) {
+					case ".css":
+					case ".json", ".js", ".mjs":
+
+					}
+
+					encodings := strings.Split(r.Header.Get("Accept-Encoding"), ",")
+					for i, encoding := range encodings {
+						encodings[i] = strings.TrimSpace(strings.ToLower(encoding))
+					}
+
+					reader, encoding := state.getPoison(mime, encodings)
+					if reader == nil {
+						mime = "application/octet-stream"
+						reader, encoding = state.getPoison(mime, encodings)
+					}
+
+					if reader != nil {
+						defer reader.Close()
+					}
+
+					w.Header().Set("Cache-Control", "max-age=0, private, must-revalidate, no-transform")
+					w.Header().Set("Vary", "Accept-Encoding")
+					w.Header().Set("Content-Type", mime)
+					w.Header().Set("X-Content-Type-Options", "nosniff")
+					if encoding != "" {
+						w.Header().Set("Content-Encoding", encoding)
+					}
+					w.WriteHeader(http.StatusOK)
+					if flusher, ok := w.(http.Flusher); ok {
+						// trigger chunked encoding
+						flusher.Flush()
+					}
+					if r != nil {
+						_, _ = io.Copy(w, reader)
+					}
 					return
 				}
 			}

@@ -8,6 +8,7 @@ const (
 	RuleActionBLOCK     RuleAction = "BLOCK"
 	RuleActionCHALLENGE RuleAction = "CHALLENGE"
 	RuleActionCHECK     RuleAction = "CHECK"
+	RuleActionPOISON    RuleAction = "POISON"
 )
 
 type Rule struct {

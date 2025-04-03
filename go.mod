@@ -4,9 +4,11 @@ go 1.24
 
 require (
 	codeberg.org/meta/gzipped/v2 v2.0.0-20231111234332-aa70c3194756
+	github.com/andybalholm/brotli v1.1.1
 	github.com/go-jose/go-jose/v4 v4.0.5
 	github.com/google/cel-go v0.24.1
 	github.com/itchyny/gojq v0.12.17
+	github.com/klauspost/compress v1.18.0
 	github.com/tetratelabs/wazero v1.9.0
 	github.com/yl2chen/cidranger v1.0.2
 	gopkg.in/yaml.v3 v3.0.1

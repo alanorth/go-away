@@ -15,6 +15,10 @@ networks:
     # AS45102
     - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/45102/aggregated.json
       jq-path: '.subnets.ipv4[], .subnets.ipv6[]'
+  zenlayer-inc:
+    # AS21859
+    - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/21859/aggregated.json
+      jq-path: '.subnets.ipv4[], .subnets.ipv6[]'
   aws-cloud:
     - url: https://ip-ranges.amazonaws.com/ip-ranges.json
       jq-path: '(.prefixes[] | select(has("ip_prefix")) | .ip_prefix), (.prefixes[] | select(has("ipv6_prefix")) | .ipv6_prefix)'
@@ -180,6 +184,11 @@ conditions:
   is-git-path:
     - 'path.matches("^/[^/]+/[^/]+/(git-upload-pack|git-receive-pack|HEAD|info/refs|info/lfs|objects)")'
 
+  is-generic-robot-ua:
+    - 'userAgent.contains("compatible;") && !userAgent.contains("Trident/")'
+    - 'userAgent.matches("\\+https?://")'
+    - 'userAgent.matches("[bB]ot/[0-9]")'
+
   is-tool-ua:
     - 'userAgent.startsWith("python-requests/")'
     - 'userAgent.startsWith("Python-urllib/")'
@@ -237,13 +246,12 @@ conditions:
 rules:
   - name: undesired-networks
     conditions:
-      - 'inNetwork("huawei-cloud", remoteAddress) || inNetwork("alibaba-cloud", remoteAddress)'
-    action: deny
+      - 'inNetwork("huawei-cloud", remoteAddress) || inNetwork("alibaba-cloud", remoteAddress) || inNetwork("zenlayer-inc", remoteAddress)'
+    action: poison
 
   - name: undesired-crawlers
     conditions:
       - '($is-headless-chromium)'
-      - 'userAgent == ""'
       - 'userAgent.startsWith("Lightpanda/")'
       - 'userAgent.startsWith("masscan/")'
       # Typo'd opera botnet
@@ -261,7 +269,15 @@ rules:
       - 'userAgent.contains("GPTBot") || userAgent.contains("OAI-SearchBot") || userAgent.contains("ChatGPT-User")'
       # Other AI crawlers
       - 'userAgent.contains("Amazonbot") || userAgent.contains("Google-Extended") || userAgent.contains("PanguBot") || userAgent.contains("AI2Bot") || userAgent.contains("Diffbot") || userAgent.contains("cohere-training-data-crawler") || userAgent.contains("Applebot-Extended")'
+    action: poison
+
+  - name: unknown-crawlers
+    conditions:
+      # No user agent set
+      - 'userAgent == ""'
     action: deny
+
+
 
   # check a sequence of challenges for non logged in
   - name: suspicious-crawlers/0

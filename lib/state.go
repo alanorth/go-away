@@ -57,6 +57,8 @@ type State struct {
 
 	PublicKey  ed25519.PublicKey
 	PrivateKey ed25519.PrivateKey
+
+	Poison map[string][]byte
 }
 
 type RuleState struct {
