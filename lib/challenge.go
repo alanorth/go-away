@@ -106,21 +106,27 @@ func (state *State) VerifyChallengeToken(name string, expectedKey []byte, w http
 	cookie, err := r.Cookie(CookiePrefix + name)
 	if err != nil {
 		// fallback: fetch cookie from response
-		if setCookies, ok := w.Header()["Set-Cookie"]; ok {
-			for _, setCookie := range setCookies {
-				newCookie, err := http.ParseSetCookie(setCookie)
-				if err != nil {
-					continue
-				}
-				// keep processing to find last set cookie
-				if newCookie.Name == name {
-					cookie = newCookie
+		// TODO: implemented in go1.23, port back
+		/*
+			if setCookies, ok := w.Header()["Set-Cookie"]; ok {
+				for _, setCookie := range setCookies {
+					newCookie, err := http.ParseSetCookie(setCookie)
+					if err != nil {
+						continue
+					}
+					// keep processing to find last set cookie
+					if newCookie.Name == name {
+						cookie = newCookie
+					}
 				}
 			}
-		}
+		*/
+	}
+	if err != nil {
+		return false, err
 	}
 	if cookie == nil {
-		return false, err
+		return false, http.ErrNoCookie
 	}
 
 	token, err := jwt.ParseSigned(cookie.Value, []jose.SignatureAlgorithm{jose.EdDSA})

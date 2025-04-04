@@ -1,6 +1,6 @@
 module git.gammaspectra.live/git/go-away
 
-go 1.24
+go 1.22.12
 
 require (
 	codeberg.org/meta/gzipped/v2 v2.0.0-20231111234332-aa70c3194756
@@ -15,14 +15,14 @@ require (
 )
 
 require (
-	cel.dev/expr v0.22.1 // indirect
+	cel.dev/expr v0.23.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/itchyny/timefmt-go v0.1.6 // indirect
 	github.com/kevinpollet/nego v0.0.0-20211010160919-a65cd48cee43 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240826202546-f6391c0de4c7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240826202546-f6391c0de4c7 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 )
