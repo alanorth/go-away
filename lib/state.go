@@ -348,6 +348,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				params, _ := json.Marshal(p.Parameters)
 
 				//TODO: move this to http.go as a template
+				w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 				w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 				w.WriteHeader(http.StatusOK)
 
