@@ -165,6 +165,7 @@ func (state *State) getLogger(r *http.Request) *slog.Logger {
 		"user_agent", r.UserAgent(),
 		"host", r.Host,
 		"path", r.URL.Path,
+		"query", r.URL.RawQuery,
 	)
 }
 
