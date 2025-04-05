@@ -1,6 +1,8 @@
 module git.gammaspectra.live/git/go-away
 
-go 1.22.12
+go 1.22.0
+
+toolchain go1.22.12
 
 require (
 	codeberg.org/meta/gzipped/v2 v2.0.0-20231111234332-aa70c3194756
@@ -15,7 +17,7 @@ require (
 )
 
 require (
-	cel.dev/expr v0.23.0 // indirect
+	cel.dev/expr v0.23.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/itchyny/timefmt-go v0.1.6 // indirect
 	github.com/kevinpollet/nego v0.0.0-20211010160919-a65cd48cee43 // indirect
@@ -26,3 +28,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240826202546-f6391c0de4c7 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 )
+
+// Used by github.com/antlr4-go/antlr v4.13.0 via github.com/google/cel-go
+replace golang.org/x/exp v0.0.0 => ./utils/exp

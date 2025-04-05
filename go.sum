@@ -1,5 +1,5 @@
-cel.dev/expr v0.23.0 h1:wUb94w6OYQS4uXraxo9U+wUAs9jT47Xvl4iPgAwM2ss=
-cel.dev/expr v0.23.0/go.mod h1:hLPLo1W4QUmuYdA72RBX06QTs6MXw941piREPl3Yfiw=
+cel.dev/expr v0.23.1 h1:K4KOtPCJQjVggkARsjG9RWXP6O4R73aHeJMa/dmCQQg=
+cel.dev/expr v0.23.1/go.mod h1:hLPLo1W4QUmuYdA72RBX06QTs6MXw941piREPl3Yfiw=
 codeberg.org/meta/gzipped/v2 v2.0.0-20231111234332-aa70c3194756 h1:bDqEUEYt4UJy8mfLCZeJuXx+xNJvdqTbkE4Ci11NQYU=
 codeberg.org/meta/gzipped/v2 v2.0.0-20231111234332-aa70c3194756/go.mod h1:aJ/ghJW7viYfwZ6OizDst+uJgbb6r/Hvoqhmi1OPTTw=
 github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=
