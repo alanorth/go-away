@@ -9,7 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	go_away "git.gammaspectra.live/git/go-away"
+	"git.gammaspectra.live/git/go-away/embed"
 	"git.gammaspectra.live/git/go-away/lib/network"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/google/cel-go/common/types"
@@ -43,7 +43,7 @@ func init() {
 
 	templates = make(map[string]*template.Template)
 
-	dir, err := go_away.TemplatesFs.ReadDir("templates")
+	dir, err := embed.TemplatesFs.ReadDir("templates")
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +51,7 @@ func init() {
 		if e.IsDir() {
 			continue
 		}
-		data, err := go_away.TemplatesFs.ReadFile(filepath.Join("templates", e.Name()))
+		data, err := embed.TemplatesFs.ReadFile(filepath.Join("templates", e.Name()))
 		if err != nil {
 			panic(err)
 		}
@@ -373,7 +373,7 @@ func (state *State) setupRoutes() error {
 
 	state.Mux.HandleFunc("/", state.handleRequest)
 
-	state.Mux.Handle("GET "+state.UrlPath+"/assets/", http.StripPrefix(state.UrlPath, gzipped.FileServer(gzipped.FS(go_away.AssetsFs))))
+	state.Mux.Handle("GET "+state.UrlPath+"/assets/", http.StripPrefix(state.UrlPath, gzipped.FileServer(gzipped.FS(embed.AssetsFs))))
 
 	for challengeName, c := range state.Challenges {
 		if c.Static != nil {

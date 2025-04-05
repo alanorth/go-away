@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/binary"
-	"git.gammaspectra.live/git/go-away/challenge"
-	"git.gammaspectra.live/git/go-away/challenge/inline"
+	"git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/lib/challenge/inline"
 	"math/bits"
 	"strconv"
 )

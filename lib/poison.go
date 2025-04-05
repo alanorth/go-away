@@ -1,7 +1,7 @@
 package lib
 
 import (
-	go_away "git.gammaspectra.live/git/go-away"
+	"git.gammaspectra.live/git/go-away/embed"
 	"io"
 	"path"
 	"slices"
@@ -17,7 +17,7 @@ func (state *State) getPoison(mime string, encodings []string) (r io.ReadCloser,
 		}
 
 		p := path.Join("poison", strings.ReplaceAll(mime, "/", "_")+"."+encoding+".poison")
-		f, err := go_away.PoisonFs.Open(p)
+		f, err := embed.PoisonFs.Open(p)
 		if err == nil {
 			return f, encoding
 		}

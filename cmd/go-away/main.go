@@ -61,6 +61,8 @@ func main() {
 	challengeTemplate := flag.String("challenge-template", "anubis", "name or path of the challenge template to use (anubis, forgejo)")
 	challengeTemplateTheme := flag.String("challenge-template-theme", "", "name of the challenge template theme to use (forgejo => [forgejo-dark, forgejo-light, gitea...])")
 
+	packageName := flag.String("package-path", "git.gammaspectra.live/git/go-away/cmd/go-away", "package name to expose in .well-known url path")
+
 	flag.Parse()
 
 	{
@@ -93,7 +95,7 @@ func main() {
 
 	state, err := lib.NewState(p, lib.StateSettings{
 		Debug:                  *debug,
-		PackagePath:            "git.gammaspectra.live/git/go-away/cmd",
+		PackageName:            *packageName,
 		ChallengeTemplate:      *challengeTemplate,
 		ChallengeTemplateTheme: *challengeTemplateTheme,
 	})

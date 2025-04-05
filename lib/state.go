@@ -11,9 +11,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	go_away "git.gammaspectra.live/git/go-away"
-	"git.gammaspectra.live/git/go-away/challenge"
-	"git.gammaspectra.live/git/go-away/challenge/inline"
+	"git.gammaspectra.live/git/go-away/embed"
+	challenge2 "git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/lib/challenge/inline"
 	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/google/cel-go/cel"
@@ -101,7 +101,7 @@ type ChallengeState struct {
 
 type StateSettings struct {
 	Debug                  bool
-	PackagePath            string
+	PackageName            string
 	ChallengeTemplate      string
 	ChallengeTemplateTheme string
 }
@@ -114,7 +114,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			return http.ErrUseLastResponse
 		},
 	}
-	state.UrlPath = "/.well-known/." + state.Settings.PackagePath
+	state.UrlPath = "/.well-known/." + state.Settings.PackageName
 
 	state.Backends = make(map[string]http.Handler)
 
@@ -198,7 +198,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		}
 
 		assetPath := c.Path + "/static/"
-		subFs, err := fs.Sub(go_away.ChallengeFs, fmt.Sprintf("challenge/%s/static", challengeName))
+		subFs, err := fs.Sub(embed.ChallengeFs, fmt.Sprintf("challenge/%s/static", challengeName))
 		if err == nil {
 			c.Static = http.StripPrefix(
 				assetPath,
@@ -458,7 +458,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			})
 
 		case "wasm":
-			wasmData, err := go_away.ChallengeFs.ReadFile(fmt.Sprintf("challenge/%s/runtime/%s", challengeName, p.Runtime.Asset))
+			wasmData, err := embed.ChallengeFs.ReadFile(fmt.Sprintf("challenge/%s/runtime/%s", challengeName, p.Runtime.Asset))
 			if err != nil {
 				return nil, fmt.Errorf("c %s: could not load runtime: %w", challengeName, err)
 			}
@@ -470,7 +470,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			c.MakeChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				err := state.ChallengeMod(challengeName, func(ctx context.Context, mod api.Module) (err error) {
 
-					in := challenge.MakeChallengeInput{
+					in := challenge2.MakeChallengeInput{
 						Key:        state.GetChallengeKeyForRequest(challengeName, time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity), r),
 						Parameters: p.Parameters,
 						Headers:    inline.MIMEHeader(r.Header),
@@ -480,7 +480,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 						return err
 					}
 
-					out, err := challenge.MakeChallengeCall(state.WasmContext, mod, in)
+					out, err := challenge2.MakeChallengeCall(state.WasmContext, mod, in)
 					if err != nil {
 						return err
 					}
@@ -502,21 +502,21 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 			c.Verify = func(key []byte, result string) (ok bool, err error) {
 				err = state.ChallengeMod(challengeName, func(ctx context.Context, mod api.Module) (err error) {
-					in := challenge.VerifyChallengeInput{
+					in := challenge2.VerifyChallengeInput{
 						Key:        key,
 						Parameters: p.Parameters,
 						Result:     []byte(result),
 					}
 
-					out, err := challenge.VerifyChallengeCall(state.WasmContext, mod, in)
+					out, err := challenge2.VerifyChallengeCall(state.WasmContext, mod, in)
 					if err != nil {
 						return err
 					}
 
-					if out == challenge.VerifyChallengeOutputError {
+					if out == challenge2.VerifyChallengeOutputError {
 						return errors.New("error checking challenge")
 					}
-					ok = out == challenge.VerifyChallengeOutputOK
+					ok = out == challenge2.VerifyChallengeOutputOK
 					return nil
 				})
 				if err != nil {

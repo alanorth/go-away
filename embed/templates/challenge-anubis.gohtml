@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>{{ .Title }}</title>
-    <link rel="stylesheet" href="{{ .Path }}/assets/static/anubis/style.css?cacheBust={{ .Random }}"/>
+    <link rel="stylesheet" href="{{ .Path }}/embed/assets/static/anubis/style.css?cacheBust={{ .Random }}"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     {{ range $key, $value := .Meta }}
         {{ if eq $key "refresh"}}
@@ -151,7 +151,7 @@
         <img
                 id="image"
                 style="width:100%;max-width:256px;"
-                src="{{ .Path }}/assets/static/logo.png?cacheBust={{ .Random }}"
+                src="{{ .Path }}/embed/assets/static/logo.png?cacheBust={{ .Random }}"
         />
         {{if .Challenge }}
         <p id="status">Loading challenge <em>{{ .Challenge }}</em>...</p>

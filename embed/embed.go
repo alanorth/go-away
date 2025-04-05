@@ -1,4 +1,4 @@
-package go_away
+package embed
 
 import "embed"
 
