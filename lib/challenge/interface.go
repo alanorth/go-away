@@ -5,8 +5,7 @@ import (
 	"git.gammaspectra.live/git/go-away/utils/inline"
 )
 
-type MakeChallenge func(in Allocation) (out Allocation)
-
+// Allocation is a combination of pointer location in WASM memory and size of it
 type Allocation uint64
 
 func NewAllocation(ptr, size uint32) Allocation {

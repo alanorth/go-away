@@ -9,15 +9,33 @@ environment:
   GOARCH: amd64
 
 steps:
-  - name: build-go1.22-alpine3.20
+  - name: build
     image: golang:1.22-alpine3.20
-    environment:
-      GOOS: linux
-      GOARCH: amd64
     commands:
       - apk update
       - apk add --no-cache git
       - go build -v ./cmd/go-away
+
+  - name: test-wasm-success
+    image: golang:1.22-alpine3.20
+    commands:
+      - >
+        go run ./cmd/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+        -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json
+        -make-challenge-out ./embed/challenge/js-pow-sha256/test/make-challenge-out.json
+        -verify-challenge ./embed/challenge/js-pow-sha256/test/verify-challenge.json
+        -verify-challenge-out 0
+
+  - name: test-wasm-fail
+    image: golang:1.22-alpine3.20
+    commands:
+      - >
+        go run ./cmd/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+        -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json
+        -make-challenge-out ./embed/challenge/js-pow-sha256/test/make-challenge-out.json
+        -verify-challenge ./embed/challenge/js-pow-sha256/test/verify-challenge-fail.json
+        -verify-challenge-out 1
+
 ---
 kind: pipeline
 type: docker
@@ -29,7 +47,7 @@ environment:
   GOARCH: amd64
 
 steps:
-  - name: build-go1.24-alpine3.21
+  - name: build
     image: golang:1.24-alpine3.21
     commands:
       - apk update

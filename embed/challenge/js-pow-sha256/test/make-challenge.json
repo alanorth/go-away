@@ -1,0 +1,60 @@
+{
+  "Data": "",
+  "Headers": {
+    "Accept": [
+      "*/*"
+    ],
+    "Accept-Encoding": [
+      "gzip, deflate, br, zstd"
+    ],
+    "Accept-Language": [
+      "en-US,en;q=0.9"
+    ],
+    "Cache-Control": [
+      "no-cache"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "Content-Length": [
+      "0"
+    ],
+    "Dnt": [
+      "1"
+    ],
+    "Origin": [
+      "http://127.0.0.1:8787"
+    ],
+    "Pragma": [
+      "no-cache"
+    ],
+    "Sec-Ch-Ua": [
+      "\"Google Chrome\";v=\"135\", \"Not-A.Brand\";v=\"8\", \"Chromium\";v=\"135\""
+    ],
+    "Sec-Ch-Ua-Mobile": [
+      "?0"
+    ],
+    "Sec-Ch-Ua-Platform": [
+      "\"Linux\""
+    ],
+    "Sec-Fetch-Dest": [
+      "empty"
+    ],
+    "Sec-Fetch-Mode": [
+      "cors"
+    ],
+    "Sec-Fetch-Site": [
+      "same-origin"
+    ],
+    "User-Agent": [
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+    ],
+    "X-Away-Id": [
+      "cf33e115f699c50822c4e56ed3c610dc"
+    ]
+  },
+  "Key": "Pl02g55pPapXdVc3SVfMZQGymmyE0dTCpq0qm8ax9ss=",
+  "Parameters": {
+    "difficulty": "20"
+  }
+}

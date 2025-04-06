@@ -12,16 +12,14 @@ import (
 	"errors"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/embed"
-	challenge2 "git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/utils/inline"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
-	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
-	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 	"github.com/yl2chen/cidranger"
 	"html/template"
 	"io"
@@ -46,8 +44,7 @@ type State struct {
 
 	Networks map[string]cidranger.Ranger
 
-	WasmRuntime wazero.Runtime
-	WasmContext context.Context
+	Wasm *challenge.Runner
 
 	Challenges map[string]ChallengeState
 
@@ -84,8 +81,6 @@ const (
 )
 
 type ChallengeState struct {
-	RuntimeModule wazero.CompiledModule
-
 	Path string
 
 	Static              http.Handler
@@ -191,9 +186,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		state.Networks[k] = ranger
 	}
 
-	state.WasmContext = context.Background()
-	state.WasmRuntime = wazero.NewRuntimeWithConfig(state.WasmContext, wazero.NewRuntimeConfigCompiler())
-	wasi_snapshot_preview1.MustInstantiate(state.WasmContext, state.WasmRuntime)
+	state.Wasm = challenge.NewRunner(true)
 
 	state.Challenges = make(map[string]ChallengeState)
 
@@ -475,15 +468,15 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			if err != nil {
 				return nil, fmt.Errorf("c %s: could not load runtime: %w", challengeName, err)
 			}
-			c.RuntimeModule, err = state.WasmRuntime.CompileModule(state.WasmContext, wasmData)
+			err = state.Wasm.Compile(challengeName, wasmData)
 			if err != nil {
 				return nil, fmt.Errorf("c %s: compiling runtime: %w", challengeName, err)
 			}
 
 			c.MakeChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				err := state.ChallengeMod(challengeName, func(ctx context.Context, mod api.Module) (err error) {
+				err := state.Wasm.Instantiate(challengeName, func(ctx context.Context, mod api.Module) (err error) {
 
-					in := challenge2.MakeChallengeInput{
+					in := challenge.MakeChallengeInput{
 						Key:        state.GetChallengeKeyForRequest(challengeName, time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity), r),
 						Parameters: p.Parameters,
 						Headers:    inline.MIMEHeader(r.Header),
@@ -493,7 +486,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 						return err
 					}
 
-					out, err := challenge2.MakeChallengeCall(state.WasmContext, mod, in)
+					out, err := challenge.MakeChallengeCall(ctx, mod, in)
 					if err != nil {
 						return err
 					}
@@ -514,22 +507,22 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			})
 
 			c.Verify = func(key []byte, result string) (ok bool, err error) {
-				err = state.ChallengeMod(challengeName, func(ctx context.Context, mod api.Module) (err error) {
-					in := challenge2.VerifyChallengeInput{
+				err = state.Wasm.Instantiate(challengeName, func(ctx context.Context, mod api.Module) (err error) {
+					in := challenge.VerifyChallengeInput{
 						Key:        key,
 						Parameters: p.Parameters,
 						Result:     []byte(result),
 					}
 
-					out, err := challenge2.VerifyChallengeCall(state.WasmContext, mod, in)
+					out, err := challenge.VerifyChallengeCall(ctx, mod, in)
 					if err != nil {
 						return err
 					}
 
-					if out == challenge2.VerifyChallengeOutputError {
+					if out == challenge.VerifyChallengeOutputError {
 						return errors.New("error checking challenge")
 					}
-					ok = out == challenge2.VerifyChallengeOutputOK
+					ok = out == challenge.VerifyChallengeOutputOK
 					return nil
 				})
 				if err != nil {

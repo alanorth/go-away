@@ -2,15 +2,12 @@ package lib
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
-	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/api"
 	"math/rand/v2"
 	"net"
 	"net/http"
@@ -170,30 +167,4 @@ func (state *State) VerifyChallengeToken(name string, expectedKey []byte, w http
 	r.Header.Set(fmt.Sprintf("X-Away-Challenge-%s-Verify", name), "CHECK")
 
 	return true, nil
-}
-
-func (state *State) ChallengeMod(name string, cb func(ctx context.Context, mod api.Module) error) error {
-	c, ok := state.Challenges[name]
-	if !ok {
-		return errors.New("challenge not found")
-	}
-	if c.RuntimeModule == nil {
-		return errors.New("challenge module is nil")
-	}
-
-	ctx := state.WasmContext
-	mod, err := state.WasmRuntime.InstantiateModule(
-		ctx,
-		c.RuntimeModule,
-		wazero.NewModuleConfig().WithName(name).WithStartFunctions("_initialize"),
-	)
-	if err != nil {
-		return err
-	}
-	defer mod.Close(ctx)
-	err = cb(ctx, mod)
-	if err != nil {
-		return err
-	}
-	return nil
 }

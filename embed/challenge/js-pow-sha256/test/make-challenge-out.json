@@ -1,0 +1,10 @@
+{
+  "Code": 200,
+  "Data": "eyJjaGFsbGVuZ2UiOiAiMzc5NjRjZGI4NmM4YjRmZTI0YWU5NjU0Y2Q0MGIwZDZkNjgyOTZjZTg0NmY0NTc1YmE0MTRlNDFiMDdmMjg5MyIsICJ0YXJnZXQiOiAiMDAwMDBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZiIsICJkaWZmaWN1bHR5IjogMjB9",
+  "Error": "",
+  "Headers": {
+    "Content-Type": [
+      "application/json; charset=utf-8"
+    ]
+  }
+}
