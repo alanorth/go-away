@@ -1,3 +1,8 @@
+# Example cmdline (forward requests from upstream to port :8080)
+# $ go-away --bind :8080 --backend git.example.com:http://forgejo:3000 --policy forgejo.yml --challenge-template forgejo --challenge-template-theme forgejo-dark
+
+
+
 # Define networks to be used later below
 networks:
   # todo: support direct ASN lookups
@@ -139,13 +144,14 @@ challenges:
   # Verifies the existence of a cookie and confirms it against some backend request, passing the entire client cookie contents
   http-cookie-check:
     mode: http
-    url: http://gitea:3000/user/stopwatches
-    # url: http://gitea:3000/repo/search
-    # url: http://gitea:3000/notifications/new
+    url: http://forgejo:3000/user/stopwatches
+    # url: http://forgejo:3000/repo/search
+    # url: http://forgejo:3000/notifications/new
     parameters:
       http-method: GET
       http-cookie: gammaspectra_session
       http-code: 200
+      # todo: archive value of session within token to bind it
 
 conditions:
   # Conditions will get replaced on rules AST when found as ($condition-name)
