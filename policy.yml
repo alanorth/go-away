@@ -1,8 +1,3 @@
-
-# Define backends to use. Rules can be done generally, or only applying to specific hosts
-backends:
-  git.gammaspectra.live: http://gitea:3000
-
 # Define networks to be used later below
 networks:
   # todo: support direct ASN lookups
@@ -163,8 +158,11 @@ conditions:
   is-generic-browser:
     - 'userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")'
 
-  is-static-asset:
+  is-well-known-asset:
     - 'path == "/robots.txt"'
+    - 'path.startsWith("/.well-known")'
+
+  is-static-asset:
     - 'path == "/favicon.ico"'
     - 'path == "/apple-touch-icon.png"'
     - 'path == "/apple-touch-icon-precomposed.png"'
@@ -193,9 +191,10 @@ conditions:
     - 'userAgent.startsWith("python-requests/")'
     - 'userAgent.startsWith("Python-urllib/")'
     - 'userAgent.startsWith("python-httpx/")'
-    - 'userAgent.startsWith("aoihttp/")'
+    - 'userAgent.contains("aoihttp/")'
     - 'userAgent.startsWith("http.rb/")'
     - 'userAgent.startsWith("curl/")'
+    - 'userAgent.startsWith("Wget/")'
     - 'userAgent.startsWith("libcurl/")'
     - 'userAgent.startsWith("okhttp/")'
     - 'userAgent.startsWith("Java/")'
@@ -203,6 +202,7 @@ conditions:
     - 'userAgent.startsWith("Go-http-client/")'
     - 'userAgent.startsWith("node-fetch/")'
     - 'userAgent.startsWith("reqwest/")'
+
   is-suspicious-crawler:
     - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
     # Old IE browsers
@@ -244,6 +244,11 @@ conditions:
 #   inNetwork(networkName string, address net.IP) bool
 #   inNetwork(networkCIDR string, address net.IP) bool
 rules:
+  - name: allow-well-known-resources
+    conditions:
+      - '($is-well-known-asset)'
+    action: pass
+
   - name: undesired-networks
     conditions:
       - 'inNetwork("huawei-cloud", remoteAddress) || inNetwork("alibaba-cloud", remoteAddress) || inNetwork("zenlayer-inc", remoteAddress)'
@@ -277,8 +282,6 @@ rules:
       - 'userAgent == ""'
     action: deny
 
-
-
   # check a sequence of challenges for non logged in
   - name: suspicious-crawlers/0
     conditions: ['($is-suspicious-crawler)']
@@ -300,7 +303,14 @@ rules:
 
   - name: always-pow-challenge
     conditions:
-      - 'path.startsWith("/user/sign_up") || path.startsWith("/user/login")|| path.startsWith("/user/oauth2/")'
+      # login paths
+      - 'path.startsWith("/user/sign_up") || path.startsWith("/user/login") || path.startsWith("/user/oauth2/")'
+      # repo / org / mirror creation paths
+      - 'path == "/repo/create" || path == "/repo/migrate" || path ==  "/org/create"'
+      # user profile info edit paths
+      - 'path == "/user/settings" || path.startsWith("/user/settings/hooks/")'
+      # issue creation
+      - 'path.matches("^/[^/]+/[^/]+/issues/new")'
       # Match archive downloads from browsers and not tools
       - 'path.matches("^/[^/]+/[^/]+/archive/.*\\.(bundle|zip|tar\\.gz)") && ($is-generic-browser)'
     action: challenge
@@ -322,7 +332,6 @@ rules:
 
   - name: api-call
     conditions:
-      - 'path.startsWith("/.well-known")'
       - 'path.startsWith("/api/v1/") || path.startsWith("/api/forgejo/v1/")'
       - 'path.startsWith("/login/oauth/")'
       - 'path.startsWith("/captcha/")'
@@ -368,19 +377,14 @@ rules:
     conditions:
       - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
 
-
   # check a sequence of challenges
   - name: heavy-operations/0
     action: check
-    challenges: [js-pow-sha256, http-cookie-check]
+    challenges: [self-header-refresh, js-pow-sha256, http-cookie-check]
     conditions: ['($is-heavy-resource)']
   - name: heavy-operations/1
     action: check
-    challenges: [self-header-refresh, http-cookie-check]
-    conditions: ['($is-heavy-resource)']
-  - name: heavy-operations/2
-    action: check
-    challenges: [self-resource-load, http-cookie-check]
+    challenges: [self-resource-load, js-pow-sha256, http-cookie-check]
     conditions: ['($is-heavy-resource)']
 
   # Allow all source downloads not caught in browser above
@@ -401,7 +405,6 @@ rules:
 
   - name: standard-browser
     action: challenge
-    challenges: [http-cookie-check, self-resource-load, self-meta-refresh, js-pow-sha256]
+    challenges: [http-cookie-check, self-meta-refresh, self-resource-load, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'
-
