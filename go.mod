@@ -31,4 +31,13 @@ require (
 
 // Used by github.com/antlr4-go/antlr v4.13.0 via github.com/google/cel-go
 // Ensure we have no other exp package usages by only proxying the slices functions in that package
+// Newer versions than v0.0.0-20250210185358-939b2ce775ac are not supported by Go 1.22
 replace golang.org/x/exp v0.0.0 => ./utils/exp
+
+// Pin latest versions to support Go 1.22 to prevent a package update from changing them
+// TODO: remove this when Go 1.22+ is supported by other higher users
+replace (
+	google.golang.org/genproto/googleapis/api => google.golang.org/genproto/googleapis/api v0.0.0-20240826202546-f6391c0de4c7
+	google.golang.org/genproto/googleapis/rpc => google.golang.org/genproto/googleapis/rpc v0.0.0-20240826202546-f6391c0de4c7
+	golang.org/x/crypto => golang.org/x/crypto v0.33.0
+)
