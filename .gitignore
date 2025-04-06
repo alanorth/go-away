@@ -1,5 +1,4 @@
-/tinygo
-/.bin/*
+/.bin
 *.gz
 *.br
 *.zst
