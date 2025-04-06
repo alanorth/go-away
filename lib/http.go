@@ -10,8 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/embed"
-	"git.gammaspectra.live/git/go-away/lib/network"
 	"git.gammaspectra.live/git/go-away/lib/policy"
+	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/google/cel-go/common/types"
 	"html/template"
 	"io"
@@ -91,7 +91,7 @@ func makeReverseProxy(target string) (*httputil.ReverseProxy, error) {
 			return dialer.DialContext(ctx, "unix", addr)
 		}
 		// tell transport how to handle the unix url scheme
-		transport.RegisterProtocol("unix", network.UnixRoundTripper{Transport: transport})
+		transport.RegisterProtocol("unix", utils.UnixRoundTripper{Transport: transport})
 	}
 
 	rp := httputil.NewSingleHostReverseProxy(u)

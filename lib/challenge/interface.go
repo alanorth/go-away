@@ -2,7 +2,7 @@ package challenge
 
 import (
 	"encoding/json"
-	"git.gammaspectra.live/git/go-away/lib/challenge/inline"
+	"git.gammaspectra.live/git/go-away/utils/inline"
 )
 
 type MakeChallenge func(in Allocation) (out Allocation)

@@ -30,4 +30,5 @@ require (
 )
 
 // Used by github.com/antlr4-go/antlr v4.13.0 via github.com/google/cel-go
+// Ensure we have no other exp package usages by only proxying the slices functions in that package
 replace golang.org/x/exp v0.0.0 => ./utils/exp
