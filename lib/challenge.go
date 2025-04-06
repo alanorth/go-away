@@ -28,7 +28,7 @@ type ChallengeInformation struct {
 	IssuedAt  *jwt.NumericDate `json:"iat,omitempty"`
 }
 
-func (state *State) GetRequestAddress(r *http.Request) net.IP {
+func getRequestAddress(r *http.Request) net.IP {
 	//TODO: verified upstream
 	ipStr := r.Header.Get("X-Real-Ip")
 	if ipStr == "" {
@@ -47,7 +47,7 @@ func (state *State) GetChallengeKeyForRequest(name string, until time.Time, r *h
 	hasher.Write([]byte("challenge\x00"))
 	hasher.Write([]byte(name))
 	hasher.Write([]byte{0})
-	hasher.Write(state.GetRequestAddress(r).To16())
+	hasher.Write(getRequestAddress(r).To16())
 	hasher.Write([]byte{0})
 
 	// specific headers
@@ -64,7 +64,7 @@ func (state *State) GetChallengeKeyForRequest(name string, until time.Time, r *h
 	hasher.Write([]byte{0})
 	_ = binary.Write(hasher, binary.LittleEndian, until.UTC().Unix())
 	hasher.Write([]byte{0})
-	hasher.Write(state.PublicKey)
+	hasher.Write(state.publicKey)
 	hasher.Write([]byte{0})
 
 	return hasher.Sum(nil)
@@ -73,7 +73,7 @@ func (state *State) GetChallengeKeyForRequest(name string, until time.Time, r *h
 func (state *State) IssueChallengeToken(name string, key, result []byte, until time.Time) (token string, err error) {
 	signer, err := jose.NewSigner(jose.SigningKey{
 		Algorithm: jose.EdDSA,
-		Key:       state.PrivateKey,
+		Key:       state.privateKey,
 	}, nil)
 	if err != nil {
 		return "", err
@@ -135,7 +135,7 @@ func (state *State) VerifyChallengeToken(name string, expectedKey []byte, w http
 	}
 
 	var i ChallengeInformation
-	err = token.Claims(state.PublicKey, &i)
+	err = token.Claims(state.publicKey, &i)
 	if err != nil {
 		return false, err
 	}

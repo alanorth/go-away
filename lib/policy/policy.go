@@ -44,5 +44,7 @@ type Policy struct {
 
 	Rules []Rule `yaml:"rules"`
 
+	// Backends
+	// Deprecated
 	Backends map[string]string `json:"backends"`
 }

@@ -29,6 +29,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"path"
@@ -42,7 +43,6 @@ type State struct {
 	Settings StateSettings
 	UrlPath  string
 	Mux      *http.ServeMux
-	Backends map[string]http.Handler
 
 	Networks map[string]cidranger.Ranger
 
@@ -55,8 +55,8 @@ type State struct {
 
 	Rules []RuleState
 
-	PublicKey  ed25519.PublicKey
-	PrivateKey ed25519.PrivateKey
+	publicKey  ed25519.PublicKey
+	privateKey ed25519.PrivateKey
 
 	Poison map[string][]byte
 }
@@ -100,6 +100,8 @@ type ChallengeState struct {
 }
 
 type StateSettings struct {
+	Backends               map[string]http.Handler
+	PrivateKeySeed         []byte
 	Debug                  bool
 	PackageName            string
 	ChallengeTemplate      string
@@ -116,25 +118,36 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 	}
 	state.UrlPath = "/.well-known/." + state.Settings.PackageName
 
-	state.Backends = make(map[string]http.Handler)
+	// set a reasonable configuration for default http proxy if there is none
+	for _, backend := range state.Settings.Backends {
+		if proxy, ok := backend.(*httputil.ReverseProxy); ok {
+			if proxy.ErrorHandler == nil {
+				proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+					GetLoggerForRequest(r).Error(err.Error())
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusBadGateway, err)
+				}
+			}
+		}
+	}
 
-	for k, v := range p.Backends {
-		backend, err := makeReverseProxy(v)
+	if len(state.Settings.PrivateKeySeed) > 0 {
+		if len(state.Settings.PrivateKeySeed) != ed25519.SeedSize {
+			return nil, fmt.Errorf("invalid private key seed length: %d", len(state.Settings.PrivateKeySeed))
+		}
+
+		state.privateKey = ed25519.NewKeyFromSeed(state.Settings.PrivateKeySeed)
+		state.publicKey = state.privateKey.Public().(ed25519.PublicKey)
+
+		clear(state.Settings.PrivateKeySeed)
+
+	} else {
+		state.publicKey, state.privateKey, err = ed25519.GenerateKey(rand.Reader)
 		if err != nil {
-			return nil, fmt.Errorf("backend %s: failed to make reverse proxy: %w", k, err)
+			return nil, err
 		}
-		backend.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-			state.getLogger(r).Error(fmt.Errorf("backend %s error: %w", k, err).Error())
-			_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusBadGateway, err)
-		}
-		state.Backends[k] = backend
 	}
 
-	state.PublicKey, state.PrivateKey, err = ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-	privateKeyFingerprint := sha256.Sum256(state.PrivateKey)
+	privateKeyFingerprint := sha256.Sum256(state.privateKey)
 
 	if state.Settings.ChallengeTemplate == "" {
 		state.Settings.ChallengeTemplate = "anubis"
@@ -423,12 +436,12 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					if ok, err := c.Verify(key, result); err != nil {
 						return err
 					} else if !ok {
-						state.getLogger(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
+						GetLoggerForRequest(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 						ClearCookie(CookiePrefix+challengeName, w)
 						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
 						return nil
 					}
-					state.getLogger(r).Warn("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
+					GetLoggerForRequest(r).Warn("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 
 					token, err := state.IssueChallengeToken(challengeName, key, []byte(result), expiry)
 					if err != nil {
