@@ -82,7 +82,9 @@ func main() {
 	socketMode := flag.String("socket-mode", "0770", "socket mode (permissions) for unix domain sockets.")
 
 	slogLevel := flag.String("slog-level", "WARN", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
-	debug := flag.Bool("debug", false, "debug mode with logs and server timings")
+	debugMode := flag.Bool("debug", false, "debug mode with logs and server timings")
+
+	clientIpHeader := flag.String("client-ip-header", "", "Client HTTP header to fetch their IP address from (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
 
 	policyFile := flag.String("policy", "", "path to policy YAML file")
 	challengeTemplate := flag.String("challenge-template", "anubis", "name or path of the challenge template to use (anubis, forgejo)")
@@ -110,7 +112,7 @@ func main() {
 		leveler.Set(programLevel)
 
 		h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
-			AddSource: *debug,
+			AddSource: *debugMode,
 			Level:     leveler,
 		})
 		slog.SetDefault(slog.New(h))
@@ -182,11 +184,12 @@ func main() {
 
 	state, err := lib.NewState(p, lib.StateSettings{
 		Backends:               createdBackends,
-		Debug:                  *debug,
+		Debug:                  *debugMode,
 		PackageName:            *packageName,
 		ChallengeTemplate:      *challengeTemplate,
 		ChallengeTemplateTheme: *challengeTemplateTheme,
 		PrivateKeySeed:         seed,
+		ClientIpHeader:         *clientIpHeader,
 	})
 
 	if err != nil {

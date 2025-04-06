@@ -125,15 +125,19 @@ func (state *State) addTiming(w http.ResponseWriter, name, desc string, duration
 	}
 }
 
-func GetLoggerForRequest(r *http.Request) *slog.Logger {
+func GetLoggerForRequest(r *http.Request, clientHeader string) *slog.Logger {
 	return slog.With(
 		"request_id", r.Header.Get("X-Away-Id"),
-		"remote_address", getRequestAddress(r),
+		"remote_address", getRequestAddress(r, clientHeader),
 		"user_agent", r.UserAgent(),
 		"host", r.Host,
 		"path", r.URL.Path,
 		"query", r.URL.RawQuery,
 	)
+}
+
+func (state *State) logger(r *http.Request) *slog.Logger {
+	return GetLoggerForRequest(r, state.Settings.ClientIpHeader)
 }
 
 func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +149,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lg := GetLoggerForRequest(r)
+	lg := state.logger(r)
 
 	start := time.Now()
 
@@ -153,7 +157,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 	env := map[string]any{
 		"host":          host,
 		"method":        r.Method,
-		"remoteAddress": getRequestAddress(r),
+		"remoteAddress": getRequestAddress(r, state.Settings.ClientIpHeader),
 		"userAgent":     r.UserAgent(),
 		"path":          r.URL.Path,
 		"query": func() map[string]string {
@@ -259,7 +263,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 								if rule.Action == policy.RuleActionCHECK {
 									goto nextRule
 								}
-								GetLoggerForRequest(r).Warn("challenge passed", "rule", rule.Name, "rule_hash", rule.Hash, "challenge", challengeName)
+								state.logger(r).Warn("challenge passed", "rule", rule.Name, "rule_hash", rule.Hash, "challenge", challengeName)
 
 								// we pass the challenge early!
 								r.Header.Set(fmt.Sprintf("X-Away-Challenge-%s-Verify", challengeName), "PASS")
@@ -374,15 +378,15 @@ func (state *State) setupRoutes() error {
 					state.addTiming(w, "challenge-verify", "Verify client challenge", time.Since(start))
 
 					if err != nil {
-						GetLoggerForRequest(r).Error(fmt.Errorf("challenge error: %w", err).Error(), "challenge", challengeName, "redirect", r.FormValue("redirect"))
+						state.logger(r).Error(fmt.Errorf("challenge error: %w", err).Error(), "challenge", challengeName, "redirect", r.FormValue("redirect"))
 						return err
 					} else if !ok {
-						GetLoggerForRequest(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
+						state.logger(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 						ClearCookie(CookiePrefix+challengeName, w)
 						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
 						return nil
 					}
-					GetLoggerForRequest(r).Info("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
+					state.logger(r).Info("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 
 					token, err := state.IssueChallengeToken(challengeName, key, []byte(result), expiry)
 					if err != nil {

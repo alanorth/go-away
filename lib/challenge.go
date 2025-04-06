@@ -25,12 +25,17 @@ type ChallengeInformation struct {
 	IssuedAt  *jwt.NumericDate `json:"iat,omitempty"`
 }
 
-func getRequestAddress(r *http.Request) net.IP {
-	//TODO: verified upstream
-	ipStr := r.Header.Get("X-Real-Ip")
-	if ipStr == "" {
-		ipStr = strings.Split(r.Header.Get("X-Forwarded-For"), ",")[0]
+func getRequestAddress(r *http.Request, clientHeader string) net.IP {
+	var ipStr string
+	if clientHeader != "" {
+		ipStr = r.Header.Get(clientHeader)
 	}
+	if ipStr != "" {
+		// handle X-Forwarded-For
+		ipStr = strings.Split(ipStr, ",")[0]
+	}
+
+	// fallback
 	if ipStr == "" {
 		parts := strings.Split(r.RemoteAddr, ":")
 		// drop port
@@ -44,7 +49,7 @@ func (state *State) GetChallengeKeyForRequest(name string, until time.Time, r *h
 	hasher.Write([]byte("challenge\x00"))
 	hasher.Write([]byte(name))
 	hasher.Write([]byte{0})
-	hasher.Write(getRequestAddress(r).To16())
+	hasher.Write(getRequestAddress(r, state.Settings.ClientIpHeader).To16())
 	hasher.Write([]byte{0})
 
 	// specific headers

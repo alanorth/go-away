@@ -12,7 +12,8 @@ import (
 	"errors"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/embed"
-	"git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/lib/challenge/wasm"
+	"git.gammaspectra.live/git/go-away/lib/challenge/wasm/interface"
 	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/utils/inline"
@@ -44,7 +45,7 @@ type State struct {
 
 	Networks map[string]cidranger.Ranger
 
-	Wasm *challenge.Runner
+	Wasm *wasm.Runner
 
 	Challenges map[string]ChallengeState
 
@@ -101,6 +102,7 @@ type StateSettings struct {
 	PackageName            string
 	ChallengeTemplate      string
 	ChallengeTemplateTheme string
+	ClientIpHeader         string
 }
 
 func NewState(p policy.Policy, settings StateSettings) (state *State, err error) {
@@ -118,7 +120,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		if proxy, ok := backend.(*httputil.ReverseProxy); ok {
 			if proxy.ErrorHandler == nil {
 				proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-					GetLoggerForRequest(r).Error(err.Error())
+					state.logger(r).Error(err.Error())
 					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusBadGateway, err)
 				}
 			}
@@ -186,7 +188,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		state.Networks[k] = ranger
 	}
 
-	state.Wasm = challenge.NewRunner(true)
+	state.Wasm = wasm.NewRunner(true)
 
 	state.Challenges = make(map[string]ChallengeState)
 
@@ -429,12 +431,12 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					if ok, err := c.Verify(key, result); err != nil {
 						return err
 					} else if !ok {
-						GetLoggerForRequest(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
+						state.logger(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 						ClearCookie(CookiePrefix+challengeName, w)
 						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
 						return nil
 					}
-					GetLoggerForRequest(r).Warn("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
+					state.logger(r).Warn("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 
 					token, err := state.IssueChallengeToken(challengeName, key, []byte(result), expiry)
 					if err != nil {
@@ -476,7 +478,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			c.MakeChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				err := state.Wasm.Instantiate(challengeName, func(ctx context.Context, mod api.Module) (err error) {
 
-					in := challenge.MakeChallengeInput{
+					in := _interface.MakeChallengeInput{
 						Key:        state.GetChallengeKeyForRequest(challengeName, time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity), r),
 						Parameters: p.Parameters,
 						Headers:    inline.MIMEHeader(r.Header),
@@ -486,7 +488,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 						return err
 					}
 
-					out, err := challenge.MakeChallengeCall(ctx, mod, in)
+					out, err := wasm.MakeChallengeCall(ctx, mod, in)
 					if err != nil {
 						return err
 					}
@@ -508,21 +510,21 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 			c.Verify = func(key []byte, result string) (ok bool, err error) {
 				err = state.Wasm.Instantiate(challengeName, func(ctx context.Context, mod api.Module) (err error) {
-					in := challenge.VerifyChallengeInput{
+					in := _interface.VerifyChallengeInput{
 						Key:        key,
 						Parameters: p.Parameters,
 						Result:     []byte(result),
 					}
 
-					out, err := challenge.VerifyChallengeCall(ctx, mod, in)
+					out, err := wasm.VerifyChallengeCall(ctx, mod, in)
 					if err != nil {
 						return err
 					}
 
-					if out == challenge.VerifyChallengeOutputError {
+					if out == _interface.VerifyChallengeOutputError {
 						return errors.New("error checking challenge")
 					}
-					ok = out == challenge.VerifyChallengeOutputOK
+					ok = out == _interface.VerifyChallengeOutputOK
 					return nil
 				})
 				if err != nil {

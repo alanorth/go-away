@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/lib/challenge/wasm"
+	"git.gammaspectra.live/git/go-away/lib/challenge/wasm/interface"
 	"github.com/tetratelabs/wazero/api"
 	"os"
 	"reflect"
@@ -18,7 +19,7 @@ func main() {
 	makeChallenge := flag.String("make-challenge", "", "Path to contents for MakeChallenge input")
 	makeChallengeOutput := flag.String("make-challenge-out", "", "Path to contents for expected MakeChallenge output")
 	verifyChallenge := flag.String("verify-challenge", "", "Path to contents for VerifyChallenge input")
-	verifyChallengeOutput := flag.Uint64("verify-challenge-out", uint64(challenge.VerifyChallengeOutputOK), "Path to contents for expected VerifyChallenge output")
+	verifyChallengeOutput := flag.Uint64("verify-challenge-out", uint64(_interface.VerifyChallengeOutputOK), "Path to contents for expected VerifyChallenge output")
 
 	flag.Parse()
 
@@ -32,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	runner := challenge.NewRunner(true)
+	runner := wasm.NewRunner(true)
 	defer runner.Close()
 
 	err = runner.Compile("test", wasmData)
@@ -44,7 +45,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	var makeIn challenge.MakeChallengeInput
+	var makeIn _interface.MakeChallengeInput
 	err = json.Unmarshal(makeData, &makeIn)
 	if err != nil {
 		panic(err)
@@ -54,7 +55,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	var makeOut challenge.MakeChallengeOutput
+	var makeOut _interface.MakeChallengeOutput
 	err = json.Unmarshal(makeOutData, &makeOut)
 	if err != nil {
 		panic(err)
@@ -64,7 +65,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	var verifyIn challenge.VerifyChallengeInput
+	var verifyIn _interface.VerifyChallengeInput
 	err = json.Unmarshal(verifyData, &verifyIn)
 	if err != nil {
 		panic(err)
@@ -75,7 +76,7 @@ func main() {
 	}
 
 	err = runner.Instantiate("test", func(ctx context.Context, mod api.Module) error {
-		out, err := challenge.MakeChallengeCall(ctx, mod, makeIn)
+		out, err := wasm.MakeChallengeCall(ctx, mod, makeIn)
 		if err != nil {
 			return err
 		}
@@ -90,13 +91,13 @@ func main() {
 	}
 
 	err = runner.Instantiate("test", func(ctx context.Context, mod api.Module) error {
-		out, err := challenge.VerifyChallengeCall(ctx, mod, verifyIn)
+		out, err := wasm.VerifyChallengeCall(ctx, mod, verifyIn)
 		if err != nil {
 			return err
 		}
 
-		if out != challenge.VerifyChallengeOutput(*verifyChallengeOutput) {
-			return fmt.Errorf("verify output did not match expected output, got %d expected %d", out, challenge.VerifyChallengeOutput(*verifyChallengeOutput))
+		if out != _interface.VerifyChallengeOutput(*verifyChallengeOutput) {
+			return fmt.Errorf("verify output did not match expected output, got %d expected %d", out, _interface.VerifyChallengeOutput(*verifyChallengeOutput))
 		}
 		return nil
 	})

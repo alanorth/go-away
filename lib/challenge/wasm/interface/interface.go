@@ -1,4 +1,4 @@
-package challenge
+package _interface
 
 import (
 	"encoding/json"

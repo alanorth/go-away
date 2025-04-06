@@ -1,6 +1,6 @@
 //go:build tinygo
 
-package challenge
+package _interface
 
 // #include <stdlib.h>
 import "C"

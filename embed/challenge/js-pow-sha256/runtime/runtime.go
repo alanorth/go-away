@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/binary"
-	"git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/lib/challenge/wasm/interface"
 	"git.gammaspectra.live/git/go-away/utils/inline"
 	"math/bits"
 	"strconv"
@@ -31,8 +31,8 @@ func getChallenge(key []byte, params map[string]string) ([]byte, uint64) {
 }
 
 //go:wasmexport MakeChallenge
-func MakeChallenge(in challenge.Allocation) (out challenge.Allocation) {
-	return challenge.MakeChallengeDecode(func(in challenge.MakeChallengeInput, out *challenge.MakeChallengeOutput) {
+func MakeChallenge(in _interface.Allocation) (out _interface.Allocation) {
+	return _interface.MakeChallengeDecode(func(in _interface.MakeChallengeInput, out *_interface.MakeChallengeOutput) {
 		c, difficulty := getChallenge(in.Key, in.Parameters)
 
 		// create target
@@ -63,24 +63,24 @@ func MakeChallenge(in challenge.Allocation) (out challenge.Allocation) {
 }
 
 //go:wasmexport VerifyChallenge
-func VerifyChallenge(in challenge.Allocation) (out challenge.VerifyChallengeOutput) {
-	return challenge.VerifyChallengeDecode(func(in challenge.VerifyChallengeInput) challenge.VerifyChallengeOutput {
+func VerifyChallenge(in _interface.Allocation) (out _interface.VerifyChallengeOutput) {
+	return _interface.VerifyChallengeDecode(func(in _interface.VerifyChallengeInput) _interface.VerifyChallengeOutput {
 		c, difficulty := getChallenge(in.Key, in.Parameters)
 
 		result := make([]byte, inline.DecodedLen(len(in.Result)))
 		n, err := inline.Decode(result, in.Result)
 		if err != nil {
-			return challenge.VerifyChallengeOutputError
+			return _interface.VerifyChallengeOutputError
 		}
 		result = result[:n]
 
 		if len(result) < 8 {
-			return challenge.VerifyChallengeOutputError
+			return _interface.VerifyChallengeOutputError
 		}
 
 		// verify we used same challenge
 		if subtle.ConstantTimeCompare(result[:len(result)-8], c) != 1 {
-			return challenge.VerifyChallengeOutputFailed
+			return _interface.VerifyChallengeOutputFailed
 		}
 
 		hash := sha256.Sum256(result)
@@ -95,9 +95,9 @@ func VerifyChallenge(in challenge.Allocation) (out challenge.VerifyChallengeOutp
 		}
 
 		if leadingZeroesCount < int(difficulty) {
-			return challenge.VerifyChallengeOutputFailed
+			return _interface.VerifyChallengeOutputFailed
 		}
 
-		return challenge.VerifyChallengeOutputOK
+		return _interface.VerifyChallengeOutputOK
 	}, in)
 }
