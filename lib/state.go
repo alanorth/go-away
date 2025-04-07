@@ -240,6 +240,13 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			}
 
 			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
+
+				data := RequestDataFromContext(r.Context())
+
+				if result := data.Challenges[c.Id]; result.Ok() {
+					return challenge.ResultPass
+				}
+
 				var cookieValue string
 				if expectedCookie != "" {
 					if cookie, err := r.Cookie(expectedCookie); err != nil || cookie == nil {
@@ -282,6 +289,8 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					} else {
 						utils.SetCookie(utils.CookiePrefix+challengeName, token, expiry, w)
 					}
+
+					data.Challenges[c.Id] = challenge.VerifyResultPASS
 
 					// we passed it!
 					return challenge.ResultPass
