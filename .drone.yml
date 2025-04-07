@@ -1,7 +1,10 @@
 ---
 kind: pipeline
 type: docker
-name: build-go1.22
+name: build-amd64-go1.22
+platform:
+  os: linux
+  arch: amd64
 
 environment:
   CGO_ENABLED: "0"
@@ -39,12 +42,35 @@ steps:
 ---
 kind: pipeline
 type: docker
-name: build-go1.24
+name: build-amd64-go1.24
+platform:
+  os: linux
+  arch: amd64
 
 environment:
   CGO_ENABLED: "0"
   GOOS: linux
   GOARCH: amd64
+
+steps:
+  - name: build
+    image: golang:1.24-alpine3.21
+    commands:
+      - apk update
+      - apk add --no-cache git
+      - go build -v ./cmd/go-away
+---
+kind: pipeline
+type: docker
+name: build-arm64-go1.24
+platform:
+  os: linux
+  arch: arm64
+
+environment:
+  CGO_ENABLED: "0"
+  GOOS: linux
+  GOARCH: arm64
 
 steps:
   - name: build
