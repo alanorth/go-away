@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/embed"
+	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"git.gammaspectra.live/git/go-away/lib/challenge/wasm"
 	"git.gammaspectra.live/git/go-away/lib/challenge/wasm/interface"
 	"git.gammaspectra.live/git/go-away/lib/condition"
@@ -47,7 +48,7 @@ type State struct {
 
 	Wasm *wasm.Runner
 
-	Challenges map[string]ChallengeState
+	Challenges map[string]challenge.Challenge
 
 	RulesEnv *cel.Env
 
@@ -68,31 +69,6 @@ type RuleState struct {
 	Program    cel.Program
 	Action     policy.RuleAction
 	Challenges []string
-}
-
-type ChallengeResult int
-
-const (
-	// ChallengeResultStop Stop testing challenges and return
-	ChallengeResultStop = ChallengeResult(iota)
-	// ChallengeResultContinue Test next challenge
-	ChallengeResultContinue
-	// ChallengeResultPass Challenge passed, return and proxy
-	ChallengeResultPass
-)
-
-type ChallengeState struct {
-	Path string
-
-	Static              http.Handler
-	Challenge           func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult
-	ChallengeScriptPath string
-	ChallengeScript     http.Handler
-	MakeChallenge       http.Handler
-	VerifyChallenge     http.Handler
-	Verify              func(key []byte, result string) (bool, error)
-
-	VerifyProbability float64
 }
 
 type StateSettings struct {
@@ -190,10 +166,10 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 	state.Wasm = wasm.NewRunner(true)
 
-	state.Challenges = make(map[string]ChallengeState)
+	state.Challenges = make(map[string]challenge.Challenge)
 
 	for challengeName, p := range p.Challenges {
-		c := ChallengeState{
+		c := challenge.Challenge{
 			Path:              fmt.Sprintf("%s/challenge/%s", state.UrlPath, challengeName),
 			VerifyProbability: p.Runtime.Probability,
 		}
@@ -208,7 +184,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		assetPath := c.Path + "/static/"
 		subFs, err := fs.Sub(embed.ChallengeFs, fmt.Sprintf("challenge/%s/static", challengeName))
 		if err == nil {
-			c.Static = http.StripPrefix(
+			c.ServeStatic = http.StripPrefix(
 				assetPath,
 				gzipped.FileServer(gzipped.FS(subFs)),
 			)
@@ -233,23 +209,23 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 			expectedCookie := p.Parameters["http-cookie"]
 
-			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
+			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
 				if expectedCookie != "" {
 					if cookie, err := r.Cookie(expectedCookie); err != nil || cookie == nil {
 						// skip check if we don't have cookie or it's expired
-						return ChallengeResultContinue
+						return challenge.ResultContinue
 					}
 				}
 
 				request, err := http.NewRequest(method, *p.Url, nil)
 				if err != nil {
-					return ChallengeResultContinue
+					return challenge.ResultContinue
 				}
 
 				request.Header = r.Header
 				response, err := state.Client.Do(request)
 				if err != nil {
-					return ChallengeResultContinue
+					return challenge.ResultContinue
 				}
 				defer response.Body.Close()
 				defer io.Copy(io.Discard, response.Body)
@@ -257,7 +233,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				if response.StatusCode != httpCode {
 					ClearCookie(CookiePrefix+challengeName, w)
 					// continue other challenges!
-					return ChallengeResultContinue
+					return challenge.ResultContinue
 				} else {
 					token, err := state.IssueChallengeToken(challengeName, key, nil, expiry)
 					if err != nil {
@@ -267,12 +243,12 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					}
 
 					// we passed it!
-					return ChallengeResultPass
+					return challenge.ResultPass
 				}
 			}
 
 		case "cookie":
-			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
+			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
 				token, err := state.IssueChallengeToken(challengeName, key, nil, expiry)
 				if err != nil {
 					ClearCookie(CookiePrefix+challengeName, w)
@@ -282,10 +258,10 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				// self redirect!
 				//TODO: add redirect loop detect parameter
 				http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
-				return ChallengeResultStop
+				return challenge.ResultStop
 			}
 		case "meta-refresh":
-			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
+			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
 				redirectUri := new(url.URL)
 				redirectUri.Path = c.Path + "/verify-challenge"
 
@@ -302,10 +278,10 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					},
 				})
 
-				return ChallengeResultStop
+				return challenge.ResultStop
 			}
 		case "header-refresh":
-			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
+			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
 				redirectUri := new(url.URL)
 				redirectUri.Path = c.Path + "/verify-challenge"
 
@@ -321,10 +297,10 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 				_ = state.challengePage(w, r.Header.Get("X-Away-Id"), http.StatusTeapot, "", nil)
 
-				return ChallengeResultStop
+				return challenge.ResultStop
 			}
 		case "resource-load":
-			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
+			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
 				redirectUri := new(url.URL)
 				redirectUri.Path = c.Path + "/verify-challenge"
 
@@ -343,16 +319,16 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					},
 				})
 
-				return ChallengeResultStop
+				return challenge.ResultStop
 			}
 		case "js":
-			c.Challenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) ChallengeResult {
+			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
 				_ = state.challengePage(w, r.Header.Get("X-Away-Id"), http.StatusTeapot, challengeName, nil)
 
-				return ChallengeResultStop
+				return challenge.ResultStop
 			}
-			c.ChallengeScriptPath = c.Path + "/challenge.mjs"
-			c.ChallengeScript = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			c.ServeScriptPath = c.Path + "/challenge.mjs"
+			c.ServeScript = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				params, _ := json.Marshal(p.Parameters)
 
 				//TODO: move this to http.go as a template
@@ -415,7 +391,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				return true, nil
 			}
 
-			c.VerifyChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			c.ServeVerifyChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 				err := func() (err error) {
 					expiry := time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
@@ -475,7 +451,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				return nil, fmt.Errorf("c %s: compiling runtime: %w", challengeName, err)
 			}
 
-			c.MakeChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			c.ServeMakeChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				err := state.Wasm.Instantiate(challengeName, func(ctx context.Context, mod api.Module) (err error) {
 
 					in := _interface.MakeChallengeInput{

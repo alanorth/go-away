@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/embed"
+	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/google/cel-go/common/types"
 	"html/template"
@@ -251,15 +252,15 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 					// none matched, issue first challenge in priority
 					for _, challengeName := range rule.Challenges {
 						c := state.Challenges[challengeName]
-						if c.Challenge != nil {
-							result := c.Challenge(w, r, state.GetChallengeKeyForRequest(challengeName, expiry, r), expiry)
+						if c.ServeChallenge != nil {
+							result := c.ServeChallenge(w, r, state.GetChallengeKeyForRequest(challengeName, expiry, r), expiry)
 							switch result {
-							case ChallengeResultStop:
+							case challenge.ResultStop:
 								lg.Info("request challenged", "rule", rule.Name, "rule_hash", rule.Hash, "challenge", challengeName)
 								return
-							case ChallengeResultContinue:
+							case challenge.ResultContinue:
 								continue
-							case ChallengeResultPass:
+							case challenge.ResultPass:
 								if rule.Action == policy.RuleActionCHECK {
 									goto nextRule
 								}
@@ -347,20 +348,20 @@ func (state *State) setupRoutes() error {
 	state.Mux.Handle("GET "+state.UrlPath+"/assets/", http.StripPrefix(state.UrlPath, gzipped.FileServer(gzipped.FS(embed.AssetsFs))))
 
 	for challengeName, c := range state.Challenges {
-		if c.Static != nil {
-			state.Mux.Handle("GET "+c.Path+"/static/", c.Static)
+		if c.ServeStatic != nil {
+			state.Mux.Handle("GET "+c.Path+"/static/", c.ServeStatic)
 		}
 
-		if c.ChallengeScript != nil {
-			state.Mux.Handle("GET "+c.ChallengeScriptPath, c.ChallengeScript)
+		if c.ServeScript != nil {
+			state.Mux.Handle("GET "+c.ServeScriptPath, c.ServeScript)
 		}
 
-		if c.MakeChallenge != nil {
-			state.Mux.Handle(fmt.Sprintf("POST %s/make-challenge", c.Path), c.MakeChallenge)
+		if c.ServeMakeChallenge != nil {
+			state.Mux.Handle(fmt.Sprintf("POST %s/make-challenge", c.Path), c.ServeMakeChallenge)
 		}
 
-		if c.VerifyChallenge != nil {
-			state.Mux.Handle(fmt.Sprintf("GET %s/verify-challenge", c.Path), c.VerifyChallenge)
+		if c.ServeVerifyChallenge != nil {
+			state.Mux.Handle(fmt.Sprintf("GET %s/verify-challenge", c.Path), c.ServeVerifyChallenge)
 		} else if c.Verify != nil {
 			state.Mux.HandleFunc(fmt.Sprintf("GET %s/verify-challenge", c.Path), func(w http.ResponseWriter, r *http.Request) {
 				err := func() (err error) {
