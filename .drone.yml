@@ -165,7 +165,9 @@ platform:
   arch: amd64
   os: linux
 steps:
-- image: plugins/buildx
+- environment:
+    DOCKER_BUILDKIT: "1"
+  image: plugins/buildx
   name: docker
   privileged: true
   settings:
@@ -199,7 +201,9 @@ platform:
   arch: amd64
   os: linux
 steps:
-- image: plugins/buildx
+- environment:
+    DOCKER_BUILDKIT: "1"
+  image: plugins/buildx
   name: docker
   privileged: true
   settings:
@@ -233,7 +237,9 @@ platform:
   arch: amd64
   os: linux
 steps:
-- image: plugins/buildx
+- environment:
+    DOCKER_BUILDKIT: "1"
+  image: plugins/buildx
   name: docker
   privileged: true
   settings:
@@ -262,6 +268,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: 90e6da0206cabda47b8279b4704e95f68f5a36ff04d07284ff9ef203fc96a911
+hmac: 3cbd114d368c7bd348105921d85c703db1c1bc46de79f00daabbca23ffac6050
 
 ...

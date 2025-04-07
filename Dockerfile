@@ -1,12 +1,12 @@
 ARG from_builder=golang:1.24-alpine3.21
 ARG from=alpine:3.21
 
-ARG TARGETPLATFORM
-ARG TARGETARCH
-ARG TARGETOS
 ARG BUILDPLATFORM
 
 FROM --platform=$BUILDPLATFORM ${from_builder} AS build
+
+ARG TARGETARCH
+ARG TARGETOS
 
 RUN apk update && apk add --no-cache \
     bash \

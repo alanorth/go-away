@@ -65,6 +65,9 @@ local Publish(go, alpine, os, arch, trigger, platforms, extra) = {
             name: "docker",
             image: "plugins/buildx",
             privileged: true,
+            environment: {
+                DOCKER_BUILDKIT: "1"
+            },
             settings: {
                   registry: "git.gammaspectra.live",
                   repo: "git.gammaspectra.live/git/go-away",
