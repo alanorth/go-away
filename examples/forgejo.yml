@@ -149,7 +149,7 @@ challenges:
     # url: http://forgejo:3000/notifications/new
     parameters:
       http-method: GET
-      http-cookie: gammaspectra_session
+      http-cookie: i_like_gitea
       http-code: 200
       # todo: archive value of session within token to bind it
 
@@ -176,15 +176,16 @@ conditions:
     - 'path.startsWith("/repo-avatars/")'
     - 'path.startsWith("/avatars/")'
     - 'path.startsWith("/avatar/")'
+    - 'path.startsWith("/user/avatar/")'
     - 'path.startsWith("/attachments/")'
 
   is-git-ua:
-    - 'userAgent.startsWith("git/")'
+    - 'userAgent.startsWith("git/") || userAgent.contains("libgit")'
     - 'userAgent.startsWith("go-git")'
     - 'userAgent.startsWith("JGit/") || userAgent.startsWith("JGit-")'
     # Golang proxy and initial fetch
     - 'userAgent.startsWith("GoModuleMirror/")'
-    - 'userAgent.startsWith("Go-http-client/") && "go-get" in query && query["go-get"] == "1" && (path.matches("^/[^/]+/[^/]+$") || path.matches("^/[^/]+/[^/]+/v[0-9]+$"))'
+    - 'userAgent.startsWith("Go-http-client/") && "go-get" in query && query["go-get"] == "1"'
   is-git-path:
     - 'path.matches("^/[^/]+/[^/]+/(git-upload-pack|git-receive-pack|HEAD|info/refs|info/lfs|objects)")'
 
@@ -235,7 +236,7 @@ conditions:
     # any search with a custom query
     - '"q" in query && query.q != ""'
     # user activity tab
-    - 'path.matches("^/[^/]") && "tab" in query && query.tab == "activity"'
+    - 'path.matches("^/[^/]+$") && "tab" in query && query.tab == "activity"'
 
 # Rules and conditions are served this environment
 #   remoteAddress (net.IP) - Connecting client remote address from headers or properties
@@ -280,6 +281,8 @@ rules:
       - 'userAgent.contains("GPTBot") || userAgent.contains("OAI-SearchBot") || userAgent.contains("ChatGPT-User")'
       # Other AI crawlers
       - 'userAgent.contains("Amazonbot") || userAgent.contains("Google-Extended") || userAgent.contains("PanguBot") || userAgent.contains("AI2Bot") || userAgent.contains("Diffbot") || userAgent.contains("cohere-training-data-crawler") || userAgent.contains("Applebot-Extended")'
+      # SEO / Ads and marketing
+      - 'userAgent.contains("BLEXBot")'
     action: poison
 
   - name: unknown-crawlers
@@ -334,7 +337,7 @@ rules:
       - 'path == "/sitemap.xml" || path.matches("^/explore/(users|repos)/sitemap-[0-9]+\\.xml$")'
     action: pass
 
-    # TODO: rss
+  # TODO: rss
 
   - name: api-call
     conditions:
@@ -347,9 +350,14 @@ rules:
       - 'path == "/user/events"'
       - 'path == "/ssh_info"'
       - 'path == "/api/healthz"'
+      # actions
+      - 'path.startsWith("/api/actions/") || path.startsWith("/api/actions_pipeline/")'
       # user pubkeys
       - 'path.matches("^/[^/]+\\.keys$")'
       - 'path.matches("^/[^/]+\\.gpg")'
+      # OCI packages API and package managers
+      - 'path.startsWith("/api/packages/") || path == "/api/packages"'
+      - 'path.startsWith("/v2/") || path == "/v2"'
     action: pass
 
   - name: preview-fetchers
@@ -374,6 +382,7 @@ rules:
     conditions:
       - 'path == "/"'
       # generic /*/*/ match gave too many options for scrapers to trigger random endpoints
+      # todo: create negative match?
       - 'path.matches("(?i)^/(WeebDataHoarder|P2Pool|mirror|git|S\\.O\\.N\\.G|FM10K|Sillycom|pwgen2155|kaitou|metonym)/[^/]+$")'
     action: pass
 
@@ -408,6 +417,15 @@ rules:
     action: pass
     conditions:
       - '!(method == "HEAD" || method == "GET")'
+
+
+
+  - name: standard-tools
+    action: challenge
+    challenges: [self-meta-refresh]
+    conditions:
+      - '($is-generic-robot-ua)'
+      - '($is-tool-ua)'
 
   - name: standard-browser
     action: challenge
