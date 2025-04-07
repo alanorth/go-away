@@ -6,10 +6,6 @@ platform:
   os: linux
   arch: amd64
 
-trigger:
-  branch:
-    - master
-
 environment:
   CGO_ENABLED: "0"
   GOOS: linux
@@ -57,10 +53,6 @@ platform:
   os: linux
   arch: amd64
 
-trigger:
-  branch:
-    - master
-
 environment:
   CGO_ENABLED: "0"
   GOOS: linux
@@ -80,10 +72,6 @@ name: build-arm64-go1.24
 platform:
   os: linux
   arch: arm64
-
-trigger:
-  branch:
-    - master
 
 environment:
   CGO_ENABLED: "0"
@@ -106,6 +94,7 @@ name: publish-docker
 
 steps:
   - name: docker
+    privileged: true
     image: plugins/buildx
     settings:
       registry: git.gammaspectra.live
@@ -122,10 +111,13 @@ steps:
       password:
         from_secret: git_password
 
-#trigger:
-#  event:
-#    - promote
-#  target:
-#    - production
-...
+trigger:
+  event:
+    - promote
+  target:
+    - production
+---
+kind: signature
+hmac: cf87c046c0a84f6311cef12fcbfc10a2419b27f8d3319df69baad7f77bd7c77d
 
+...
