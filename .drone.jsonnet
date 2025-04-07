@@ -51,7 +51,7 @@ local Build(go, alpine, os, arch) = {
     ]
 };
 
-local Publish(go, alpine, os, arch, platforms) = {
+local Publish(go, alpine, os, arch, trigger, platforms, extra) = {
     kind: "pipeline",
     type: "docker",
     name: "publish-" + go + "-alpine" + alpine,
@@ -59,10 +59,7 @@ local Publish(go, alpine, os, arch, platforms) = {
         os: os,
         arch: arch,
     },
-    trigger: {
-        event: ["promote"],
-        target: ["production"],
-    },
+    trigger: trigger,
     steps: [
         {
             name: "docker",
@@ -79,7 +76,6 @@ local Publish(go, alpine, os, arch, platforms) = {
                     from_builder: "golang:" + go +"-alpine" + alpine,
                     from: "alpine:" + alpine,
                   },
-                  auto_tag: true,
                   auto_tag_suffix: "alpine" + alpine,
                   username: {
                     from_secret: "git_username",
@@ -87,7 +83,7 @@ local Publish(go, alpine, os, arch, platforms) = {
                   password: {
                     from_secret: "git_password",
                   },
-            }
+            } + extra,
         },
     ]
 };
@@ -100,6 +96,9 @@ local Publish(go, alpine, os, arch, platforms) = {
     Build("1.24", "3.21", "linux", "amd64"),
     Build("1.24", "3.21", "linux", "arm64"),
 
-    Publish("1.24", "3.21", "linux", "amd64", ["linux/amd64", "linux/arm64"]),
-    Publish("1.22", "3.20", "linux", "amd64", ["linux/amd64", "linux/arm64"]),
+    # latest
+    Publish("1.24", "3.21", "linux", "amd64", {event: ["push"], branch: ["master"], }, ["linux/amd64", "linux/arm64"], {tags: ["latest"],}) + {name: "publish-latest"},
+    Publish("1.24", "3.21", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, ["linux/amd64", "linux/arm64"], {auto_tag: true,}),
+    # legacy
+    Publish("1.22", "3.20", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, ["linux/amd64", "linux/arm64"], {auto_tag: true,}),
 ]
