@@ -1,7 +1,12 @@
 ARG from_builder=golang:1.24-alpine3.21
 ARG from=alpine:3.21
 
-FROM ${from_builder} AS build
+ARG TARGETPLATFORM
+ARG TARGETARCH
+ARG TARGETOS
+ARG BUILDPLATFORM
+
+FROM --platform=$BUILDPLATFORM ${from_builder} AS build
 
 RUN apk update && apk add --no-cache \
     bash \
@@ -10,24 +15,19 @@ RUN apk update && apk add --no-cache \
 
 ENV GOBIN="/go/bin"
 
-ARG GOAWAY_REF="master"
-
-RUN git clone https://git.gammaspectra.live/git/go-away.git /src/go-away
-WORKDIR /src/go-away
-
-RUN git reset --hard "${GOAWAY_REF}"
+COPY . .
 
 RUN ./build-compress.sh
 
 ENV CGO_ENABLED=0
-ENV GOOS=linux
-ENV GOARCH=amd64
+ENV GOOS=${TARGETOS}
+ENV GOARCH=${TARGETARCH}
 
 RUN go build -pgo=auto -v -trimpath -o "${GOBIN}/go-away" ./cmd/go-away
 RUN test -e "${GOBIN}/go-away"
 
 
-FROM ${from}
+FROM --platform=$TARGETPLATFORM ${from}
 
 COPY --from=build /go/bin/go-away /bin/go-away
 

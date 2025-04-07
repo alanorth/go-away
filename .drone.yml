@@ -6,6 +6,10 @@ platform:
   os: linux
   arch: amd64
 
+trigger:
+  branch:
+    - master
+
 environment:
   CGO_ENABLED: "0"
   GOOS: linux
@@ -17,13 +21,17 @@ steps:
     commands:
       - apk update
       - apk add --no-cache git
-      - go build -v ./cmd/go-away
+      - mkdir .bin
+      - go build -v -o ./.bin/go-away ./cmd/go-away
+      - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
 
   - name: test-wasm-success
     image: golang:1.22-alpine3.20
+    depends_on:
+      - build
     commands:
       - >
-        go run ./cmd/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+        ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
         -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json
         -make-challenge-out ./embed/challenge/js-pow-sha256/test/make-challenge-out.json
         -verify-challenge ./embed/challenge/js-pow-sha256/test/verify-challenge.json
@@ -31,9 +39,11 @@ steps:
 
   - name: test-wasm-fail
     image: golang:1.22-alpine3.20
+    depends_on:
+      - build
     commands:
       - >
-        go run ./cmd/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+        ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
         -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json
         -make-challenge-out ./embed/challenge/js-pow-sha256/test/make-challenge-out.json
         -verify-challenge ./embed/challenge/js-pow-sha256/test/verify-challenge-fail.json
@@ -46,6 +56,10 @@ name: build-amd64-go1.24
 platform:
   os: linux
   arch: amd64
+
+trigger:
+  branch:
+    - master
 
 environment:
   CGO_ENABLED: "0"
@@ -67,6 +81,10 @@ platform:
   os: linux
   arch: arm64
 
+trigger:
+  branch:
+    - master
+
 environment:
   CGO_ENABLED: "0"
   GOOS: linux
@@ -79,5 +97,35 @@ steps:
       - apk update
       - apk add --no-cache git
       - go build -v ./cmd/go-away
+
+---
+kind: pipeline
+type: docker
+name: publish-docker
+
+
+steps:
+  - name: docker
+    image: plugins/buildx
+    settings:
+      registry: git.gammaspectra.live
+      repo: git.gammaspectra.live/git/go-away
+      squash: true
+      compress: true
+      platform:
+        - linux/amd64
+        - linux/arm64
+      builder_driver: docker-container
+      auto_tag: true
+      username:
+        from_secret: git_username
+      password:
+        from_secret: git_password
+
+#trigger:
+#  event:
+#    - promote
+#  target:
+#    - production
 ...
 
