@@ -23,7 +23,7 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=amd64
 
-RUN go build -pgo=auto -v -trimpath -o "${GOBIN}/go-away" ./cmd
+RUN go build -pgo=auto -v -trimpath -o "${GOBIN}/go-away" ./cmd/go-away
 RUN test -e "${GOBIN}/go-away"
 
 
