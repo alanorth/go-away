@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
@@ -20,6 +21,8 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 func setupListener(network, address, socketMode string) (net.Listener, string) {
@@ -83,6 +86,7 @@ func main() {
 
 	slogLevel := flag.String("slog-level", "WARN", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
 	debugMode := flag.Bool("debug", false, "debug mode with logs and server timings")
+	passThrough := flag.Bool("passthrough", true, "passthrough mode sends all requests to matching backends until state is loaded")
 
 	clientIpHeader := flag.String("client-ip-header", "", "Client HTTP header to fetch their IP address from (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
 
@@ -182,6 +186,55 @@ func main() {
 		createdBackends[k] = backend
 	}
 
+	var wg sync.WaitGroup
+
+	passThroughCtx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+
+	if *passThrough {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			server := http.Server{
+				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					backend, ok := createdBackends[r.Host]
+					if !ok {
+						http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+						return
+					}
+
+					backend.ServeHTTP(w, r)
+				}),
+			}
+
+			listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode)
+			slog.Warn(
+				"listening passthrough",
+				"url", listenUrl,
+			)
+			defer listener.Close()
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
+					log.Fatal(err)
+				}
+			}()
+
+			<-passThroughCtx.Done()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			server.Close()
+			if err := server.Shutdown(ctx); err != nil {
+				log.Fatal(err)
+			}
+		}()
+	}
+
 	state, err := lib.NewState(p, lib.StateSettings{
 		Backends:               createdBackends,
 		Debug:                  *debugMode,
@@ -195,6 +248,10 @@ func main() {
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to create state: %w", err))
 	}
+
+	// cancel the existing server listener
+	cancelFunc()
+	wg.Wait()
 
 	listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode)
 	slog.Warn(
