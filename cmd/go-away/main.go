@@ -11,6 +11,8 @@ import (
 	"git.gammaspectra.live/git/go-away/lib"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/utils"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"gopkg.in/yaml.v3"
 	"log"
 	"log/slog"
@@ -77,6 +79,16 @@ func (v *MultiVar) String() string {
 func (v *MultiVar) Set(value string) error {
 	*v = append(*v, value)
 	return nil
+}
+
+func newServer(handler http.Handler) *http.Server {
+	h2s := &http2.Server{}
+
+	h1s := &http.Server{
+		Handler: h2c.NewHandler(handler, h2s),
+	}
+
+	return h1s
 }
 
 func main() {
@@ -196,17 +208,15 @@ func main() {
 		go func() {
 			defer wg.Done()
 
-			server := http.Server{
-				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					backend, ok := createdBackends[r.Host]
-					if !ok {
-						http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
-						return
-					}
+			server := newServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				backend, ok := createdBackends[r.Host]
+				if !ok {
+					http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+					return
+				}
 
-					backend.ServeHTTP(w, r)
-				}),
-			}
+				backend.ServeHTTP(w, r)
+			}))
 
 			listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode)
 			slog.Warn(
@@ -259,9 +269,7 @@ func main() {
 		"url", listenUrl,
 	)
 
-	server := http.Server{
-		Handler: state,
-	}
+	server := newServer(state)
 
 	if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
