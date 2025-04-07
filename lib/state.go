@@ -17,6 +17,7 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/challenge/wasm/interface"
 	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
+	"git.gammaspectra.live/git/go-away/utils"
 	"git.gammaspectra.live/git/go-away/utils/inline"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
@@ -48,7 +49,7 @@ type State struct {
 
 	Wasm *wasm.Runner
 
-	Challenges map[string]challenge.Challenge
+	Challenges map[challenge.Id]challenge.Challenge
 
 	RulesEnv *cel.Env
 
@@ -68,7 +69,7 @@ type RuleState struct {
 
 	Program    cel.Program
 	Action     policy.RuleAction
-	Challenges []string
+	Challenges []challenge.Id
 }
 
 type StateSettings struct {
@@ -97,7 +98,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			if proxy.ErrorHandler == nil {
 				proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 					state.logger(r).Error(err.Error())
-					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusBadGateway, err)
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusBadGateway, err, "")
 				}
 			}
 		}
@@ -166,13 +167,18 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 	state.Wasm = wasm.NewRunner(true)
 
-	state.Challenges = make(map[string]challenge.Challenge)
+	state.Challenges = make(map[challenge.Id]challenge.Challenge)
+
+	idCounter := challenge.Id(1)
 
 	for challengeName, p := range p.Challenges {
 		c := challenge.Challenge{
+			Id:                idCounter,
+			Name:              challengeName,
 			Path:              fmt.Sprintf("%s/challenge/%s", state.UrlPath, challengeName),
 			VerifyProbability: p.Runtime.Probability,
 		}
+		idCounter++
 
 		if c.VerifyProbability <= 0 {
 			//10% default
@@ -209,11 +215,38 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 			expectedCookie := p.Parameters["http-cookie"]
 
+			c.Verify = func(key []byte, result string, r *http.Request) (bool, error) {
+				var cookieValue string
+				if expectedCookie != "" {
+					if cookie, err := r.Cookie(expectedCookie); err != nil || cookie == nil {
+						// skip check if we don't have cookie or it's expired
+						return false, nil
+					} else {
+						cookieValue = cookie.Value
+					}
+				}
+				// bind hash of cookie contents
+				sum := sha256.New()
+				sum.Write([]byte(cookieValue))
+				sum.Write([]byte{0})
+				sum.Write(key)
+				sum.Write([]byte{0})
+				sum.Write(state.publicKey)
+
+				if subtle.ConstantTimeCompare(sum.Sum(nil), []byte(result)) == 1 {
+					return true, nil
+				}
+				return false, nil
+			}
+
 			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
+				var cookieValue string
 				if expectedCookie != "" {
 					if cookie, err := r.Cookie(expectedCookie); err != nil || cookie == nil {
 						// skip check if we don't have cookie or it's expired
 						return challenge.ResultContinue
+					} else {
+						cookieValue = cookie.Value
 					}
 				}
 
@@ -231,15 +264,23 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				defer io.Copy(io.Discard, response.Body)
 
 				if response.StatusCode != httpCode {
-					ClearCookie(CookiePrefix+challengeName, w)
+					utils.ClearCookie(utils.CookiePrefix+c.Name, w)
 					// continue other challenges!
 					return challenge.ResultContinue
 				} else {
-					token, err := state.IssueChallengeToken(challengeName, key, nil, expiry)
+					// bind hash of cookie contents
+					sum := sha256.New()
+					sum.Write([]byte(cookieValue))
+					sum.Write([]byte{0})
+					sum.Write(key)
+					sum.Write([]byte{0})
+					sum.Write(state.publicKey)
+
+					token, err := c.IssueChallengeToken(state.privateKey, key, sum.Sum(nil), expiry)
 					if err != nil {
-						ClearCookie(CookiePrefix+challengeName, w)
+						utils.ClearCookie(utils.CookiePrefix+c.Name, w)
 					} else {
-						SetCookie(CookiePrefix+challengeName, token, expiry, w)
+						utils.SetCookie(utils.CookiePrefix+challengeName, token, expiry, w)
 					}
 
 					// we passed it!
@@ -249,11 +290,12 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 		case "cookie":
 			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
-				token, err := state.IssueChallengeToken(challengeName, key, nil, expiry)
+
+				token, err := c.IssueChallengeToken(state.privateKey, key, nil, expiry)
 				if err != nil {
-					ClearCookie(CookiePrefix+challengeName, w)
+					utils.ClearCookie(utils.CookiePrefix+challengeName, w)
 				} else {
-					SetCookie(CookiePrefix+challengeName, token, expiry, w)
+					utils.SetCookie(utils.CookiePrefix+challengeName, token, expiry, w)
 				}
 				// self redirect!
 				//TODO: add redirect loop detect parameter
@@ -379,7 +421,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				content = []byte(data)
 			}
 
-			c.Verify = func(key []byte, result string) (bool, error) {
+			c.Verify = func(key []byte, result string, r *http.Request) (bool, error) {
 				resultBytes, err := hex.DecodeString(result)
 				if err != nil {
 					return false, err
@@ -394,9 +436,9 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			c.ServeVerifyChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 				err := func() (err error) {
-					expiry := time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
+					data := RequestDataFromContext(r.Context())
 
-					key := state.GetChallengeKeyForRequest(challengeName, expiry, r)
+					key := state.GetChallengeKeyForRequest(challengeName, data.Expires, r)
 					result := r.FormValue("result")
 
 					requestId, err := hex.DecodeString(r.FormValue("requestId"))
@@ -404,22 +446,24 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 						r.Header.Set("X-Away-Id", hex.EncodeToString(requestId))
 					}
 
-					if ok, err := c.Verify(key, result); err != nil {
+					if ok, err := c.Verify(key, result, r); err != nil {
 						return err
 					} else if !ok {
 						state.logger(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
-						ClearCookie(CookiePrefix+challengeName, w)
-						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName))
+						utils.ClearCookie(utils.CookiePrefix+challengeName, w)
+						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName), r.FormValue("redirect"))
 						return nil
 					}
+
 					state.logger(r).Warn("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
 
-					token, err := state.IssueChallengeToken(challengeName, key, []byte(result), expiry)
+					token, err := c.IssueChallengeToken(state.privateKey, key, []byte(result), data.Expires)
 					if err != nil {
-						ClearCookie(CookiePrefix+challengeName, w)
+						utils.ClearCookie(utils.CookiePrefix+challengeName, w)
 					} else {
-						SetCookie(CookiePrefix+challengeName, token, expiry, w)
+						utils.SetCookie(utils.CookiePrefix+challengeName, token, data.Expires, w)
 					}
+					data.Challenges[c.Id] = challenge.VerifyResultPASS
 
 					switch httpCode {
 					case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
@@ -435,8 +479,8 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					return nil
 				}()
 				if err != nil {
-					ClearCookie(CookiePrefix+challengeName, w)
-					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err)
+					utils.ClearCookie(utils.CookiePrefix+challengeName, w)
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err, r.FormValue("redirect"))
 					return
 				}
 			})
@@ -454,8 +498,10 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			c.ServeMakeChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				err := state.Wasm.Instantiate(challengeName, func(ctx context.Context, mod api.Module) (err error) {
 
+					data := RequestDataFromContext(r.Context())
+
 					in := _interface.MakeChallengeInput{
-						Key:        state.GetChallengeKeyForRequest(challengeName, time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity), r),
+						Key:        state.GetChallengeKeyForRequest(challengeName, data.Expires, r),
 						Parameters: p.Parameters,
 						Headers:    inline.MIMEHeader(r.Header),
 					}
@@ -479,12 +525,12 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					return nil
 				})
 				if err != nil {
-					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err)
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err, "")
 					return
 				}
 			})
 
-			c.Verify = func(key []byte, result string) (ok bool, err error) {
+			c.Verify = func(key []byte, result string, r *http.Request) (ok bool, err error) {
 				err = state.Wasm.Instantiate(challengeName, func(ctx context.Context, mod api.Module) (err error) {
 					in := _interface.VerifyChallengeInput{
 						Key:        key,
@@ -510,7 +556,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 			}
 		}
 
-		state.Challenges[challengeName] = c
+		state.Challenges[c.Id] = c
 	}
 
 	state.RulesEnv, err = cel.NewEnv(
@@ -598,12 +644,22 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		hasher.Write(privateKeyFingerprint[:])
 		sum := hasher.Sum(nil)
 
+		challenges := make([]challenge.Id, 0, len(rule.Challenges))
+
+		for _, challengeName := range rule.Challenges {
+			c, ok := state.GetChallengeByName(challengeName)
+			if !ok {
+				return nil, fmt.Errorf("challenge %s not found", challengeName)
+			}
+			challenges = append(challenges, c.Id)
+		}
+
 		r := RuleState{
 			Name:       rule.Name,
 			Hash:       hex.EncodeToString(sum[:8]),
 			Host:       rule.Host,
 			Action:     policy.RuleAction(strings.ToUpper(rule.Action)),
-			Challenges: rule.Challenges,
+			Challenges: challenges,
 		}
 
 		if (r.Action == policy.RuleActionCHALLENGE || r.Action == policy.RuleActionCHECK) && len(r.Challenges) == 0 {
@@ -641,11 +697,11 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 	return state, nil
 }
 
-func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	requestId := make([]byte, 16)
-	_, _ = rand.Read(requestId)
-
-	r.Header.Set("X-Away-Id", hex.EncodeToString(requestId))
-
-	state.Mux.ServeHTTP(w, r)
+func (state *State) GetChallengeByName(name string) (challenge.Challenge, bool) {
+	for _, c := range state.Challenges {
+		if c.Name == name {
+			return c, true
+		}
+	}
+	return challenge.Challenge{}, false
 }

@@ -382,6 +382,7 @@ rules:
     conditions:
       - 'path == "/"'
       # generic /*/*/ match gave too many options for scrapers to trigger random endpoints
+      # edit this with preferential users/orgs for now
       # todo: create negative match?
       - 'path.matches("(?i)^/(WeebDataHoarder|P2Pool|mirror|git|S\\.O\\.N\\.G|FM10K|Sillycom|pwgen2155|kaitou|metonym)/[^/]+$")'
     action: pass
