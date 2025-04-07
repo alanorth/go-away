@@ -1,123 +1,233 @@
 ---
-kind: pipeline
-type: docker
-name: build-amd64-go1.22
-platform:
-  os: linux
-  arch: amd64
-
 environment:
   CGO_ENABLED: "0"
-  GOOS: linux
   GOARCH: amd64
-
-steps:
-  - name: build
-    image: golang:1.22-alpine3.20
-    commands:
-      - apk update
-      - apk add --no-cache git
-      - mkdir .bin
-      - go build -v -o ./.bin/go-away ./cmd/go-away
-      - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
-
-  - name: test-wasm-success
-    image: golang:1.22-alpine3.20
-    depends_on:
-      - build
-    commands:
-      - >
-        ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
-        -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json
-        -make-challenge-out ./embed/challenge/js-pow-sha256/test/make-challenge-out.json
-        -verify-challenge ./embed/challenge/js-pow-sha256/test/verify-challenge.json
-        -verify-challenge-out 0
-
-  - name: test-wasm-fail
-    image: golang:1.22-alpine3.20
-    depends_on:
-      - build
-    commands:
-      - >
-        ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
-        -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json
-        -make-challenge-out ./embed/challenge/js-pow-sha256/test/make-challenge-out.json
-        -verify-challenge ./embed/challenge/js-pow-sha256/test/verify-challenge-fail.json
-        -verify-challenge-out 1
-
----
+  GOOS: linux
 kind: pipeline
-type: docker
-name: build-amd64-go1.24
+name: build-1.22-alpine3.20-amd64
 platform:
-  os: linux
   arch: amd64
-
-environment:
-  CGO_ENABLED: "0"
-  GOOS: linux
-  GOARCH: amd64
-
-steps:
-  - name: build
-    image: golang:1.24-alpine3.21
-    commands:
-      - apk update
-      - apk add --no-cache git
-      - go build -v ./cmd/go-away
----
-kind: pipeline
-type: docker
-name: build-arm64-go1.24
-platform:
   os: linux
-  arch: arm64
-
+steps:
+- commands:
+  - apk update
+  - apk add --no-cache git
+  - mkdir .bin
+  - go build -v -o ./.bin/go-away ./cmd/go-away
+  - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
+  image: golang:1.22-alpine3.20
+  name: build
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge.json -verify-challenge-out
+    0
+  depends_on:
+  - build
+  image: alpine:3.20
+  name: test-wasm-success
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge-fail.json -verify-challenge-out
+    1
+  depends_on:
+  - build
+  image: alpine:3.20
+  name: test-wasm-fail
+type: docker
+---
 environment:
   CGO_ENABLED: "0"
-  GOOS: linux
   GOARCH: arm64
-
+  GOOS: linux
+kind: pipeline
+name: build-1.22-alpine3.20-arm64
+platform:
+  arch: arm64
+  os: linux
 steps:
-  - name: build
-    image: golang:1.24-alpine3.21
-    commands:
-      - apk update
-      - apk add --no-cache git
-      - go build -v ./cmd/go-away
-
+- commands:
+  - apk update
+  - apk add --no-cache git
+  - mkdir .bin
+  - go build -v -o ./.bin/go-away ./cmd/go-away
+  - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
+  image: golang:1.22-alpine3.20
+  name: build
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge.json -verify-challenge-out
+    0
+  depends_on:
+  - build
+  image: alpine:3.20
+  name: test-wasm-success
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge-fail.json -verify-challenge-out
+    1
+  depends_on:
+  - build
+  image: alpine:3.20
+  name: test-wasm-fail
+type: docker
+---
+environment:
+  CGO_ENABLED: "0"
+  GOARCH: amd64
+  GOOS: linux
+kind: pipeline
+name: build-1.24-alpine3.21-amd64
+platform:
+  arch: amd64
+  os: linux
+steps:
+- commands:
+  - apk update
+  - apk add --no-cache git
+  - mkdir .bin
+  - go build -v -o ./.bin/go-away ./cmd/go-away
+  - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
+  image: golang:1.24-alpine3.21
+  name: build
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge.json -verify-challenge-out
+    0
+  depends_on:
+  - build
+  image: alpine:3.21
+  name: test-wasm-success
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge-fail.json -verify-challenge-out
+    1
+  depends_on:
+  - build
+  image: alpine:3.21
+  name: test-wasm-fail
+type: docker
+---
+environment:
+  CGO_ENABLED: "0"
+  GOARCH: arm64
+  GOOS: linux
+kind: pipeline
+name: build-1.24-alpine3.21-arm64
+platform:
+  arch: arm64
+  os: linux
+steps:
+- commands:
+  - apk update
+  - apk add --no-cache git
+  - mkdir .bin
+  - go build -v -o ./.bin/go-away ./cmd/go-away
+  - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
+  image: golang:1.24-alpine3.21
+  name: build
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge.json -verify-challenge-out
+    0
+  depends_on:
+  - build
+  image: alpine:3.21
+  name: test-wasm-success
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge-fail.json -verify-challenge-out
+    1
+  depends_on:
+  - build
+  image: alpine:3.21
+  name: test-wasm-fail
+type: docker
 ---
 kind: pipeline
-type: docker
-name: publish-docker
-
-
+name: publish-1.24-alpine3.21
+platform:
+  arch: amd64
+  os: linux
 steps:
-  - name: docker
-    privileged: true
-    image: plugins/buildx
-    settings:
-      registry: git.gammaspectra.live
-      repo: git.gammaspectra.live/git/go-away
-      squash: true
-      compress: true
-      platform:
-        - linux/amd64
-        - linux/arm64
-      builder_driver: docker-container
-      auto_tag: true
-      username:
-        from_secret: git_username
-      password:
-        from_secret: git_password
-
+- image: plugins/buildx
+  name: docker
+  privileged: true
+  settings:
+    auto_tag: true
+    auto_tag_suffix: -alpine3.21
+    build_args:
+      from: alpine:3.21
+      from_builder: golang:1.24-alpine3.21
+    builder_driver: docker-container
+    compress: true
+    password:
+      from_secret: git_password
+    platform:
+    - linux/amd64
+    - linux/arm64
+    registry: git.gammaspectra.live
+    repo: git.gammaspectra.live/git/go-away
+    squash: true
+    username:
+      from_secret: git_username
 trigger:
   event:
-    - promote
+  - promote
   target:
-    - production
+  - production
+type: docker
+---
+kind: pipeline
+name: publish-1.22-alpine3.20
+platform:
+  arch: amd64
+  os: linux
+steps:
+- image: plugins/buildx
+  name: docker
+  privileged: true
+  settings:
+    auto_tag: true
+    auto_tag_suffix: -alpine3.20
+    build_args:
+      from: alpine:3.20
+      from_builder: golang:1.22-alpine3.20
+    builder_driver: docker-container
+    compress: true
+    password:
+      from_secret: git_password
+    platform:
+    - linux/amd64
+    - linux/arm64
+    registry: git.gammaspectra.live
+    repo: git.gammaspectra.live/git/go-away
+    squash: true
+    username:
+      from_secret: git_username
+trigger:
+  event:
+  - promote
+  target:
+  - production
+type: docker
 ---
 kind: signature
-hmac: cf87c046c0a84f6311cef12fcbfc10a2419b27f8d3319df69baad7f77bd7c77d
+hmac: df5f717113694708251e53b4a30070d44ce0fc1dbc0975d5b90fab130f5d1f2a
 
 ...
