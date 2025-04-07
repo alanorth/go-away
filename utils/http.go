@@ -2,12 +2,32 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 )
+
+func EnsureNoOpenRedirect(redirect string) (string, error) {
+	uri, err := url.Parse(redirect)
+	if err != nil {
+		return "", err
+	}
+	uri.Scheme = ""
+	uri.Host = ""
+	uri.User = nil
+	uri.Opaque = ""
+	uri.OmitHost = true
+
+	if uri.Path != "" && !strings.HasPrefix(uri.Path, "/") {
+		return "", errors.New("invalid redirect path")
+	}
+
+	return uri.String(), nil
+}
 
 func MakeReverseProxy(target string) (*httputil.ReverseProxy, error) {
 	u, err := url.Parse(target)

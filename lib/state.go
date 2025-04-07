@@ -435,7 +435,14 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 			c.ServeVerifyChallenge = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-				err := func() (err error) {
+				redirect, err := utils.EnsureNoOpenRedirect(r.FormValue("redirect"))
+				if err != nil {
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err, "")
+					return
+				}
+
+				err = func() (err error) {
+
 					data := RequestDataFromContext(r.Context())
 
 					key := state.GetChallengeKeyForRequest(challengeName, data.Expires, r)
@@ -449,13 +456,13 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					if ok, err := c.Verify(key, result, r); err != nil {
 						return err
 					} else if !ok {
-						state.logger(r).Warn("challenge failed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
+						state.logger(r).Warn("challenge failed", "challenge", challengeName, "redirect", redirect)
 						utils.ClearCookie(utils.CookiePrefix+challengeName, w)
-						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName), r.FormValue("redirect"))
+						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName), redirect)
 						return nil
 					}
 
-					state.logger(r).Warn("challenge passed", "challenge", challengeName, "redirect", r.FormValue("redirect"))
+					state.logger(r).Warn("challenge passed", "challenge", challengeName, "redirect", redirect)
 
 					token, err := c.IssueChallengeToken(state.privateKey, key, []byte(result), data.Expires)
 					if err != nil {
@@ -467,7 +474,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 					switch httpCode {
 					case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
-						http.Redirect(w, r, r.FormValue("redirect"), httpCode)
+						http.Redirect(w, r, redirect, httpCode)
 					default:
 						w.Header().Set("Content-Type", mimeType)
 						w.WriteHeader(httpCode)
@@ -480,7 +487,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				}()
 				if err != nil {
 					utils.ClearCookie(utils.CookiePrefix+challengeName, w)
-					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err, r.FormValue("redirect"))
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err, redirect)
 					return
 				}
 			})

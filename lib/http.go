@@ -362,7 +362,13 @@ func (state *State) setupRoutes() error {
 			state.Mux.Handle(fmt.Sprintf("GET %s/verify-challenge", c.Path), c.ServeVerifyChallenge)
 		} else if c.Verify != nil {
 			state.Mux.HandleFunc(fmt.Sprintf("GET %s/verify-challenge", c.Path), func(w http.ResponseWriter, r *http.Request) {
-				err := func() (err error) {
+				redirect, err := utils.EnsureNoOpenRedirect(r.FormValue("redirect"))
+				if redirect == "" {
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err, "")
+					return
+				}
+
+				err = func() (err error) {
 
 					data := RequestDataFromContext(r.Context())
 
@@ -380,15 +386,15 @@ func (state *State) setupRoutes() error {
 					state.addTiming(w, "challenge-verify", "Verify client challenge", time.Since(start))
 
 					if err != nil {
-						state.logger(r).Error(fmt.Errorf("challenge error: %w", err).Error(), "challenge", c.Name, "redirect", r.FormValue("redirect"))
+						state.logger(r).Error(fmt.Errorf("challenge error: %w", err).Error(), "challenge", c.Name, "redirect", redirect)
 						return err
 					} else if !ok {
-						state.logger(r).Warn("challenge failed", "challenge", c.Name, "redirect", r.FormValue("redirect"))
+						state.logger(r).Warn("challenge failed", "challenge", c.Name, "redirect", redirect)
 						utils.ClearCookie(utils.CookiePrefix+c.Name, w)
-						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", c.Name), r.FormValue("redirect"))
+						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", c.Name), redirect)
 						return nil
 					}
-					state.logger(r).Info("challenge passed", "challenge", c.Name, "redirect", r.FormValue("redirect"))
+					state.logger(r).Info("challenge passed", "challenge", c.Name, "redirect", redirect)
 
 					token, err := c.IssueChallengeToken(state.privateKey, key, []byte(result), data.Expires)
 					if err != nil {
@@ -398,12 +404,12 @@ func (state *State) setupRoutes() error {
 					}
 					data.Challenges[c.Id] = challenge.VerifyResultPASS
 
-					http.Redirect(w, r, r.FormValue("redirect"), http.StatusTemporaryRedirect)
+					http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 					return nil
 				}()
 				if err != nil {
 					utils.ClearCookie(utils.CookiePrefix+c.Name, w)
-					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err, r.FormValue("redirect"))
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err, redirect)
 					return
 				}
 			})

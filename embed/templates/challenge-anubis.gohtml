@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>{{ .Title }}</title>
-    <link rel="stylesheet" href="{{ .Path }}/embed/assets/static/anubis/style.css?cacheBust={{ .Random }}"/>
+    <link rel="stylesheet" href="{{ .Path }}/assets/static/anubis/style.css?cacheBust={{ .Random }}"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     {{ range $key, $value := .Meta }}
         {{ if eq $key "refresh"}}
@@ -151,7 +151,7 @@
         <img
                 id="image"
                 style="width:100%;max-width:256px;"
-                src="{{ .Path }}/embed/assets/static/logo.png?cacheBust={{ .Random }}"
+                src="{{ .Path }}/assets/static/logo.png?cacheBust={{ .Random }}"
         />
         {{if .Challenge }}
         <p id="status">Loading challenge <em>{{ .Challenge }}</em>...</p>
@@ -173,18 +173,24 @@
             <div></div>
         </div>
         {{end}}
-        <details>
+        <details style="padding-bottom: 2em;">
             <summary>Why am I seeing this?</summary>
             <p>You are seeing this because the administrator of this website has set up <a href="https://git.gammaspectra.live/git/go-away">go-away</a> to protect the server against the scourge of <a href="https://thelibre.news/foss-infrastructure-is-under-attack-by-ai-companies/">AI companies aggressively scraping websites</a>. This can and does cause downtime for the websites, which makes their resources inaccessible for everyone.</p>
             <p>Please note that some challenges requires the use of modern JavaScript features and some plugins may will disable. Please disable such plugins for this domain (for example, JShelter).</p>
-            <p>If you have any issues contact the administrator and provide this request id: <em>{{ .Id }}</em></p>
+            <p>If you have any issues contact the administrator and provide this Request Id: <em>{{ .Id }}</em></p>
         </details>
+
         <noscript>
             <p>
                 Sadly, you may need to enable JavaScript to get past this challenge. This is required because AI companies have changed
                 the social contract around how website hosting works.
             </p>
         </noscript>
+
+        {{if .Redirect }}
+            <a role="button" href="{{ .Redirect }}">Refresh page</a>
+        {{end}}
+
         <div id="testarea"></div>
     </div>
 
