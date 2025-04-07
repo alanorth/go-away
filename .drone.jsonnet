@@ -80,7 +80,7 @@ local Publish(go, alpine, os, arch, platforms) = {
                     from: "alpine:" + alpine,
                   },
                   auto_tag: true,
-                  auto_tag_suffix: "-alpine" + alpine,
+                  auto_tag_suffix: "alpine" + alpine,
                   username: {
                     from_secret: "git_username",
                   },

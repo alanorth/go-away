@@ -170,7 +170,7 @@ steps:
   privileged: true
   settings:
     auto_tag: true
-    auto_tag_suffix: -alpine3.21
+    auto_tag_suffix: alpine3.21
     build_args:
       from: alpine:3.21
       from_builder: golang:1.24-alpine3.21
@@ -204,7 +204,7 @@ steps:
   privileged: true
   settings:
     auto_tag: true
-    auto_tag_suffix: -alpine3.20
+    auto_tag_suffix: alpine3.20
     build_args:
       from: alpine:3.20
       from_builder: golang:1.22-alpine3.20
@@ -228,6 +228,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: df5f717113694708251e53b4a30070d44ce0fc1dbc0975d5b90fab130f5d1f2a
+hmac: b24b30bb7ac591a385173daeb0edbcd9119918ee9e38be90d232f83b8b767115
 
 ...
