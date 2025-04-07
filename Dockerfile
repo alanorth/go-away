@@ -15,7 +15,7 @@ ARG GOAWAY_REF="master"
 RUN git clone https://git.gammaspectra.live/git/go-away.git /src/go-away
 WORKDIR /src/go-away
 
-RUN git reset --hard "${GOAWAY_COMMIT}"
+RUN git reset --hard "${GOAWAY_REF}"
 
 RUN ./build-compress.sh
 
