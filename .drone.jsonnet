@@ -68,7 +68,6 @@ local Publish(go, alpine, os, arch, trigger, platforms, extra) = {
             settings: {
                   registry: "git.gammaspectra.live",
                   repo: "git.gammaspectra.live/git/go-away",
-                  squash: true,
                   compress: true,
                   platform: platforms,
                   builder_driver: "docker-container",

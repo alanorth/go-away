@@ -182,7 +182,6 @@ steps:
     - linux/arm64
     registry: git.gammaspectra.live
     repo: git.gammaspectra.live/git/go-away
-    squash: true
     tags:
     - latest
     username:
@@ -218,7 +217,6 @@ steps:
     - linux/arm64
     registry: git.gammaspectra.live
     repo: git.gammaspectra.live/git/go-away
-    squash: true
     username:
       from_secret: git_username
 trigger:
@@ -253,7 +251,6 @@ steps:
     - linux/arm64
     registry: git.gammaspectra.live
     repo: git.gammaspectra.live/git/go-away
-    squash: true
     username:
       from_secret: git_username
 trigger:
@@ -265,6 +262,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: ce284b67eca8ab7014d65a72c617d6ed4d50bdfe4b0103ea47a07ef9d3ee0c68
+hmac: 90e6da0206cabda47b8279b4704e95f68f5a36ff04d07284ff9ef203fc96a911
 
 ...
