@@ -232,7 +232,7 @@ conditions:
     # Old IE browsers
     - 'userAgent.matches("MSIE ([2-9]|10|11)\\.")'
     # Old Linux browsers
-    - 'userAgent.contains("Linux i686")'
+    - 'userAgent.contains("Linux i[63]86") || userAgent.contains("FreeBSD i[63]86")'
     # Old Windows browsers
     - 'userAgent.matches("Windows (3|95|98|CE)") || userAgent.matches("Windows NT [1-5]\\.")'
     # Old mobile browsers
@@ -394,7 +394,7 @@ rules:
   - name: desired-crawlers
     conditions:
       - 'userAgent.contains("+https://kagi.com/bot") && inNetwork("kagibot", remoteAddress)'
-      - '(userAgent.contains("+http://www.google.com/bot.html") || userAgent.contains("Google-InspectionTool")) && inNetwork("googlebot", remoteAddress)'
+      - '(userAgent.contains("+http://www.google.com/bot.html") || userAgent.contains("Google-InspectionTool") || userAgent.contains("Googlebot")) && inNetwork("googlebot", remoteAddress)'
       - 'userAgent.contains("+http://www.bing.com/bingbot.htm") && inNetwork("bingbot", remoteAddress)'
       - 'userAgent.contains("+http://duckduckgo.com/duckduckbot.html") && inNetwork("duckduckbot", remoteAddress)'
       - 'userAgent.contains("+https://help.qwant.com/bot/") && inNetwork("qwantbot", remoteAddress)'
@@ -452,7 +452,7 @@ rules:
 
   - name: standard-tools
     action: challenge
-    challenges: [self-meta-refresh]
+    challenges: [self-cookie]
     conditions:
       - '($is-generic-robot-ua)'
       - '($is-tool-ua)'
