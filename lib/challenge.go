@@ -48,6 +48,7 @@ func getRequestAddress(r *http.Request, clientHeader string) net.IP {
 		// drop port
 		ipStr = strings.Join(parts[:len(parts)-1], ":")
 	}
+	ipStr = strings.Trim(ipStr, "[]")
 	return net.ParseIP(ipStr)
 }
 
@@ -64,8 +65,9 @@ func (state *State) GetChallengeKeyForRequest(challengeName string, until time.T
 		"Accept-Language",
 		// General browser information
 		"User-Agent",
-		"Sec-Ch-Ua",
-		"Sec-Ch-Ua-Platform",
+		// TODO: not sent in preload
+		//"Sec-Ch-Ua",
+		//"Sec-Ch-Ua-Platform",
 	} {
 		hasher.Write([]byte(r.Header.Get(k)))
 		hasher.Write([]byte{0})
