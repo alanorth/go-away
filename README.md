@@ -81,7 +81,17 @@ services:
 ```
 
 
-## Examples
+## Example policies
+
+### Forgejo
+
+The policy file at [examples/forgejo.yml](examples/forgejo.yml) provides a ready template to be used on your own Forgejo instance.
+
+Important notes:
+* Edit the `homesite` rule, as it's targeted to common users or orgs on the instance. A better regex might be possible in the future.
+* Edit the `http-cookie-check` challenge, as this will fetch the listed backend with the given session cookie to check for user login.
+* Adjust the desired blocked networks or others. A template list of network ranges is provided, feel free to remove these if not needed.
+* Check the conditions and base rules to change your challenges offered and other ordering.
 
 
 ## Development
