@@ -36,6 +36,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -59,7 +61,35 @@ type State struct {
 	privateKey ed25519.PrivateKey
 
 	Poison map[string][]byte
+
+	ChallengeSolve sync.Map
 }
+
+func (state *State) AwaitChallenge(key []byte, ctx context.Context) challenge.VerifyResult {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	var result atomic.Int64
+
+	state.ChallengeSolve.Store(string(key), ChallengeCallback(func(receivedResult challenge.VerifyResult) {
+		result.Store(int64(receivedResult))
+		cancel()
+	}))
+
+	<-ctx.Done()
+
+	return challenge.VerifyResult(result.Load())
+}
+
+func (state *State) SolveChallenge(key []byte, result challenge.VerifyResult) {
+	if f, ok := state.ChallengeSolve.LoadAndDelete(string(key)); ok && f != nil {
+		if cb, ok := f.(ChallengeCallback); ok {
+			cb(result)
+		}
+	}
+}
+
+type ChallengeCallback func(result challenge.VerifyResult)
 
 type RuleState struct {
 	Name string
@@ -273,6 +303,9 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				if response.StatusCode != httpCode {
 					utils.ClearCookie(utils.CookiePrefix+c.Name, w)
 					// continue other challenges!
+
+					//TODO: negatively cache failure
+
 					return challenge.ResultContinue
 				} else {
 					// bind hash of cookie contents
@@ -282,7 +315,6 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					sum.Write(key)
 					sum.Write([]byte{0})
 					sum.Write(state.publicKey)
-
 					token, err := c.IssueChallengeToken(state.privateKey, key, sum.Sum(nil), expiry)
 					if err != nil {
 						utils.ClearCookie(utils.CookiePrefix+c.Name, w)
@@ -349,6 +381,50 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				_ = state.challengePage(w, r.Header.Get("X-Away-Id"), http.StatusTeapot, "", nil)
 
 				return challenge.ResultStop
+			}
+		case "preload-link":
+			deadline := time.Second * 5
+
+			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
+				// this only works on HTTP/2 and HTTP/3
+
+				if r.ProtoMajor < 2 {
+					// this can happen if we are an upgraded request
+					if _, ok := w.(http.Pusher); !ok {
+						return challenge.ResultContinue
+					}
+				}
+
+				data := RequestDataFromContext(r.Context())
+				redirectUri := new(url.URL)
+				redirectUri.Path = c.Path + "/verify-challenge"
+
+				values := make(url.Values)
+				values.Set("result", hex.EncodeToString(key))
+				values.Set("redirect", r.URL.String())
+				values.Set("requestId", r.Header.Get("X-Away-Id"))
+
+				redirectUri.RawQuery = values.Encode()
+
+				w.Header().Set("Link", fmt.Sprintf("<%s>; rel=preload; as=fetch; crossorigin=1", redirectUri.String()))
+				defer func() {
+					// remove old header header!
+					w.Header().Del("Link")
+				}()
+				w.WriteHeader(http.StatusEarlyHints)
+
+				ctx, cancel := context.WithTimeout(r.Context(), deadline)
+				defer cancel()
+				if result := state.AwaitChallenge(key, ctx); result.Ok() {
+					data.Challenges[c.Id] = challenge.VerifyResultPASS
+
+					// this should serve!
+					return challenge.ResultPass
+				}
+
+				data.Challenges[c.Id] = challenge.VerifyResultFAIL
+				// we failed, continue
+				return challenge.ResultContinue
 			}
 		case "resource-load":
 			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
@@ -467,6 +543,9 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					} else if !ok {
 						state.logger(r).Warn("challenge failed", "challenge", challengeName, "redirect", redirect)
 						utils.ClearCookie(utils.CookiePrefix+challengeName, w)
+
+						state.SolveChallenge(key, challenge.VerifyResultFAIL)
+
 						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName), redirect)
 						return nil
 					}
@@ -480,6 +559,8 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 						utils.SetCookie(utils.CookiePrefix+challengeName, token, data.Expires, w)
 					}
 					data.Challenges[c.Id] = challenge.VerifyResultPASS
+
+					state.SolveChallenge(key, challenge.VerifyResultPASS)
 
 					switch httpCode {
 					case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:

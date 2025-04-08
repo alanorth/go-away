@@ -84,6 +84,8 @@ func (v *MultiVar) Set(value string) error {
 func newServer(handler http.Handler) *http.Server {
 	h2s := &http2.Server{}
 
+	// TODO: use Go 1.24 Server.Protocols to add H2C
+	// https://pkg.go.dev/net/http#Server.Protocols
 	h1s := &http.Server{
 		Handler: h2c.NewHandler(handler, h2s),
 	}

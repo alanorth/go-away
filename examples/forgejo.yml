@@ -112,7 +112,17 @@ challenges:
   self-cookie:
     mode: "cookie"
 
-  # Challenges with a redirect via header (non-JS, requires HTTP parsing and logic)
+
+  # Challenges with a redirect via Link header with rel=preload and early hints (non-JS, requires HTTP parsing, fetching and logic)
+  # Works on HTTP/2 and above!
+  self-preload-link:
+    mode: "preload-link"
+    runtime:
+      # verifies that result = key
+      mode: "key"
+      probability: 0.1
+
+  # Challenges with a redirect via Refresh header (non-JS, requires HTTP parsing and logic)
   self-header-refresh:
     mode: "header-refresh"
     runtime:
@@ -120,7 +130,7 @@ challenges:
       mode: "key"
       probability: 0.1
 
-  # Challenges with a redirect via meta (non-JS, requires HTML parsing and logic)
+  # Challenges with a redirect via Refresh meta (non-JS, requires HTML parsing and logic)
   self-meta-refresh:
     mode: "meta-refresh"
     runtime:
@@ -186,6 +196,7 @@ conditions:
     # Golang proxy and initial fetch
     - 'userAgent.startsWith("GoModuleMirror/")'
     - 'userAgent.startsWith("Go-http-client/") && "go-get" in query && query["go-get"] == "1"'
+    - '"Git-Protocol" in headers && headers["Git-Protocol"] == "version=2"'
   is-git-path:
     - 'path.matches("^/[^/]+/[^/]+/(git-upload-pack|git-receive-pack|HEAD|info/refs|info/lfs|objects)")'
 
@@ -299,8 +310,12 @@ rules:
   - name: suspicious-crawlers/1
     conditions: ['($is-suspicious-crawler)']
     action: check
-    challenges: [self-header-refresh]
+    challenges: [self-preload-link]
   - name: suspicious-crawlers/2
+    conditions: ['($is-suspicious-crawler)']
+    action: check
+    challenges: [self-header-refresh]
+  - name: suspicious-crawlers/3
     conditions: ['($is-suspicious-crawler)']
     action: check
     challenges: [self-resource-load]
@@ -396,7 +411,7 @@ rules:
   # check a sequence of challenges
   - name: heavy-operations/0
     action: check
-    challenges: [self-header-refresh, js-pow-sha256, http-cookie-check]
+    challenges: [self-preload-link, self-header-refresh, js-pow-sha256, http-cookie-check]
     conditions: ['($is-heavy-resource)']
   - name: heavy-operations/1
     action: check
@@ -430,6 +445,6 @@ rules:
 
   - name: standard-browser
     action: challenge
-    challenges: [http-cookie-check, self-meta-refresh, self-resource-load, js-pow-sha256]
+    challenges: [http-cookie-check, self-preload-link, self-meta-refresh, self-resource-load, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'
