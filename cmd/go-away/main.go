@@ -100,7 +100,7 @@ func main() {
 
 	slogLevel := flag.String("slog-level", "WARN", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
 	debugMode := flag.Bool("debug", false, "debug mode with logs and server timings")
-	passThrough := flag.Bool("passthrough", true, "passthrough mode sends all requests to matching backends until state is loaded")
+	passThrough := flag.Bool("passthrough", false, "passthrough mode sends all requests to matching backends until state is loaded")
 
 	clientIpHeader := flag.String("client-ip-header", "", "Client HTTP header to fetch their IP address from (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
 
@@ -240,10 +240,10 @@ func main() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
-			server.Close()
 			if err := server.Shutdown(ctx); err != nil {
 				log.Fatal(err)
 			}
+			_ = server.Close()
 		}()
 	}
 
