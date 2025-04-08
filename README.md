@@ -73,6 +73,9 @@ services:
       GOAWAY_CHALLENGE_TEMPLATE: forgejo
       GOAWAY_CHALLENGE_TEMPLATE_THEME: forgejo-dark
       
+      # specify a DNSBL for usage in conditions. Defaults to DroneBL 
+      # GOAWAY_DNSBL: "dnsbl.dronebl.org"
+      
       GOAWAY_BACKEND: "git.example.com=http://forgejo:3000"
       
     # additional backends can be specified via more command arguments  

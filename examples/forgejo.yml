@@ -410,12 +410,6 @@ rules:
       - 'path.matches("(?i)^/(WeebDataHoarder|P2Pool|mirror|git|S\\.O\\.N\\.G|FM10K|Sillycom|pwgen2155|kaitou|metonym)/[^/]+$")'
     action: pass
 
-  - name: suspicious-fetchers
-    action: challenge
-    challenges: [js-pow-sha256, http-cookie-check]
-    conditions:
-      - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
-
   # check a sequence of challenges
   - name: heavy-operations/0
     action: check
@@ -436,12 +430,24 @@ rules:
       - 'path.matches("^/[^/]+/[^/]+/media/") && ($is-generic-browser)'
     action: pass
 
+  # check DNSBL and serve harder challenges
+  - name: undesired-dnsbl
+    conditions:
+      - 'inDNSBL(remoteAddress)'
+    action: check
+    challenges: [js-pow-sha256, http-cookie-check]
+
+  - name: suspicious-fetchers
+    action: check
+    challenges: [js-pow-sha256]
+    conditions:
+      - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
+
   # Allow PUT/DELETE/PATCH/POST requests in general
   - name: non-get-request
     action: pass
     conditions:
       - '!(method == "HEAD" || method == "GET")'
-
 
 
   - name: standard-tools
@@ -450,6 +456,7 @@ rules:
     conditions:
       - '($is-generic-robot-ua)'
       - '($is-tool-ua)'
+      - '!($is-generic-browser)'
 
   - name: standard-browser
     action: challenge

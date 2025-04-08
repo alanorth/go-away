@@ -26,6 +26,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -60,6 +61,10 @@ type State struct {
 	Poison map[string][]byte
 
 	ChallengeSolve sync.Map
+
+	DecayMap *utils.DecayMap[[net.IPv6len]byte, utils.DNSBLResponse]
+
+	close chan struct{}
 }
 
 func (state *State) AwaitChallenge(key []byte, ctx context.Context) challenge.VerifyResult {
@@ -107,10 +112,12 @@ type StateSettings struct {
 	ChallengeTemplate      string
 	ChallengeTemplateTheme string
 	ClientIpHeader         string
+	DNSBL                  *utils.DNSBL
 }
 
-func NewState(p policy.Policy, settings StateSettings) (state *State, err error) {
-	state = new(State)
+func NewState(p policy.Policy, settings StateSettings) (handler http.Handler, err error) {
+	state := new(State)
+	state.close = make(chan struct{})
 	state.Settings = settings
 	state.Client = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -118,6 +125,10 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 		},
 	}
 	state.UrlPath = "/.well-known/." + state.Settings.PackageName
+
+	if state.Settings.DNSBL != nil {
+		state.DecayMap = utils.NewDecayMap[[net.IPv6len]byte, utils.DNSBLResponse]()
+	}
 
 	// set a reasonable configuration for default http proxy if there is none
 	for _, backend := range state.Settings.Backends {
@@ -220,6 +231,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 	idCounter := challenge.Id(1)
 
+	//TODO: move this to self-contained challenge files
 	for challengeName, p := range p.Challenges {
 
 		// allow nesting
@@ -767,6 +779,20 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 	if err = state.setupRoutes(); err != nil {
 		return nil, err
+	}
+
+	if state.DecayMap != nil {
+		go func() {
+			ticker := time.NewTicker(17 * time.Minute)
+			for {
+				select {
+				case <-ticker.C:
+					state.DecayMap.Decay()
+				case <-state.close:
+					return
+				}
+			}
+		}()
 	}
 
 	return state, nil

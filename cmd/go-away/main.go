@@ -104,6 +104,8 @@ func main() {
 
 	clientIpHeader := flag.String("client-ip-header", "", "Client HTTP header to fetch their IP address from (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
 
+	dnsbl := flag.String("dnsbl", "dnsbl.dronebl.org", "blocklist for DNSBL (default DroneBL)")
+
 	policyFile := flag.String("policy", "", "path to policy YAML file")
 	challengeTemplate := flag.String("challenge-template", "anubis", "name or path of the challenge template to use (anubis, forgejo)")
 	challengeTemplateTheme := flag.String("challenge-template-theme", "", "name of the challenge template theme to use (forgejo => [forgejo-dark, forgejo-light, gitea...])")
@@ -247,7 +249,7 @@ func main() {
 		}()
 	}
 
-	state, err := lib.NewState(p, lib.StateSettings{
+	settings := lib.StateSettings{
 		Backends:               createdBackends,
 		Debug:                  *debugMode,
 		PackageName:            *packageName,
@@ -255,7 +257,13 @@ func main() {
 		ChallengeTemplateTheme: *challengeTemplateTheme,
 		PrivateKeySeed:         seed,
 		ClientIpHeader:         *clientIpHeader,
-	})
+	}
+
+	if *dnsbl != "" {
+		settings.DNSBL = utils.NewDNSBL(*dnsbl, net.DefaultResolver)
+	}
+
+	state, err := lib.NewState(p, settings)
 
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to create state: %w", err))
