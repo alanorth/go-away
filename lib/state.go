@@ -406,7 +406,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 				redirectUri.RawQuery = values.Encode()
 
-				w.Header().Set("Link", fmt.Sprintf("<%s>; rel=preload; as=fetch; crossorigin=1", redirectUri.String()))
+				w.Header().Set("Link", fmt.Sprintf("<%s>; rel=preload; as=style; fetchpriority=high", redirectUri.String()))
 				defer func() {
 					// remove old header header!
 					w.Header().Del("Link")

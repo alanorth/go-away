@@ -121,6 +121,10 @@ challenges:
       # verifies that result = key
       mode: "key"
       probability: 0.1
+    parameters:
+      key-code: 200
+      key-mime: text/css
+      key-content: ""
 
   # Challenges with a redirect via Refresh header (non-JS, requires HTTP parsing and logic)
   self-header-refresh:
