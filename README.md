@@ -9,6 +9,27 @@ This documentation is a work in progress. For now, see policy examples under [ex
 
 ## Setup
 
+It is recommended to have another reverse proxy above (for example [Caddy](https://caddyserver.com/), nginx, HAProxy) to handle HTTPs or similar.
+
+go-away for now only accepts plaintext connections, although it can take _HTTP/2_ / _h2c_ connections if desired over the same port.
+
+### Binary / Go
+
+Requires Go 1.22+. Builds statically without CGo
+
+```shell
+git clone https://git.gammaspectra.live/git/go-away.git && cd go-away
+
+CGO_ENABLED=0 go build -pgo=auto -v -trimpath -o ./go-away ./cmd/go-away
+
+# Run on port 8080, forwarding matching requests on git.example.com to http://forgejo:3000
+./go-away --bind :8080 \
+--backend git.example.com=http://forgejo:3000 \
+--policy examples/forgejo.yml \
+--challenge-template forgejo --challenge-template-theme forgejo-dark
+
+```
+
 ### Dockerfile
 
 Available under [Dockerfile](Dockerfile). See the _docker compose_ below for the environment variables.
@@ -33,7 +54,7 @@ services:
       #GOAWAY_BIND_NETWORK: "tcp"
       #GOAWAY_SOCKET_MODE: "0770"
       
-      # default is WARN, set to INFO to also see challenge successe and others
+      # default is WARN, set to INFO to also see challenge successes and others
       #GOAWAY_SLOG_LEVEL: "INFO"
       
       # this value is used to sign cookies and challenges. by default a new one is generated each time
