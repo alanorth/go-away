@@ -20,6 +20,18 @@ type ChallengeInformation struct {
 	IssuedAt  *jwt.NumericDate `json:"iat,omitempty"`
 }
 
+func getRequestScheme(r *http.Request) string {
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto == "http" || proto == "https" {
+		return proto
+	}
+
+	if r.TLS != nil {
+		return "https"
+	}
+
+	return "http"
+}
+
 func getRequestAddress(r *http.Request, clientHeader string) net.IP {
 	var ipStr string
 	if clientHeader != "" {

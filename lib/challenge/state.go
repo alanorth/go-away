@@ -7,6 +7,7 @@ import (
 	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
+	"github.com/google/cel-go/cel"
 	"math/rand/v2"
 	"net/http"
 	"time"
@@ -26,9 +27,10 @@ const (
 type Id int
 
 type Challenge struct {
-	Id   Id
-	Name string
-	Path string
+	Id      Id
+	Program cel.Program
+	Name    string
+	Path    string
 
 	Verify            func(key []byte, result string, r *http.Request) (bool, error)
 	VerifyProbability float64
@@ -86,6 +88,7 @@ type VerifyResult int
 const (
 	VerifyResultNONE = VerifyResult(iota)
 	VerifyResultFAIL
+	VerifyResultSKIP
 
 	// VerifyResultPASS Client just passed this challenge
 	VerifyResultPASS
@@ -95,7 +98,7 @@ const (
 )
 
 func (r VerifyResult) Ok() bool {
-	return r > VerifyResultFAIL
+	return r >= VerifyResultPASS
 }
 
 func (r VerifyResult) String() string {
@@ -104,6 +107,8 @@ func (r VerifyResult) String() string {
 		return "NONE"
 	case VerifyResultFAIL:
 		return "FAIL"
+	case VerifyResultSKIP:
+		return "SKIP"
 	case VerifyResultPASS:
 		return "PASS"
 	case VerifyResultOK:

@@ -20,15 +20,12 @@ import (
 	"git.gammaspectra.live/git/go-away/utils"
 	"git.gammaspectra.live/git/go-away/utils/inline"
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/common/types"
-	"github.com/google/cel-go/common/types/ref"
 	"github.com/tetratelabs/wazero/api"
 	"github.com/yl2chen/cidranger"
 	"html/template"
 	"io"
 	"io/fs"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -197,13 +194,56 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 	state.Wasm = wasm.NewRunner(true)
 
+	err = state.initConditions()
+	if err != nil {
+		return nil, err
+	}
+
+	var replacements []string
+	for k, entries := range p.Conditions {
+		ast, err := condition.FromStrings(state.RulesEnv, condition.OperatorOr, entries...)
+		if err != nil {
+			return nil, fmt.Errorf("conditions %s: error compiling conditions: %v", k, err)
+		}
+
+		cond, err := cel.AstToString(ast)
+		if err != nil {
+			return nil, fmt.Errorf("conditions %s: error printing condition: %v", k, err)
+		}
+
+		replacements = append(replacements, fmt.Sprintf("($%s)", k))
+		replacements = append(replacements, "("+cond+")")
+	}
+	conditionReplacer := strings.NewReplacer(replacements...)
+
 	state.Challenges = make(map[challenge.Id]challenge.Challenge)
 
 	idCounter := challenge.Id(1)
 
 	for challengeName, p := range p.Challenges {
+
+		// allow nesting
+		var conditions []string
+		for _, cond := range p.Conditions {
+			cond = conditionReplacer.Replace(cond)
+			conditions = append(conditions, cond)
+		}
+
+		var program cel.Program
+		if len(conditions) > 0 {
+			ast, err := condition.FromStrings(state.RulesEnv, condition.OperatorOr, conditions...)
+			if err != nil {
+				return nil, fmt.Errorf("challenge %s: error compiling conditions: %v", challengeName, err)
+			}
+			program, err = state.RulesEnv.Program(ast)
+			if err != nil {
+				return nil, fmt.Errorf("challenge %s: error compiling program: %v", challengeName, err)
+			}
+		}
+
 		c := challenge.Challenge{
 			Id:                idCounter,
+			Program:           program,
 			Name:              challengeName,
 			Path:              fmt.Sprintf("%s/challenge/%s", state.UrlPath, challengeName),
 			VerifyProbability: p.Runtime.Probability,
@@ -383,13 +423,16 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 				return challenge.ResultStop
 			}
 		case "preload-link":
-			deadline := time.Second * 5
+			deadline, _ := time.ParseDuration(p.Parameters["preload-early-hint-deadline"])
+			if deadline == 0 {
+				deadline = time.Second * 3
+			}
 
 			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
 				// this only works on HTTP/2 and HTTP/3
 
 				if r.ProtoMajor < 2 {
-					// this can happen if we are an upgraded request
+					// this can happen if we are an upgraded request from HTTP/1.1 to HTTP/2 in H2C
 					if _, ok := w.(http.Pusher); !ok {
 						return challenge.ResultContinue
 					}
@@ -397,18 +440,19 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 				data := RequestDataFromContext(r.Context())
 				redirectUri := new(url.URL)
+				redirectUri.Scheme = getRequestScheme(r)
+				redirectUri.Host = r.Host
 				redirectUri.Path = c.Path + "/verify-challenge"
 
 				values := make(url.Values)
 				values.Set("result", hex.EncodeToString(key))
-				values.Set("redirect", r.URL.String())
 				values.Set("requestId", r.Header.Get("X-Away-Id"))
 
 				redirectUri.RawQuery = values.Encode()
 
-				w.Header().Set("Link", fmt.Sprintf("<%s>; rel=preload; as=style; fetchpriority=high", redirectUri.String()))
+				w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"preload\"; as=\"style\"; fetchpriority=high", redirectUri.String()))
 				defer func() {
-					// remove old header header!
+					// remove old header so it won't show on response!
 					w.Header().Del("Link")
 				}()
 				w.WriteHeader(http.StatusEarlyHints)
@@ -655,80 +699,6 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 		state.Challenges[c.Id] = c
 	}
-
-	state.RulesEnv, err = cel.NewEnv(
-		cel.DefaultUTCTimeZone(true),
-		cel.Variable("remoteAddress", cel.BytesType),
-		cel.Variable("host", cel.StringType),
-		cel.Variable("method", cel.StringType),
-		cel.Variable("userAgent", cel.StringType),
-		cel.Variable("path", cel.StringType),
-		cel.Variable("query", cel.MapType(cel.StringType, cel.StringType)),
-		// http.Header
-		cel.Variable("headers", cel.MapType(cel.StringType, cel.StringType)),
-		//TODO: dynamic type?
-		cel.Function("inNetwork",
-			cel.Overload("inNetwork_string_ip",
-				[]*cel.Type{cel.StringType, cel.AnyType},
-				cel.BoolType,
-				cel.BinaryBinding(func(lhs ref.Val, rhs ref.Val) ref.Val {
-					var ip net.IP
-					switch v := rhs.Value().(type) {
-					case []byte:
-						ip = v
-					case net.IP:
-						ip = v
-					case string:
-						ip = net.ParseIP(v)
-					}
-
-					if ip == nil {
-						panic(fmt.Errorf("invalid ip %v", rhs.Value()))
-					}
-
-					val, ok := lhs.Value().(string)
-					if !ok {
-						panic(fmt.Errorf("invalid value %v", lhs.Value()))
-					}
-
-					network, ok := state.Networks[val]
-					if !ok {
-						_, ipNet, err := net.ParseCIDR(val)
-						if err != nil {
-							panic("network not found")
-						}
-						return types.Bool(ipNet.Contains(ip))
-					} else {
-						ok, err := network.Contains(ip)
-						if err != nil {
-							panic(err)
-						}
-						return types.Bool(ok)
-					}
-				}),
-			),
-		),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	var replacements []string
-	for k, entries := range p.Conditions {
-		ast, err := condition.FromStrings(state.RulesEnv, condition.OperatorOr, entries...)
-		if err != nil {
-			return nil, fmt.Errorf("conditions %s: error compiling conditions: %v", k, err)
-		}
-
-		cond, err := cel.AstToString(ast)
-		if err != nil {
-			return nil, fmt.Errorf("conditions %s: error printing condition: %v", k, err)
-		}
-
-		replacements = append(replacements, fmt.Sprintf("($%s)", k))
-		replacements = append(replacements, "("+cond+")")
-	}
-	conditionReplacer := strings.NewReplacer(replacements...)
 
 	for _, rule := range p.Rules {
 		hasher := sha256.New()

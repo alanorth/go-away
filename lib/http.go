@@ -159,29 +159,6 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	start := time.Now()
 
-	//TODO better matcher! combo ast?
-	env := map[string]any{
-		"host":          host,
-		"method":        r.Method,
-		"remoteAddress": getRequestAddress(r, state.Settings.ClientIpHeader),
-		"userAgent":     r.UserAgent(),
-		"path":          r.URL.Path,
-		"query": func() map[string]string {
-			result := make(map[string]string)
-			for k, v := range r.URL.Query() {
-				result[k] = strings.Join(v, ",")
-			}
-			return result
-		}(),
-		"headers": func() map[string]string {
-			result := make(map[string]string)
-			for k, v := range r.Header {
-				result[k] = strings.Join(v, ",")
-			}
-			return result
-		}(),
-	}
-
 	state.addTiming(w, "rule-env", "Setup the rule environment", time.Since(start))
 
 	var (
@@ -211,7 +188,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		start = time.Now()
-		out, _, err := rule.Program.Eval(env)
+		out, _, err := rule.Program.Eval(data.ProgramEnv)
 		ruleEvalDuration += time.Since(start)
 
 		if err != nil {
@@ -230,7 +207,6 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 					serve()
 					return
 				case policy.RuleActionCHALLENGE, policy.RuleActionCHECK:
-
 					for _, challengeId := range rule.Challenges {
 						if result := data.Challenges[challengeId]; !result.Ok() {
 							continue
@@ -249,6 +225,11 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 					// none matched, issue first challenge in priority
 					for _, challengeId := range rule.Challenges {
+						result := data.Challenges[challengeId]
+						if result.Ok() || result == challenge.VerifyResultSKIP {
+							// skip already ok'd challenges for some reason, and also skip skipped challenges
+							continue
+						}
 						c := state.Challenges[challengeId]
 						if c.ServeChallenge != nil {
 							result := c.ServeChallenge(w, r, state.GetChallengeKeyForRequest(c.Name, data.Expires, r), data.Expires)
@@ -264,7 +245,10 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 								}
 								state.logger(r).Warn("challenge passed", "rule", rule.Name, "rule_hash", rule.Hash, "challenge", c.Name)
 
-								data.Challenges[c.Id] = challenge.VerifyResultOK
+								// set pass if caller didn't set one
+								if !data.Challenges[c.Id].Ok() {
+									data.Challenges[c.Id] = challenge.VerifyResultPASS
+								}
 
 								// we pass the challenge early!
 								lg.Debug("request passed", "rule", rule.Name, "rule_hash", rule.Hash, "challenge", c.Name)
@@ -425,6 +409,27 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, _ = rand.Read(data.Id[:])
 	data.Challenges = make(map[challenge.Id]challenge.VerifyResult, len(state.Challenges))
 	data.Expires = time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
+	data.ProgramEnv = map[string]any{
+		"host":          r.Host,
+		"method":        r.Method,
+		"remoteAddress": getRequestAddress(r, state.Settings.ClientIpHeader),
+		"userAgent":     r.UserAgent(),
+		"path":          r.URL.Path,
+		"query": func() map[string]string {
+			result := make(map[string]string)
+			for k, v := range r.URL.Query() {
+				result[k] = strings.Join(v, ",")
+			}
+			return result
+		}(),
+		"headers": func() map[string]string {
+			result := make(map[string]string)
+			for k, v := range r.Header {
+				result[k] = strings.Join(v, ",")
+			}
+			return result
+		}(),
+	}
 
 	for _, c := range state.Challenges {
 		key := state.GetChallengeKeyForRequest(c.Name, data.Expires, r)
@@ -432,6 +437,21 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil && !errors.Is(err, http.ErrNoCookie) {
 			// clear invalid cookie
 			utils.ClearCookie(utils.CookiePrefix+c.Name, w)
+		}
+
+		// prevent the challenge if not solved
+		if !result.Ok() && c.Program != nil {
+			out, _, err := c.Program.Eval(data.ProgramEnv)
+			// verify eligibility
+			if err != nil {
+				state.logger(r).Error(err.Error(), "challenge", c.Name)
+			} else if out != nil && out.Type() == types.BoolType {
+				if out.Equal(types.True) != types.True {
+					// skip challenge match!
+					result = challenge.VerifyResultSKIP
+					continue
+				}
+			}
 		}
 		data.Challenges[c.Id] = result
 	}
@@ -449,6 +469,7 @@ func RequestDataFromContext(ctx context.Context) *RequestData {
 
 type RequestData struct {
 	Id         [16]byte
+	ProgramEnv map[string]any
 	Expires    time.Time
 	Challenges map[challenge.Id]challenge.VerifyResult
 }

@@ -116,12 +116,16 @@ challenges:
   # Challenges with a redirect via Link header with rel=preload and early hints (non-JS, requires HTTP parsing, fetching and logic)
   # Works on HTTP/2 and above!
   self-preload-link:
+    # doesn't seem to work reliably on other stuff that firefox
+    # userAgent.contains("Firefox/") &&
+    condition: '"Sec-Fetch-Mode" in headers && headers["Sec-Fetch-Mode"] == "navigate"'
     mode: "preload-link"
     runtime:
       # verifies that result = key
       mode: "key"
       probability: 0.1
     parameters:
+      preload-early-hint-deadline: 3s
       key-code: 200
       key-mime: text/css
       key-content: ""
