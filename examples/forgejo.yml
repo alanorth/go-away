@@ -333,8 +333,10 @@ rules:
 
   - name: always-pow-challenge
     conditions:
-      # login paths
-      - 'path.startsWith("/user/sign_up") || path.startsWith("/user/login") || path.startsWith("/user/oauth2/")'
+      # login and sign up paths
+      - 'path.startsWith("/user/sign_up")'
+      - 'path.startsWith("/user/login") || path.startsWith("/user/oauth2/")'
+      - 'path.startsWith("/user/activate")'
       # repo / org / mirror creation paths
       - 'path == "/repo/create" || path == "/repo/migrate" || path ==  "/org/create"'
       # user profile info edit paths
@@ -430,8 +432,8 @@ rules:
     conditions:
       - 'path.matches("^/[^/]+/[^/]+/raw/branch/")'
       - 'path.matches("^/[^/]+/[^/]+/archive/")'
-      - 'path.matches("^/[^/]+/[^/]+/media/")'
       - 'path.matches("^/[^/]+/[^/]+/releases/download/")'
+      - 'path.matches("^/[^/]+/[^/]+/media/") && ($is-generic-browser)'
     action: pass
 
   # Allow PUT/DELETE/PATCH/POST requests in general
