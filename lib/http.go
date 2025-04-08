@@ -457,6 +457,11 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.Header.Set("X-Away-Id", hex.EncodeToString(data.Id[:]))
+	w.Header().Set("X-Away-Id", hex.EncodeToString(data.Id[:]))
+
+	// send these to client so we consistently get the headers
+	//w.Header().Set("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
+	//w.Header().Set("Critical-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
 
 	r = r.WithContext(context.WithValue(r.Context(), "_goaway_data", &data))
 
