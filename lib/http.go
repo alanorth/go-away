@@ -19,6 +19,7 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"net/http/pprof"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -326,6 +327,13 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 func (state *State) setupRoutes() error {
 
 	state.Mux.HandleFunc("/", state.handleRequest)
+
+	if state.Settings.Debug {
+		http.HandleFunc(state.UrlPath+"/debug/pprof/", pprof.Index)
+		http.HandleFunc(state.UrlPath+"/debug/pprof/profile", pprof.Profile)
+		http.HandleFunc(state.UrlPath+"/debug/pprof/symbol", pprof.Symbol)
+		http.HandleFunc(state.UrlPath+"/debug/pprof/trace", pprof.Trace)
+	}
 
 	state.Mux.Handle("GET "+state.UrlPath+"/assets/", http.StripPrefix(state.UrlPath, gzipped.FileServer(gzipped.FS(embed.AssetsFs))))
 
