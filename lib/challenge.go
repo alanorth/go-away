@@ -3,6 +3,8 @@ package lib
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
+	"errors"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"net"
 	"net/http"
@@ -52,12 +54,44 @@ func getRequestAddress(r *http.Request, clientHeader string) net.IP {
 	return net.ParseIP(ipStr)
 }
 
-func (state *State) GetChallengeKeyForRequest(challengeName string, until time.Time, r *http.Request) []byte {
+type ChallengeKey []byte
+
+const ChallengeKeySize = sha256.Size
+
+func (k *ChallengeKey) Set(flags ChallengeKeyFlags) {
+	(*k)[0] |= uint8(flags)
+}
+func (k *ChallengeKey) Get(flags ChallengeKeyFlags) ChallengeKeyFlags {
+	return ChallengeKeyFlags((*k)[0] & uint8(flags))
+}
+func (k *ChallengeKey) Unset(flags ChallengeKeyFlags) {
+	(*k)[0] = (*k)[0] & ^(uint8(flags))
+}
+
+type ChallengeKeyFlags uint8
+
+const (
+	ChallengeKeyFlagIsIPv4 = ChallengeKeyFlags(1 << iota)
+)
+
+func ChallengeKeyFromString(s string) (ChallengeKey, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return nil, err
+	}
+	if len(b) != ChallengeKeySize {
+		return nil, errors.New("invalid challenge key")
+	}
+	return ChallengeKey(b), nil
+}
+
+func (state *State) GetChallengeKeyForRequest(challengeName string, until time.Time, r *http.Request) ChallengeKey {
+	address := getRequestAddress(r, state.Settings.ClientIpHeader)
 	hasher := sha256.New()
 	hasher.Write([]byte("challenge\x00"))
 	hasher.Write([]byte(challengeName))
 	hasher.Write([]byte{0})
-	hasher.Write(getRequestAddress(r, state.Settings.ClientIpHeader).To16())
+	hasher.Write(address.To16())
 	hasher.Write([]byte{0})
 
 	// specific headers
@@ -78,5 +112,13 @@ func (state *State) GetChallengeKeyForRequest(challengeName string, until time.T
 	hasher.Write(state.publicKey)
 	hasher.Write([]byte{0})
 
-	return hasher.Sum(nil)
+	sum := ChallengeKey(hasher.Sum(nil))
+
+	sum[0] = 0
+
+	if address.To4() != nil {
+		// Is IPv4, mark
+		sum.Set(ChallengeKeyFlagIsIPv4)
+	}
+	return ChallengeKey(sum)
 }

@@ -566,7 +566,7 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 
 				redirect, err := utils.EnsureNoOpenRedirect(r.FormValue("redirect"))
 				if err != nil {
-					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusInternalServerError, err, "")
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusBadRequest, err, "")
 					return
 				}
 
@@ -585,29 +585,37 @@ func NewState(p policy.Policy, settings StateSettings) (state *State, err error)
 					if ok, err := c.Verify(key, result, r); err != nil {
 						return err
 					} else if !ok {
-						state.logger(r).Warn("challenge failed", "challenge", challengeName, "redirect", redirect)
 						utils.ClearCookie(utils.CookiePrefix+challengeName, w)
-
+						data.Challenges[c.Id] = challenge.VerifyResultFAIL
 						state.SolveChallenge(key, challenge.VerifyResultFAIL)
+						state.logger(r).Warn("challenge failed", "challenge", challengeName, "redirect", redirect)
 
-						_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName), redirect)
-						return nil
-					}
+						// catch happy eyeballs IPv4 -> IPv6 migration, re-direct to try again
+						if resultKey, err := ChallengeKeyFromString(result); err == nil && resultKey.Get(ChallengeKeyFlagIsIPv4) > 0 && key.Get(ChallengeKeyFlagIsIPv4) == 0 {
 
-					state.logger(r).Warn("challenge passed", "challenge", challengeName, "redirect", redirect)
-
-					token, err := c.IssueChallengeToken(state.privateKey, key, []byte(result), data.Expires)
-					if err != nil {
-						utils.ClearCookie(utils.CookiePrefix+challengeName, w)
+						} else {
+							_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", challengeName), redirect)
+							return nil
+						}
 					} else {
-						utils.SetCookie(utils.CookiePrefix+challengeName, token, data.Expires, w)
-					}
-					data.Challenges[c.Id] = challenge.VerifyResultPASS
+						state.logger(r).Warn("challenge passed", "challenge", challengeName, "redirect", redirect)
 
-					state.SolveChallenge(key, challenge.VerifyResultPASS)
+						token, err := c.IssueChallengeToken(state.privateKey, key, []byte(result), data.Expires)
+						if err != nil {
+							utils.ClearCookie(utils.CookiePrefix+challengeName, w)
+						} else {
+							utils.SetCookie(utils.CookiePrefix+challengeName, token, data.Expires, w)
+						}
+						data.Challenges[c.Id] = challenge.VerifyResultPASS
+						state.SolveChallenge(key, challenge.VerifyResultPASS)
+					}
 
 					switch httpCode {
 					case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+						if redirect == "" {
+							_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusBadRequest, errors.New("no redirect found"), "")
+							return nil
+						}
 						http.Redirect(w, r, redirect, httpCode)
 					default:
 						w.Header().Set("Content-Type", mimeType)
