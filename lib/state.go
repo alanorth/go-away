@@ -383,16 +383,23 @@ func NewState(p policy.Policy, settings StateSettings) (handler http.Handler, er
 
 		case "cookie":
 			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
-
 				token, err := c.IssueChallengeToken(state.privateKey, key, nil, expiry)
 				if err != nil {
 					utils.ClearCookie(utils.CookiePrefix+challengeName, w)
 				} else {
 					utils.SetCookie(utils.CookiePrefix+challengeName, token, expiry, w)
 				}
-				// self redirect!
-				//TODO: add redirect loop detect parameter
-				http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
+
+				redirectUri := new(url.URL)
+				redirectUri.Path = c.Path + "/verify-challenge"
+
+				values := make(url.Values)
+				values.Set("result", hex.EncodeToString(key))
+				values.Set("redirect", r.URL.String())
+				values.Set("requestId", r.Header.Get("X-Away-Id"))
+				redirectUri.RawQuery = values.Encode()
+
+				http.Redirect(w, r, redirectUri.String(), http.StatusTemporaryRedirect)
 				return challenge.ResultStop
 			}
 		case "meta-refresh":
