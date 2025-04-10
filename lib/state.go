@@ -383,6 +383,13 @@ func NewState(p policy.Policy, settings StateSettings) (handler http.Handler, er
 
 		case "cookie":
 			c.ServeChallenge = func(w http.ResponseWriter, r *http.Request, key []byte, expiry time.Time) challenge.Result {
+				if chall := r.URL.Query().Get("__goaway_challenge"); chall == challengeName {
+					state.logger(r).Warn("challenge failed", "challenge", c.Name)
+					utils.ClearCookie(utils.CookiePrefix+c.Name, w)
+					_ = state.errorPage(w, r.Header.Get("X-Away-Id"), http.StatusForbidden, fmt.Errorf("access denied: failed challenge %s", c.Name), "")
+					return challenge.ResultStop
+				}
+
 				token, err := c.IssueChallengeToken(state.privateKey, key, nil, expiry)
 				if err != nil {
 					utils.ClearCookie(utils.CookiePrefix+challengeName, w)
@@ -390,16 +397,13 @@ func NewState(p policy.Policy, settings StateSettings) (handler http.Handler, er
 					utils.SetCookie(utils.CookiePrefix+challengeName, token, expiry, w)
 				}
 
-				redirectUri := new(url.URL)
-				redirectUri.Path = c.Path + "/verify-challenge"
+				// self redirect!
+				uri, err := url.ParseRequestURI(r.URL.String())
+				values := uri.Query()
+				values.Set("__goaway_challenge", challengeName)
+				uri.RawQuery = values.Encode()
 
-				values := make(url.Values)
-				values.Set("result", hex.EncodeToString(key))
-				values.Set("redirect", r.URL.String())
-				values.Set("requestId", r.Header.Get("X-Away-Id"))
-				redirectUri.RawQuery = values.Encode()
-
-				http.Redirect(w, r, redirectUri.String(), http.StatusTemporaryRedirect)
+				http.Redirect(w, r, uri.String(), http.StatusTemporaryRedirect)
 				return challenge.ResultStop
 			}
 		case "meta-refresh":
