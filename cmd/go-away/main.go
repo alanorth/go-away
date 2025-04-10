@@ -262,6 +262,10 @@ func main() {
 			}
 			acmeManager.Cache = autocert.DirCache(path.Join(*cachePath, "acme"))
 		}
+		slog.Warn(
+			"acme-autocert enabled",
+			"directory", *acmeAutocert,
+		)
 	}
 
 	var wg sync.WaitGroup
