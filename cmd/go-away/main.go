@@ -298,8 +298,15 @@ func main() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
-					log.Fatal(err)
+
+				if acmeManager != nil {
+					if err := server.ServeTLS(listener, "", ""); !errors.Is(err, http.ErrServerClosed) {
+						log.Fatal(err)
+					}
+				} else {
+					if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
+						log.Fatal(err)
+					}
 				}
 			}()
 
@@ -347,7 +354,15 @@ func main() {
 
 	server := newServer(state, acmeManager)
 
-	if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal(err)
+	if acmeManager != nil {
+		if err := server.ServeTLS(listener, "", ""); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	} else {
+
+		if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
 	}
+
 }
