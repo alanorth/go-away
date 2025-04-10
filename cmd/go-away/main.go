@@ -11,6 +11,8 @@ import (
 	"git.gammaspectra.live/git/go-away/lib"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/utils"
+	"golang.org/x/crypto/acme"
+	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"gopkg.in/yaml.v3"
@@ -20,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -81,30 +84,64 @@ func (v *MultiVar) Set(value string) error {
 	return nil
 }
 
-func newServer(handler http.Handler) *http.Server {
-	h2s := &http2.Server{}
+func newServer(handler http.Handler, manager *autocert.Manager) *http.Server {
 
-	// TODO: use Go 1.24 Server.Protocols to add H2C
-	// https://pkg.go.dev/net/http#Server.Protocols
-	h1s := &http.Server{
-		Handler: h2c.NewHandler(handler, h2s),
+	if manager == nil {
+		h2s := &http2.Server{}
+
+		// TODO: use Go 1.24 Server.Protocols to add H2C
+		// https://pkg.go.dev/net/http#Server.Protocols
+		h1s := &http.Server{
+			Handler: h2c.NewHandler(handler, h2s),
+		}
+
+		return h1s
+	} else {
+		return &http.Server{
+			TLSConfig: manager.TLSConfig(),
+			Handler:   handler,
+		}
+	}
+}
+
+func newACMEManager(clientDirectory string, backends map[string]http.Handler) *autocert.Manager {
+
+	var domains []string
+	for d := range backends {
+		parts := strings.Split(d, ":")
+		d = parts[0]
+		if net.ParseIP(d) != nil {
+			continue
+		}
+		domains = append(domains, d)
 	}
 
-	return h1s
+	manager := &autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(domains...),
+		Client: &acme.Client{
+			HTTPClient:   http.DefaultClient,
+			DirectoryURL: clientDirectory,
+		},
+	}
+	return manager
 }
 
 func main() {
-	bind := flag.String("bind", ":8080", "network address to bind HTTP to")
+	bind := flag.String("bind", ":8080", "network address to bind HTTP/HTTP(s) to")
 	bindNetwork := flag.String("bind-network", "tcp", "network family to bind HTTP to, e.g. unix, tcp")
 	socketMode := flag.String("socket-mode", "0770", "socket mode (permissions) for unix domain sockets.")
 
 	slogLevel := flag.String("slog-level", "WARN", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
 	debugMode := flag.Bool("debug", false, "debug mode with logs and server timings")
 	passThrough := flag.Bool("passthrough", false, "passthrough mode sends all requests to matching backends until state is loaded")
+	acmeAutocert := flag.String("acme-autocert", "", "enables HTTP(s) mode and uses the provided ACME server URL or available service (available: letsencrypt)")
 
 	clientIpHeader := flag.String("client-ip-header", "", "Client HTTP header to fetch their IP address from (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
 
 	dnsbl := flag.String("dnsbl", "dnsbl.dronebl.org", "blocklist for DNSBL (default DroneBL)")
+
+	cachePath := flag.String("cache", path.Join(os.TempDir(), "go_away_cache"), "path to temporary cache directory")
 
 	policyFile := flag.String("policy", "", "path to policy YAML file")
 	challengeTemplate := flag.String("challenge-template", "anubis", "name or path of the challenge template to use (anubis, forgejo)")
@@ -202,6 +239,31 @@ func main() {
 		createdBackends[k] = backend
 	}
 
+	if *cachePath != "" {
+		err = os.MkdirAll(*cachePath, 0755)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to create cache directory: %w", err))
+		}
+	}
+
+	var acmeManager *autocert.Manager
+
+	if *acmeAutocert != "" {
+		switch *acmeAutocert {
+		case "letsencrypt":
+			*acmeAutocert = "https://acme-v02.api.letsencrypt.org/directory"
+		}
+
+		acmeManager = newACMEManager(*acmeAutocert, createdBackends)
+		if *cachePath != "" {
+			err = os.MkdirAll(path.Join(*cachePath, "acme"), 0755)
+			if err != nil {
+				log.Fatal(fmt.Errorf("failed to create acme cache directory: %w", err))
+			}
+			acmeManager.Cache = autocert.DirCache(path.Join(*cachePath, "acme"))
+		}
+	}
+
 	var wg sync.WaitGroup
 
 	passThroughCtx, cancelFunc := context.WithCancel(context.Background())
@@ -220,7 +282,7 @@ func main() {
 				}
 
 				backend.ServeHTTP(w, r)
-			}))
+			}), acmeManager)
 
 			listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode)
 			slog.Warn(
@@ -279,7 +341,7 @@ func main() {
 		"url", listenUrl,
 	)
 
-	server := newServer(state)
+	server := newServer(state, acmeManager)
 
 	if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
