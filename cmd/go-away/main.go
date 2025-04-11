@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"errors"
 	"flag"
@@ -14,8 +15,6 @@ import (
 	"github.com/pires/go-proxyproto"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"gopkg.in/yaml.v3"
 	"log"
 	"log/slog"
@@ -96,26 +95,6 @@ func (v *MultiVar) String() string {
 func (v *MultiVar) Set(value string) error {
 	*v = append(*v, value)
 	return nil
-}
-
-func newServer(handler http.Handler, manager *autocert.Manager) *http.Server {
-
-	if manager == nil {
-		h2s := &http2.Server{}
-
-		// TODO: use Go 1.24 Server.Protocols to add H2C
-		// https://pkg.go.dev/net/http#Server.Protocols
-		h1s := &http.Server{
-			Handler: h2c.NewHandler(handler, h2s),
-		}
-
-		return h1s
-	} else {
-		return &http.Server{
-			TLSConfig: manager.TLSConfig(),
-			Handler:   handler,
-		}
-	}
 }
 
 func newACMEManager(clientDirectory string, backends map[string]http.Handler) *autocert.Manager {
@@ -262,7 +241,7 @@ func main() {
 		}
 	}
 
-	var acmeManager *autocert.Manager
+	var tlsConfig *tls.Config
 
 	if *acmeAutocert != "" {
 		switch *acmeAutocert {
@@ -270,7 +249,7 @@ func main() {
 			*acmeAutocert = "https://acme-v02.api.letsencrypt.org/directory"
 		}
 
-		acmeManager = newACMEManager(*acmeAutocert, createdBackends)
+		acmeManager := newACMEManager(*acmeAutocert, createdBackends)
 		if *cachePath != "" {
 			err = os.MkdirAll(path.Join(*cachePath, "acme"), 0755)
 			if err != nil {
@@ -282,6 +261,7 @@ func main() {
 			"acme-autocert enabled",
 			"directory", *acmeAutocert,
 		)
+		tlsConfig = acmeManager.TLSConfig()
 	}
 
 	var wg sync.WaitGroup
@@ -294,7 +274,7 @@ func main() {
 		go func() {
 			defer wg.Done()
 
-			server := newServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server := utils.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				backend, ok := createdBackends[r.Host]
 				if !ok {
 					http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
@@ -302,7 +282,7 @@ func main() {
 				}
 
 				backend.ServeHTTP(w, r)
-			}), acmeManager)
+			}), tlsConfig)
 
 			listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode, *bindProxy)
 			slog.Warn(
@@ -315,7 +295,7 @@ func main() {
 			go func() {
 				defer wg.Done()
 
-				if acmeManager != nil {
+				if tlsConfig != nil {
 					if err := server.ServeTLS(listener, "", ""); !errors.Is(err, http.ErrServerClosed) {
 						log.Fatal(err)
 					}
@@ -369,9 +349,9 @@ func main() {
 		"url", listenUrl,
 	)
 
-	server := newServer(state, acmeManager)
+	server := utils.NewServer(state, tlsConfig)
 
-	if acmeManager != nil {
+	if tlsConfig != nil {
 		if err := server.ServeTLS(listener, "", ""); !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}

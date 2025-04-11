@@ -15,7 +15,7 @@ go-away for now only accepts plaintext connections, although it can take _HTTP/2
 
 ### Binary / Go
 
-Requires Go 1.22+. Builds statically without CGo
+Requires Go 1.24+. Builds statically without CGo.
 
 ```shell
 git clone https://git.gammaspectra.live/git/go-away.git && cd go-away

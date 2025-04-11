@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -10,6 +11,27 @@ import (
 	"net/url"
 	"strings"
 )
+
+func NewServer(handler http.Handler, tlsConfig *tls.Config) *http.Server {
+
+	if tlsConfig == nil {
+		proto := new(http.Protocols)
+		proto.SetHTTP1(true)
+		proto.SetUnencryptedHTTP2(true)
+		h1s := &http.Server{
+			Handler:   handler,
+			Protocols: proto,
+		}
+
+		return h1s
+	} else {
+		server := &http.Server{
+			TLSConfig: tlsConfig,
+			Handler:   handler,
+		}
+		return server
+	}
+}
 
 func EnsureNoOpenRedirect(redirect string) (string, error) {
 	uri, err := url.Parse(redirect)
