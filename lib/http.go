@@ -443,6 +443,8 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}(),
 	}
 
+	r = r.WithContext(context.WithValue(r.Context(), "_goaway_data", &data))
+
 	for _, c := range state.Challenges {
 		key := state.GetChallengeKeyForRequest(c.Name, data.Expires, r)
 		result, err := c.VerifyChallengeToken(state.publicKey, key, r)
@@ -478,8 +480,6 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// send these to client so we consistently get the headers
 	//w.Header().Set("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
 	//w.Header().Set("Critical-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
-
-	r = r.WithContext(context.WithValue(r.Context(), "_goaway_data", &data))
 
 	state.Mux.ServeHTTP(w, r)
 }
