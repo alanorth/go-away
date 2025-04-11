@@ -153,6 +153,7 @@ func main() {
 	acmeAutocert := flag.String("acme-autocert", "", "enables HTTP(s) mode and uses the provided ACME server URL or available service (available: letsencrypt)")
 
 	clientIpHeader := flag.String("client-ip-header", "", "Client HTTP header to fetch their IP address from (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
+	backendIpHeader := flag.String("backend-ip-header", "", "Backend HTTP header to set the client IP address from, if empty defaults to leaving Client header alone (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
 
 	dnsbl := flag.String("dnsbl", "dnsbl.dronebl.org", "blocklist for DNSBL (default DroneBL)")
 
@@ -345,6 +346,7 @@ func main() {
 		ChallengeTemplateTheme: *challengeTemplateTheme,
 		PrivateKeySeed:         seed,
 		ClientIpHeader:         *clientIpHeader,
+		BackendIpHeader:        *backendIpHeader,
 	}
 
 	if *dnsbl != "" {

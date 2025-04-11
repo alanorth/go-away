@@ -112,6 +112,7 @@ type StateSettings struct {
 	ChallengeTemplate      string
 	ChallengeTemplateTheme string
 	ClientIpHeader         string
+	BackendIpHeader        string
 	DNSBL                  *utils.DNSBL
 }
 

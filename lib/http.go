@@ -18,6 +18,7 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"path"
@@ -130,10 +131,11 @@ func (state *State) addTiming(w http.ResponseWriter, name, desc string, duration
 	}
 }
 
-func GetLoggerForRequest(r *http.Request, clientHeader string) *slog.Logger {
+func GetLoggerForRequest(r *http.Request) *slog.Logger {
+	data := RequestDataFromContext(r.Context())
 	return slog.With(
-		"request_id", r.Header.Get("X-Away-Id"),
-		"remote_address", getRequestAddress(r, clientHeader),
+		"request_id", hex.EncodeToString(data.Id[:]),
+		"remote_address", data.RemoteAddress.String(),
 		"user_agent", r.UserAgent(),
 		"host", r.Host,
 		"path", r.URL.Path,
@@ -142,7 +144,7 @@ func GetLoggerForRequest(r *http.Request, clientHeader string) *slog.Logger {
 }
 
 func (state *State) logger(r *http.Request) *slog.Logger {
-	return GetLoggerForRequest(r, state.Settings.ClientIpHeader)
+	return GetLoggerForRequest(r)
 }
 
 func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
@@ -412,15 +414,17 @@ func (state *State) setupRoutes() error {
 }
 
 func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	var data RequestData
 	// generate random id, todo: is this fast?
 	_, _ = rand.Read(data.Id[:])
+	data.RemoteAddress = getRequestAddress(r, state.Settings.ClientIpHeader)
 	data.Challenges = make(map[challenge.Id]challenge.VerifyResult, len(state.Challenges))
 	data.Expires = time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
 	data.ProgramEnv = map[string]any{
 		"host":          r.Host,
 		"method":        r.Method,
-		"remoteAddress": getRequestAddress(r, state.Settings.ClientIpHeader),
+		"remoteAddress": data.RemoteAddress,
 		"userAgent":     r.UserAgent(),
 		"path":          r.URL.Path,
 		"query": func() map[string]string {
@@ -465,7 +469,11 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.Header.Set("X-Away-Id", hex.EncodeToString(data.Id[:]))
-	w.Header().Set("X-Away-Id", hex.EncodeToString(data.Id[:]))
+	if state.Settings.BackendIpHeader != "" {
+		r.Header.Del(state.Settings.ClientIpHeader)
+		r.Header.Set(state.Settings.BackendIpHeader, data.RemoteAddress.String())
+	}
+	w.Header().Add("Via", fmt.Sprintf("%s %s", r.Proto, "go-away"))
 
 	// send these to client so we consistently get the headers
 	//w.Header().Set("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
@@ -481,10 +489,11 @@ func RequestDataFromContext(ctx context.Context) *RequestData {
 }
 
 type RequestData struct {
-	Id         [16]byte
-	ProgramEnv map[string]any
-	Expires    time.Time
-	Challenges map[challenge.Id]challenge.VerifyResult
+	Id            [16]byte
+	ProgramEnv    map[string]any
+	Expires       time.Time
+	Challenges    map[challenge.Id]challenge.VerifyResult
+	RemoteAddress net.IP
 }
 
 func (d *RequestData) HasValidChallenge(id challenge.Id) bool {

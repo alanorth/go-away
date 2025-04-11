@@ -86,7 +86,8 @@ func ChallengeKeyFromString(s string) (ChallengeKey, error) {
 }
 
 func (state *State) GetChallengeKeyForRequest(challengeName string, until time.Time, r *http.Request) ChallengeKey {
-	address := getRequestAddress(r, state.Settings.ClientIpHeader)
+	data := RequestDataFromContext(r.Context())
+	address := data.RemoteAddress
 	hasher := sha256.New()
 	hasher.Write([]byte("challenge\x00"))
 	hasher.Write([]byte(challengeName))
