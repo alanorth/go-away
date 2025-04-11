@@ -32,6 +32,11 @@ import (
 )
 
 func setupListener(network, address, socketMode string, proxy bool) (net.Listener, string) {
+	if network == "proxy" {
+		network = "tcp"
+		proxy = true
+	}
+
 	formattedAddress := ""
 	switch network {
 	case "unix":
