@@ -11,6 +11,7 @@ import (
 	"git.gammaspectra.live/git/go-away/lib"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/utils"
+	"github.com/pires/go-proxyproto"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
@@ -30,7 +31,7 @@ import (
 	"time"
 )
 
-func setupListener(network, address, socketMode string) (net.Listener, string) {
+func setupListener(network, address, socketMode string, proxy bool) (net.Listener, string) {
 	formattedAddress := ""
 	switch network {
 	case "unix":
@@ -58,6 +59,14 @@ func setupListener(network, address, socketMode string) (net.Listener, string) {
 		if err != nil {
 			listener.Close()
 			log.Fatal(fmt.Errorf("could not change socket mode: %w", err))
+		}
+	}
+
+	if proxy {
+		slog.Warn("listener PROXY enabled")
+		formattedAddress += " +PROXY"
+		listener = &proxyproto.Listener{
+			Listener: listener,
 		}
 	}
 
@@ -130,6 +139,7 @@ func newACMEManager(clientDirectory string, backends map[string]http.Handler) *a
 func main() {
 	bind := flag.String("bind", ":8080", "network address to bind HTTP/HTTP(s) to")
 	bindNetwork := flag.String("bind-network", "tcp", "network family to bind HTTP to, e.g. unix, tcp")
+	bindProxy := flag.Bool("bind-proxy", false, "use PROXY protocol in front of the listener")
 	socketMode := flag.String("socket-mode", "0770", "socket mode (permissions) for unix domain sockets.")
 
 	slogLevel := flag.String("slog-level", "WARN", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
@@ -288,7 +298,7 @@ func main() {
 				backend.ServeHTTP(w, r)
 			}), acmeManager)
 
-			listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode)
+			listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode, *bindProxy)
 			slog.Warn(
 				"listening passthrough",
 				"url", listenUrl,
@@ -346,7 +356,7 @@ func main() {
 	cancelFunc()
 	wg.Wait()
 
-	listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode)
+	listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode, *bindProxy)
 	slog.Warn(
 		"listening",
 		"url", listenUrl,
