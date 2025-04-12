@@ -246,7 +246,7 @@ func main() {
 	if *acmeAutocert != "" {
 		switch *acmeAutocert {
 		case "letsencrypt":
-			*acmeAutocert = "https://acme-v02.api.letsencrypt.org/directory"
+			*acmeAutocert = acme.LetsEncryptURL
 		}
 
 		acmeManager := newACMEManager(*acmeAutocert, createdBackends)
@@ -262,6 +262,16 @@ func main() {
 			"directory", *acmeAutocert,
 		)
 		tlsConfig = acmeManager.TLSConfig()
+	} else {
+		cert, err := tls.LoadX509KeyPair("localhost.crt", "localhost.key")
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to load certificate: %w", err))
+		}
+		tlsConfig = &tls.Config{
+			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
+				return &cert, nil
+			},
+		}
 	}
 
 	var wg sync.WaitGroup

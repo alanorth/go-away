@@ -29,6 +29,7 @@ func NewServer(handler http.Handler, tlsConfig *tls.Config) *http.Server {
 			TLSConfig: tlsConfig,
 			Handler:   handler,
 		}
+		applyTLSFingerprinter(server)
 		return server
 	}
 }

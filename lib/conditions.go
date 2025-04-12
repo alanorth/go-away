@@ -20,6 +20,8 @@ func (state *State) initConditions() (err error) {
 		cel.Variable("userAgent", cel.StringType),
 		cel.Variable("path", cel.StringType),
 		cel.Variable("query", cel.MapType(cel.StringType, cel.StringType)),
+		cel.Variable("fpJA3N", cel.StringType),
+		cel.Variable("fpJA4", cel.StringType),
 		// http.Header
 		cel.Variable("headers", cel.MapType(cel.StringType, cel.StringType)),
 		//TODO: dynamic type?

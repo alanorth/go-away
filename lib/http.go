@@ -133,14 +133,20 @@ func (state *State) addTiming(w http.ResponseWriter, name, desc string, duration
 
 func GetLoggerForRequest(r *http.Request) *slog.Logger {
 	data := RequestDataFromContext(r.Context())
-	return slog.With(
+	args := []any{
 		"request_id", hex.EncodeToString(data.Id[:]),
 		"remote_address", data.RemoteAddress.String(),
 		"user_agent", r.UserAgent(),
 		"host", r.Host,
 		"path", r.URL.Path,
 		"query", r.URL.RawQuery,
-	)
+	}
+
+	if fp := utils.GetTLSFingerprint(r); fp != nil {
+		args = append(args, "ja3n", fp.JA3N().String())
+		args = append(args, "ja4", fp.JA4().String())
+	}
+	return slog.With(args...)
 }
 
 func (state *State) logger(r *http.Request) *slog.Logger {
@@ -421,12 +427,23 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	data.RemoteAddress = getRequestAddress(r, state.Settings.ClientIpHeader)
 	data.Challenges = make(map[challenge.Id]challenge.VerifyResult, len(state.Challenges))
 	data.Expires = time.Now().UTC().Add(DefaultValidity).Round(DefaultValidity)
+
+	var ja3n, ja4 string
+	if fp := utils.GetTLSFingerprint(r); fp != nil {
+		ja3n = fp.JA3N().String()
+		ja4 = fp.JA4().String()
+		r.Header.Set("X-TLS-Fingerprint-JA3N", ja3n)
+		r.Header.Set("X-TLS-Fingerprint-JA4", ja4)
+	}
+
 	data.ProgramEnv = map[string]any{
 		"host":          r.Host,
 		"method":        r.Method,
 		"remoteAddress": data.RemoteAddress,
 		"userAgent":     r.UserAgent(),
 		"path":          r.URL.Path,
+		"fpJA3N":        ja3n,
+		"fpJA4":         ja4,
 		"query": func() map[string]string {
 			result := make(map[string]string)
 			for k, v := range r.URL.Query() {
