@@ -15,7 +15,6 @@ require (
 	github.com/tetratelabs/wazero v1.9.0
 	github.com/yl2chen/cidranger v1.0.2
 	golang.org/x/crypto v0.37.0
-	golang.org/x/net v0.39.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -26,6 +25,7 @@ require (
 	github.com/kevinpollet/nego v0.0.0-20211010160919-a65cd48cee43 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	golang.org/x/exp v0.0.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250409194420-de1ac958c67a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250409194420-de1ac958c67a // indirect

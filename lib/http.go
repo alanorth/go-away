@@ -143,8 +143,12 @@ func GetLoggerForRequest(r *http.Request) *slog.Logger {
 	}
 
 	if fp := utils.GetTLSFingerprint(r); fp != nil {
-		args = append(args, "ja3n", fp.JA3N().String())
-		args = append(args, "ja4", fp.JA4().String())
+		if ja3n := fp.JA3N(); ja3n != nil {
+			args = append(args, "ja3n", ja3n)
+		}
+		if ja4 := fp.JA4(); ja4 != nil {
+			args = append(args, "ja4", ja4.String())
+		}
 	}
 	return slog.With(args...)
 }
@@ -430,10 +434,14 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var ja3n, ja4 string
 	if fp := utils.GetTLSFingerprint(r); fp != nil {
-		ja3n = fp.JA3N().String()
-		ja4 = fp.JA4().String()
-		r.Header.Set("X-TLS-Fingerprint-JA3N", ja3n)
-		r.Header.Set("X-TLS-Fingerprint-JA4", ja4)
+		if ja3nPtr := fp.JA3N(); ja3nPtr != nil {
+			ja3n = ja3nPtr.String()
+			r.Header.Set("X-TLS-Fingerprint-JA3N", ja3n)
+		}
+		if ja4Ptr := fp.JA4(); ja4Ptr != nil {
+			ja4 = ja4Ptr.String()
+			r.Header.Set("X-TLS-Fingerprint-JA4", ja4)
+		}
 	}
 
 	data.ProgramEnv = map[string]any{
