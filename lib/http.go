@@ -144,7 +144,7 @@ func GetLoggerForRequest(r *http.Request) *slog.Logger {
 
 	if fp := utils.GetTLSFingerprint(r); fp != nil {
 		if ja3n := fp.JA3N(); ja3n != nil {
-			args = append(args, "ja3n", ja3n)
+			args = append(args, "ja3n", ja3n.String())
 		}
 		if ja4 := fp.JA4(); ja4 != nil {
 			args = append(args, "ja4", ja4.String())
