@@ -242,7 +242,7 @@ Important notes:
 
 ### Generic
 
-The policy file at [examples/generic.yml](examples/forgejo.yml) provides a baseline to place on any site, that can be modified to fit your needs.
+The policy file at [examples/generic.yml](examples/generic.yml) provides a baseline to place on any site, that can be modified to fit your needs.
 
 Important notes:
 * Edit the `homesite` rule, as it's targeted to pages you always want to have available, like landing pages.
