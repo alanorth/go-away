@@ -7,6 +7,44 @@ Self-hosted abuse detection and rule enforcement against low-effort mass AI scra
 
 This documentation is a work in progress. For now, see policy examples under [examples/](examples/).
 
+This Go package can be used as a command on `git.gammaspectra.live/git/go-away/cmd/go-away` or a library under `git.gammaspectra.live/git/go-away/lib`
+
+
+## Support
+
+If you have some suggestion or issue, feel free to open a [New Issue](https://git.gammaspectra.live/git/go-away/issues/new) on the repository. 
+
+[Pull Requests](https://git.gammaspectra.live/git/go-away/pulls) are encouraged and desired.
+
+For real-time chat and other support join IRC on [##go-away](ircs://irc.libera.chat/##go-away) on Libera.Chat. The channel may not be monitored at all times, feel free to ping the operators there.
+
+
+## Example policies
+
+### Forgejo
+
+The policy file at [examples/forgejo.yml](examples/forgejo.yml) provides a ready template to be used on your own Forgejo instance.
+
+Important notes:
+* Edit the `homesite` rule, as it's targeted to common users or orgs on the instance. A better regex might be possible in the future.
+* Edit the `http-cookie-check` challenge, as this will fetch the listed backend with the given session cookie to check for user login.
+* Adjust the desired blocked networks or others. A template list of network ranges is provided, feel free to remove these if not needed.
+* Check the conditions and base rules to change your challenges offered and other ordering.
+* By default Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot are allowed by useragent and network ranges.
+
+### Generic
+
+The policy file at [examples/generic.yml](examples/forgejo.yml) provides a baseline to place on any site, that can be modified to fit your needs.
+
+Important notes:
+* Edit the `homesite` rule, as it's targeted to pages you always want to have available, like landing pages.
+* Edit the `is-static-asset` condition or the `allow-static-resources` rule to allow static file access as necessary.
+* If you have an API, add a PASS rule targeting it.
+* Check the conditions and base rules to change your challenges offered and other ordering.
+* Add or modify rules to target specific pages on your site as desired.
+* By default Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot are allowed by useragent and network ranges.
+
+
 ## Setup
 
 It is recommended to have another reverse proxy above (for example [Caddy](https://caddyserver.com/), nginx, HAProxy) to handle HTTPs or similar.
@@ -15,7 +53,7 @@ go-away for now only accepts plaintext connections, although it can take _HTTP/2
 
 ### Binary / Go
 
-Requires Go 1.24+. Builds statically without CGo.
+Requires Go 1.24+. Builds statically without CGo usage.
 
 ```shell
 git clone https://git.gammaspectra.live/git/go-away.git && cd go-away
@@ -36,7 +74,16 @@ Available under [Dockerfile](Dockerfile). See the _docker compose_ below for the
 
 ### docker compose
 
+Example follows a hypothetical Forgejo server running on `http://forgejo:3000` serving `git.example.com`
+
 ```yaml
+networks:
+  forgejo:
+    external: false
+    
+volumes:
+  goaway_cache:
+    
 services:
   go-away:
     image: git.gammaspectra.live/git/go-away:latest
@@ -48,11 +95,23 @@ services:
     depends_on:
       - forgejo
     volumes:
+      - "goaway_cache:/cache"
       - "./examples/forgejo.yml:/policy.yml:ro"
     environment:
       #GOAWAY_BIND: ":8080"
+      # Supported tcp, unix, and proxy (for enabling PROXY module for request unwrapping)
       #GOAWAY_BIND_NETWORK: "tcp"
       #GOAWAY_SOCKET_MODE: "0770"
+      
+      # set to letsencrypt or other directory URL to enable HTTPS. Above ports will be TLS only.
+      # enables request JA3N / JA4 client TLS fingerprinting
+      # TLS fingerprints are served on X-TLS-Fingerprint-JA3N and X-TLS-Fingerprint-JA4 headers
+      # TLS fingerprints can be matched against on CEL conditions
+      #GOAWAY_ACME_AUTOCERT: ""
+      
+      # Cache path for several services like certificates and caching network ranges
+      # Can be semi-ephemeral, recommended to be mapped to a permanent volume
+      #GOAWAY_CACHE="/cache"
       
       # default is WARN, set to INFO to also see challenge successes and others
       #GOAWAY_SLOG_LEVEL: "INFO"
@@ -64,7 +123,12 @@ services:
       # HTTP header that the client ip will be fetched from
       # Defaults to the connection ip itself, if set here make sure your upstream proxy sets this properly
       # Usually X-Forwarded-For is a good pick
+      # Not necessary with GOAWAY_BIND_NETWORK: proxy
       GOAWAY_CLIENT_IP_HEADER: "X-Real-Ip"
+      
+      # HTTP header that go-away will set the obtained ip will be set to
+      # If left empty, the header on GOAWAY_CLIENT_IP_HEADER will be left as-is
+      #GOAWAY_BACKEND_IP_HEADER: ""
       
       GOAWAY_POLICY: "/policy.yml"
       
@@ -81,20 +145,10 @@ services:
     # additional backends can be specified via more command arguments  
     # command: ["--backend", "ci.example.com=http://ci:3000"]
 
+  forgejo:
+    # etc.
+
 ```
-
-
-## Example policies
-
-### Forgejo
-
-The policy file at [examples/forgejo.yml](examples/forgejo.yml) provides a ready template to be used on your own Forgejo instance.
-
-Important notes:
-* Edit the `homesite` rule, as it's targeted to common users or orgs on the instance. A better regex might be possible in the future.
-* Edit the `http-cookie-check` challenge, as this will fetch the listed backend with the given session cookie to check for user login.
-* Adjust the desired blocked networks or others. A template list of network ranges is provided, feel free to remove these if not needed.
-* Check the conditions and base rules to change your challenges offered and other ordering.
 
 
 ## Development

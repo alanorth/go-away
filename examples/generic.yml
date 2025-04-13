@@ -1,61 +1,10 @@
 # Example cmdline (forward requests from upstream to port :8080)
-# $ go-away --bind :8080 --backend git.example.com=http://forgejo:3000 --policy examples/forgejo.yml --challenge-template forgejo --challenge-template-theme forgejo-dark
+# $ go-away --bind :8080 --backend site.example.com=http://site:3000 --policy examples/generic.yml --challenge-template anubis
 
 
 
 # Define networks to be used later below
 networks:
-  # todo: support direct ASN lookups
-  # todo: cache these values
-  huawei-cloud:
-    # AS136907
-    - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/136907/aggregated.json
-      jq-path: '.subnets.ipv4[], .subnets.ipv6[]'
-  alibaba-cloud:
-    # AS45102
-    - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/45102/aggregated.json
-      jq-path: '.subnets.ipv4[], .subnets.ipv6[]'
-  zenlayer-inc:
-    # AS21859
-    - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/21859/aggregated.json
-      jq-path: '.subnets.ipv4[], .subnets.ipv6[]'
-  aws-cloud:
-    - url: https://ip-ranges.amazonaws.com/ip-ranges.json
-      jq-path: '(.prefixes[] | select(has("ip_prefix")) | .ip_prefix), (.prefixes[] | select(has("ipv6_prefix")) | .ipv6_prefix)'
-  google-cloud:
-    - url: https://www.gstatic.com/ipranges/cloud.json
-      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
-  oracle-cloud:
-    - url: https://docs.oracle.com/en-us/iaas/tools/public_ip_ranges.json
-      jq-path: '.regions[] | .cidrs[] | .cidr'
-  azure-cloud:
-    # todo: https://www.microsoft.com/en-us/download/details.aspx?id=56519 does not provide direct JSON
-    - url: https://raw.githubusercontent.com/femueller/cloud-ip-ranges/refs/heads/master/microsoft-azure-ip-ranges.json
-      jq-path: '.values[] | .properties.addressPrefixes[]'
-
-  digitalocean:
-    - url: https://www.digitalocean.com/geo/google.csv
-      regex: "(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+),"
-  linode:
-    - url: https://geoip.linode.com/
-      regex: "(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+),"
-  vultr:
-    - url: "https://geofeed.constant.com/?json"
-      jq-path: '.subnets[] | .ip_prefix'
-  cloudflare:
-    - url: https://www.cloudflare.com/ips-v4
-      regex: "(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
-    - url: https://www.cloudflare.com/ips-v6
-      regex: "(?P<prefix>[0-9a-f:]+::/[0-9]+)"
-
-  icloud-private-relay:
-    - url: https://mask-api.icloud.com/egress-ip-ranges.csv
-      regex: "(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+),"
-  tunnelbroker-relay:
-    # HE Tunnelbroker
-    - url: https://tunnelbroker.net/export/google
-      regex: "(?P<prefix>([0-9a-f:]+::)/[0-9]+),"
-
 
   googlebot:
     - url: https://developers.google.com/static/search/apis/ipranges/googlebot.json
@@ -100,7 +49,7 @@ challenges:
     mode: js
     asset: load.mjs
     parameters:
-      difficulty: 20
+      difficulty: 15
     runtime:
       mode: wasm
       # Verify must be under challenges/{name}/runtime/{asset}
@@ -155,18 +104,6 @@ challenges:
       key-mime: text/css
       key-content: ""
 
-
-  # Verifies the existence of a cookie and confirms it against some backend request, passing the entire client cookie contents
-  http-cookie-check:
-    mode: http
-    url: http://forgejo:3000/user/stopwatches
-    # url: http://forgejo:3000/repo/search
-    # url: http://forgejo:3000/notifications/new
-    parameters:
-      http-method: GET
-      http-cookie: i_like_gitea
-      http-code: 200
-
 conditions:
   # Conditions will get replaced on rules AST when found as ($condition-name)
   # Checks to detect a headless chromium via headers only
@@ -186,23 +123,8 @@ conditions:
     - 'path == "/favicon.ico"'
     - 'path == "/apple-touch-icon.png"'
     - 'path == "/apple-touch-icon-precomposed.png"'
-    - 'path.startsWith("/assets/")'
-    - 'path.startsWith("/repo-avatars/")'
-    - 'path.startsWith("/avatars/")'
-    - 'path.startsWith("/avatar/")'
-    - 'path.startsWith("/user/avatar/")'
-    - 'path.startsWith("/attachments/")'
+    - 'path.matches("\\.(manifest|ttf|woff|woff2|jpg|jpeg|gif|png|webp|avif|svg|mp4|webm|css|js|mjs|wasm)$")'
 
-  is-git-ua:
-    - 'userAgent.startsWith("git/") || userAgent.contains("libgit")'
-    - 'userAgent.startsWith("go-git")'
-    - 'userAgent.startsWith("JGit/") || userAgent.startsWith("JGit-")'
-    # Golang proxy and initial fetch
-    - 'userAgent.startsWith("GoModuleMirror/")'
-    - 'userAgent.startsWith("Go-http-client/") && "go-get" in query && query["go-get"] == "1"'
-    - '"Git-Protocol" in headers && headers["Git-Protocol"] == "version=2"'
-  is-git-path:
-    - 'path.matches("^/[^/]+/[^/]+/(git-upload-pack|git-receive-pack|HEAD|info/refs|info/lfs|objects)")'
 
   is-generic-robot-ua:
     - 'userAgent.contains("compatible;") && !userAgent.contains("Trident/")'
@@ -240,19 +162,7 @@ conditions:
     - 'userAgent.startsWith("Opera/")'
     #- 'userAgent.matches("Gecko/(201[0-9]|200[0-9])")'
     - 'userAgent.matches("^Mozilla/[1-4]")'
-  is-heavy-resource:
-    - 'path.startsWith("/explore/")'
-    - 'path.matches("^/[^/]+/[^/]+/src/commit/")'
-    - 'path.matches("^/[^/]+/[^/]+/compare/")'
-    - 'path.matches("^/[^/]+/[^/]+/commits/commit/")'
-    - 'path.matches("^/[^/]+/[^/]+/blame/")'
-    - 'path.matches("^/[^/]+/[^/]+/search/")'
-    - 'path.matches("^/[^/]+/[^/]+/find/")'
-    - 'path.matches("^/[^/]+/[^/]+/activity")'
-    # any search with a custom query
-    - '"q" in query && query.q != ""'
-    # user activity tab
-    - 'path.matches("^/[^/]+$") && "tab" in query && query.tab == "activity"'
+
 
 # Rules and conditions are served this environment
 #   remoteAddress (net.IP) - Connecting client remote address from headers or properties
@@ -277,11 +187,6 @@ rules:
       - '($is-static-asset)'
     action: pass
 
-  - name: undesired-networks
-    conditions:
-      - 'inNetwork("huawei-cloud", remoteAddress) || inNetwork("alibaba-cloud", remoteAddress) || inNetwork("zenlayer-inc", remoteAddress)'
-    action: poison
-
   - name: undesired-crawlers
     conditions:
       - '($is-headless-chromium)'
@@ -304,7 +209,7 @@ rules:
       - 'userAgent.contains("Amazonbot") || userAgent.contains("Google-Extended") || userAgent.contains("PanguBot") || userAgent.contains("AI2Bot") || userAgent.contains("Diffbot") || userAgent.contains("cohere-training-data-crawler") || userAgent.contains("Applebot-Extended")'
       # SEO / Ads and marketing
       - 'userAgent.contains("BLEXBot")'
-    action: poison
+    action: deny
 
   - name: unknown-crawlers
     conditions:
@@ -312,11 +217,11 @@ rules:
       - 'userAgent == ""'
     action: deny
 
-  # check a sequence of challenges for non logged in
+  # check a sequence of challenges
   - name: suspicious-crawlers/0
     conditions: ['($is-suspicious-crawler)']
     action: check
-    challenges: [js-pow-sha256, http-cookie-check]
+    challenges: [js-pow-sha256]
   - name: suspicious-crawlers/1
     conditions: ['($is-suspicious-crawler)']
     action: check
@@ -329,66 +234,6 @@ rules:
     conditions: ['($is-suspicious-crawler)']
     action: check
     challenges: [self-resource-load]
-
-  - name: always-pow-challenge
-    conditions:
-      # login and sign up paths
-      - 'path.startsWith("/user/sign_up")'
-      - 'path.startsWith("/user/login") || path.startsWith("/user/oauth2/")'
-      - 'path.startsWith("/user/activate")'
-      # repo / org / mirror creation paths
-      - 'path == "/repo/create" || path == "/repo/migrate" || path ==  "/org/create"'
-      # user profile info edit paths
-      - 'path == "/user/settings" || path.startsWith("/user/settings/hooks/")'
-      # issue creation
-      - 'path.matches("^/[^/]+/[^/]+/issues/new")'
-      # Match archive downloads from browsers and not tools
-      - 'path.matches("^/[^/]+/[^/]+/archive/.*\\.(bundle|zip|tar\\.gz)") && ($is-generic-browser)'
-    action: challenge
-    challenges: [ js-pow-sha256 ]
-
-  - name: allow-git-operations
-    conditions:
-      - '($is-git-path)'
-      - 'path.matches("^/[^/]+/[^/]+\\.git")'
-      - 'path.matches("^/[^/]+/[^/]+/") && ($is-git-ua)'
-    action: pass
-
-  - name: sitemap
-    conditions:
-      - 'path == "/sitemap.xml" || path.matches("^/explore/(users|repos)/sitemap-[0-9]+\\.xml$")'
-    action: pass
-
-  # TODO: rss
-
-  - name: api-call
-    conditions:
-      - 'path.startsWith("/api/v1/") || path.startsWith("/api/forgejo/v1/")'
-      - 'path.startsWith("/login/oauth/")'
-      - 'path.startsWith("/captcha/")'
-      - 'path.startsWith("/metrics/")'
-      # todo: post only
-      - 'path == "/-/markup"'
-      - 'path == "/user/events"'
-      - 'path == "/ssh_info"'
-      - 'path == "/api/healthz"'
-      # actions
-      - 'path.startsWith("/api/actions/") || path.startsWith("/api/actions_pipeline/")'
-      # user pubkeys
-      - 'path.matches("^/[^/]+\\.keys$")'
-      - 'path.matches("^/[^/]+\\.gpg")'
-      # OCI packages API and package managers
-      - 'path.startsWith("/api/packages/") || path == "/api/packages"'
-      - 'path.startsWith("/v2/") || path == "/v2"'
-    action: pass
-
-  - name: preview-fetchers
-    conditions:
-      - 'path.endsWith("/-/summary-card")'
-      #- 'userAgent.contains("facebookexternalhit/")'
-      - 'userAgent.contains("Twitterbot/")'
-      - '"X-Purpose" in headers && headers["X-Purpose"] == "preview"'
-    action: pass
 
   - name: desired-crawlers
     conditions:
@@ -403,30 +248,6 @@ rules:
   - name: homesite
     conditions:
       - 'path == "/"'
-      # generic /*/*/ match gave too many options for scrapers to trigger random endpoints
-      # edit this with preferential users/orgs for now
-      # todo: create negative match?
-      - 'path.matches("(?i)^/(WeebDataHoarder|P2Pool|mirror|git|S\\.O\\.N\\.G|FM10K|Sillycom|pwgen2155|kaitou|metonym)/[^/]+$")'
-    action: pass
-
-  # check a sequence of challenges
-  - name: heavy-operations/0
-    action: check
-    challenges: [self-preload-link, self-header-refresh, js-pow-sha256, http-cookie-check]
-    conditions: ['($is-heavy-resource)']
-  - name: heavy-operations/1
-    action: check
-    challenges: [self-resource-load, js-pow-sha256, http-cookie-check]
-    conditions: ['($is-heavy-resource)']
-
-  # Allow all source downloads not caught in browser above
-  # todo: limit this as needed?
-  - name: source-download
-    conditions:
-      - 'path.matches("^/[^/]+/[^/]+/raw/branch/")'
-      - 'path.matches("^/[^/]+/[^/]+/archive/")'
-      - 'path.matches("^/[^/]+/[^/]+/releases/download/")'
-      - 'path.matches("^/[^/]+/[^/]+/media/") && ($is-generic-browser)'
     action: pass
 
   # check DNSBL and serve harder challenges
@@ -434,7 +255,7 @@ rules:
     conditions:
       - 'inDNSBL(remoteAddress)'
     action: check
-    challenges: [js-pow-sha256, http-cookie-check]
+    challenges: [js-pow-sha256]
 
   - name: suspicious-fetchers
     action: check
@@ -459,6 +280,6 @@ rules:
 
   - name: standard-browser
     action: challenge
-    challenges: [http-cookie-check, self-preload-link, self-meta-refresh, self-resource-load, js-pow-sha256]
+    challenges: [self-preload-link, self-meta-refresh, self-resource-load, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'
