@@ -323,10 +323,10 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 						if r != nil {
 							_, _ = io.Copy(w, reader)
 						}
-						return
 					} else {
 						http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 					}
+					return
 				}
 			}
 		}
