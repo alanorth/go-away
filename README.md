@@ -67,7 +67,7 @@ Internal or external templates can be loaded to customize the look of the challe
 These templates are included by default:
 
 * `anubis`: An anubis-like themed challenge.
-* `forgejo`: Uses the Forgejo template and assets from your own instance. Supports specifying themes like `forgejo-light` and `forgejo-dark`.
+* `forgejo`: Uses the Forgejo template and assets from your own instance. Supports specifying themes like `forgejo-auto`, `forgejo-light` and `forgejo-dark`.
 
 External templates for your site can be loaded specifying a full path to the `.gohtml` file. See [embed/templates/](embed/templates/) for examples to follow.
 

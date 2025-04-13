@@ -140,7 +140,7 @@ func main() {
 
 	policyFile := flag.String("policy", "", "path to policy YAML file")
 	challengeTemplate := flag.String("challenge-template", "anubis", "name or path of the challenge template to use (anubis, forgejo)")
-	challengeTemplateTheme := flag.String("challenge-template-theme", "", "name of the challenge template theme to use (forgejo => [forgejo-dark, forgejo-light, gitea...])")
+	challengeTemplateTheme := flag.String("challenge-template-theme", "", "name of the challenge template theme to use (forgejo => [forgejo-auto, forgejo-dark, forgejo-light, gitea...])")
 
 	packageName := flag.String("package-path", internalPackageName, "package name to expose in .well-known url path")
 
