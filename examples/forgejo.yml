@@ -254,18 +254,7 @@ conditions:
     # user activity tab
     - 'path.matches("^/[^/]+$") && "tab" in query && query.tab == "activity"'
 
-# Rules and conditions are served this environment
-#   remoteAddress (net.IP) - Connecting client remote address from headers or properties
-#   host (string) - HTTP Host
-#   method (string) - HTTP Method/Verb
-#   userAgent (string) - HTTP User-Agent header
-#   path (string) - HTTP request Path
-#   query (map[string]string) - HTTP request Query arguments
-#   headers (map[string]string) - HTTP request headers
-#
-# Additionally these functions are available
-#   inNetwork(networkName string, address net.IP) bool
-#   inNetwork(networkCIDR string, address net.IP) bool
+
 rules:
   - name: allow-well-known-resources
     conditions:
