@@ -7,11 +7,11 @@ Self-hosted abuse detection and rule enforcement against low-effort mass AI scra
 
 go-away sits in between your site and the Internet / upstream proxy.
 
-Incoming requests can be selected by [rules](#rich-rule-matching) to be [actioned](#extended-rule-actions) or [challenged](#challenges) to filter suspicious requests.
+Incoming requests can be selected by [rules](#rich-rule-matching) to be [actioned](#extended-rule-actions) or [challenged](CHALLENGES.md#challenges) to filter suspicious requests.
 
 The tool is designed highly flexible so the operator can minimize impact to legit users, while surgically targeting heavy endpoints or scrapers.
 
-[Challenges](#challenges) can be transparent (not shown to user, depends on backend or other logic), [non-JavaScript](#non-javascript-challenges) (challenges common browser properties), or [custom JavaScript](#custom-javascript-wasm-challenges) (from Proof of Work to fingerprinting or Captcha is supported)
+[Challenges](CHALLENGES.md#challenges) can be transparent (not shown to user, depends on backend or other logic), [non-JavaScript](#non-javascript-challenges) (challenges common browser properties), or [custom JavaScript](#custom-javascript-wasm-challenges) (from Proof of Work to fingerprinting or Captcha is supported)
 
 See _[Why?](#why)_ section for the challenges and reasoning behind this tool.
 
@@ -104,7 +104,7 @@ Several challenges that do not require JavaScript are offered, some targeting th
 
 These can be used for light checking of requests that eliminate most of the low effort scraping.
 
-See [Challenges](#challenges) below for a list of them.
+See [Challenges](CHALLENGES.md#challenges) for a list of them.
 
 ### Custom JavaScript / WASM challenges
 
@@ -150,7 +150,11 @@ Results will be temporarily cached
 
 By default, [DroneBL](https://dronebl.org/) is used.
 
-### Network range loading
+### Network range and automated filtering
+
+Some specific search spiders do follow _robots.txt_ and are well behaved. However, many actors can reuse user agents, so the origin network ranges must be checked.
+
+The samples provide example network range fetching and rules for Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot.
 
 Network ranges can be loaded via fetched JSON / TXT / HTML pages, or via lists. You can filter these using _jq_ or a regex.
 
@@ -362,117 +366,6 @@ services:
     # etc.
 
 ```
-
-## Challenges
-
-#### http
-
-Verify incoming requests against a specified backend to allow the user through. Cookies and some other headers are passed.
-
-For example, this allows verifying the user cookies against the backend to have the user skip all other challenges.
-
-Example on Forgejo, checks that current user is authenticated:
-```yaml
-  http-cookie-check:
-    mode: http
-    url: http://forgejo:3000/user/stopwatches
-    # url: http://forgejo:3000/repo/search
-    # url: http://forgejo:3000/notifications/new
-    parameters:
-      http-method: GET
-      http-cookie: i_like_gitea
-      http-code: 200
-```
-
-#### preload-link
-
-Requires HTTP/2+ response parsing and logic, silent challenge (does not display a challenge page).
-
-Browsers that support [103 Early Hints](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/103) are indicated to fetch a CSS resource via [Link](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Link) preload that solves the challenge.
-
-The server waits until solved or defined timeout, then continues on other challenges if failed.
-
-Example:
-```yaml
-  self-preload-link:
-    condition: '"Sec-Fetch-Mode" in headers && headers["Sec-Fetch-Mode"] == "navigate"'
-    mode: "preload-link"
-    runtime:
-      # verifies that result = key
-      mode: "key"
-      probability: 0.1
-    parameters:
-      preload-early-hint-deadline: 3s
-      key-code: 200
-      key-mime: text/css
-      key-content: ""
-```
-
-#### header-refresh
-
-Requires HTTP response parsing and logic, displays challenge site instantly.
-
-Have the browser solve the challenge by following the URL listed on HTTP [Refresh](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Refresh) instantly.
-
-
-#### meta-refresh
-
-Requires HTTP and HTML response parsing and logic, displays challenge site instantly.
-
-Have the browser solve the challenge by following the URL listed on HTML `<meta http-equiv=refresh>` tag instantly. Equivalent to above.
-
-#### resource-load
-
-Requires HTTP and HTML response parsing and logic, displays challenge site.
-
-Servers a challenge page with a linked resource that is loaded by the browser, which solves the challenge. Page refreshes a few seconds later via [Refresh](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Refresh).
-
-Example:
-```yaml
-  self-resource-load:
-    mode: "resource-load"
-    runtime:
-      # verifies that result = key
-      mode: "key"
-      probability: 0.1
-    parameters:
-      key-code: 200
-      key-mime: text/css
-      key-content: ""
-```
-
-#### cookie
-
-Requires HTTP parsing and a Cookie Jar, silent challenge (does not display a challenge page unless failed).
-
-Serves the client with a Set-Cookie that solves the challenge, and redirects it back to the same page. Browser must present the cookie to load.
-
-Several tools implement this, but usually not mass scrapers.
-
-#### js-pow-sha256
-
-Requires JavaScript and workers, displays challenge site.
-
-Has the user solve a Proof of Work using SHA256 hashes, with configurable difficulty.
-
-Example:
-```yaml
-  js-pow-sha256:
-    # Asset must be under challenges/{name}/static/{asset}
-    # Other files here will be available under that path
-    mode: js
-    asset: load.mjs
-    parameters:
-      # difficulty is number of bits that must be set to 0 from start
-      # Anubis challenge difficulty 5 becomes 5 * 8 = 20
-      difficulty: 20
-    runtime:
-      mode: wasm
-      # Verify must be under challenges/{name}/runtime/{asset}
-      asset: runtime.wasm
-      probability: 0.02
-```
-
 
 
 
