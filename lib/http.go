@@ -307,24 +307,26 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 					if reader != nil {
 						defer reader.Close()
-					}
 
-					w.Header().Set("Cache-Control", "max-age=0, private, must-revalidate, no-transform")
-					w.Header().Set("Vary", "Accept-Encoding")
-					w.Header().Set("Content-Type", mime)
-					w.Header().Set("X-Content-Type-Options", "nosniff")
-					if encoding != "" {
-						w.Header().Set("Content-Encoding", encoding)
+						w.Header().Set("Cache-Control", "max-age=0, private, must-revalidate, no-transform")
+						w.Header().Set("Vary", "Accept-Encoding")
+						w.Header().Set("Content-Type", mime)
+						w.Header().Set("X-Content-Type-Options", "nosniff")
+						if encoding != "" {
+							w.Header().Set("Content-Encoding", encoding)
+						}
+						w.WriteHeader(http.StatusOK)
+						if flusher, ok := w.(http.Flusher); ok {
+							// trigger chunked encoding
+							flusher.Flush()
+						}
+						if r != nil {
+							_, _ = io.Copy(w, reader)
+						}
+						return
+					} else {
+						http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 					}
-					w.WriteHeader(http.StatusOK)
-					if flusher, ok := w.(http.Flusher); ok {
-						// trigger chunked encoding
-						flusher.Flush()
-					}
-					if r != nil {
-						_, _ = io.Copy(w, reader)
-					}
-					return
 				}
 			}
 		}
