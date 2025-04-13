@@ -394,11 +394,11 @@ func (p Allocation) Size() uint32 {
 
 
 // MakeChallenge MakeChallengeInput / MakeChallengeOutput are valid JSON.
-// See lib/challenge/interface.go for a definition
+// See lib/challenge/wasm/interface/interface.go for a definition
 func MakeChallenge(in Allocation[MakeChallengeInput]) Allocation[MakeChallengeOutput]
 
 // VerifyChallenge VerifyChallengeInput is valid JSON.
-// See lib/challenge/interface.go for a definition
+// See lib/challenge/wasm/interface/interface.go for a definition
 func VerifyChallenge(in Allocation[VerifyChallengeInput]) VerifyChallengeOutput
 
 func malloc(size uint32) uintptr
