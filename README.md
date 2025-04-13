@@ -11,7 +11,7 @@ Incoming requests can be selected by [rules](#rich-rule-matching) to be [actione
 
 The tool is designed highly flexible so the operator can minimize impact to legit users, while surgically targeting heavy endpoints or scrapers.
 
-[Challenges](#challenges) can be transparent (not shown to user, depends on backend or other logic), [non-JavaScript](#non-javascript-challenges) (challenges common browser properties), or [custom JavaScript](#custom-javascript--wasm-challenges) (from Proof of Work to fingerprinting or Captcha is supported)
+[Challenges](#challenges) can be transparent (not shown to user, depends on backend or other logic), [non-JavaScript](#non-javascript-challenges) (challenges common browser properties), or [custom JavaScript](#custom-javascript-wasm-challenges) (from Proof of Work to fingerprinting or Captcha is supported)
 
 See _[Why?](#why)_ section for the challenges and reasoning behind this tool.
 
