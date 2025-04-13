@@ -1,14 +1,19 @@
 # go-away
 
-Self-hosted abuse detection and rule enforcement against low-effort mass AI scraping and bots.
+Self-hosted abuse detection and rule enforcement against low-effort mass AI scraping and bots. 
 
 [![Build Status](https://ci.gammaspectra.live/api/badges/git/go-away/status.svg)](https://ci.gammaspectra.live/git/go-away)
 [![Go Reference](https://pkg.go.dev/badge/git.gammaspectra.live/git/go-away.svg)](https://pkg.go.dev/git.gammaspectra.live/git/go-away)
 
-This documentation is a work in progress. For now, see policy examples under [examples/](examples/).
+go-away sits in between your site and the Internet / upstream proxy.
 
-This Go package can be used as a command on `git.gammaspectra.live/git/go-away/cmd/go-away` or a library under `git.gammaspectra.live/git/go-away/lib`
+Incoming requests can be selected by [rules](#rich-rule-matching) to be [actioned](#extended-rule-actions) or [challenged](#challenges) to filter suspicious requests.
 
+The tool is designed highly flexible so the operator can minimize impact to legit users, while surgically targeting heavy endpoints or scrapers.
+
+[Challenges](#challenges) can be transparent (not shown to user, depends on backend or other logic), [non-JavaScript](#non-javascript-challenges) (challenges common browser properties), or [custom JavaScript](#custom-javascript--wasm-challenges) (from Proof of Work to fingerprinting or Captcha is supported)
+
+See _[Why?](#why)_ section for the challenges and reasoning behind this tool.
 
 ## Support
 
@@ -101,7 +106,7 @@ These can be used for light checking of requests that eliminate most of the low 
 
 See [Challenges](#challenges) below for a list of them.
 
-### Custom proof-of-work JS / WASM challenges
+### Custom JavaScript / WASM challenges
 
 A WASM interface for server-side proof generation and checking is offered. We provide `js-pow-sha256` as an example of one.
 
@@ -472,6 +477,8 @@ Example:
 
 
 ## Development
+
+This Go package can be used as a command on `git.gammaspectra.live/git/go-away/cmd/go-away` or a library under `git.gammaspectra.live/git/go-away/lib`
 
 ### Compiling WASM runtime challenge modules
 
