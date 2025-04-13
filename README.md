@@ -21,7 +21,7 @@ If you have some suggestion or issue, feel free to open a [New Issue](https://gi
 
 [Pull Requests](https://git.gammaspectra.live/git/go-away/pulls) are encouraged and desired.
 
-For real-time chat and other support join IRC on [##go-away](ircs://irc.libera.chat/##go-away) on Libera.Chat. The channel may not be monitored at all times, feel free to ping the operators there.
+For real-time chat and other support join IRC on [#go-away](ircs://irc.libera.chat/#go-away) on Libera.Chat [[WebIRC]](https://web.libera.chat/?nick=Guest?#go-away). The channel may not be monitored at all times, feel free to ping the operators there.
 
 
 ## Features
