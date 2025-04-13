@@ -227,8 +227,8 @@ conditions:
     - 'userAgent.startsWith("reqwest/")'
 
   is-suspicious-crawler:
-    # TLS Fingerprint for specific agent
-    - 'fpJA4 == "t13d311000_e8f1e7e78f70_a29327ec888c"'
+    # TLS Fingerprint for specific agent without ALPN
+    - '(userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")) && fpJA4.matches("^t[0-9a-z]+00_")'
     # Old engines
     - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
     # Old IE browsers
