@@ -195,6 +195,12 @@ You can modify the path where challenges are served and package name, if you don
 
 No source code editing or forking necessary!
 
+### IPv6 Happy Eyeballs challenge retry
+
+In case a client connects over IPv4 first then IPv6 due to [Fast Fallback / Happy Eyeballs](https://en.wikipedia.org/wiki/Happy_Eyeballs), the challenge will automatically be retried.
+
+This is tracked by tagging challenges with a readable flag indicating the type of address.
+
 ## Why?
 In the past few years this small git instance has been hit by waves and waves of scraping.
 This was usually fought back by random useragent blocks for bots that did not follow [robots.txt](/robots.txt), until the past half year, where low-effort mass scraping was used more prominently.
@@ -203,7 +209,7 @@ Recently these networks go from using residential IP blocks to sending requests 
 
 If the server gets sluggish, more requests pile up. Even when denied they scrape for weeks later. Effectively spray and pray scraping, process later.
 
-At some point about 300Mbit/s of incoming requests (not including the responses) was hitting the server. And all at nonsense URLs
+At some point about 300Mbit/s of incoming requests (not including the responses) was hitting the server. And all of them nonsense URLs, or hitting archive/bundle downloads per commit.
 
 If AI is so smart, why not just git clone the repositories?
 
