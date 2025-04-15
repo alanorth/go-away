@@ -1,5 +1,6 @@
 ---
 environment:
+  GOTOOLCHAIN: "local"
   CGO_ENABLED: "0"
   GOARCH: amd64
   GOOS: linux
@@ -40,6 +41,7 @@ steps:
 type: docker
 ---
 environment:
+  GOTOOLCHAIN: "local"
   CGO_ENABLED: "0"
   GOARCH: arm64
   GOOS: linux
@@ -80,6 +82,7 @@ steps:
 type: docker
 ---
 environment:
+  GOTOOLCHAIN: "local"
   CGO_ENABLED: "0"
   GOARCH: amd64
   GOOS: linux
@@ -120,6 +123,7 @@ steps:
 type: docker
 ---
 environment:
+  GOTOOLCHAIN: "local"
   CGO_ENABLED: "0"
   GOARCH: arm64
   GOOS: linux

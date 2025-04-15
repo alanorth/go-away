@@ -7,6 +7,7 @@ FROM --platform=$BUILDPLATFORM ${from_builder} AS build
 
 ARG TARGETARCH
 ARG TARGETOS
+ARG GOTOOLCHAIN=local
 
 RUN apk update && apk add --no-cache \
     bash \
@@ -22,6 +23,7 @@ RUN ./build-compress.sh
 ENV CGO_ENABLED=0
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
+ENV GOTOOLCHAIN=${GOTOOLCHAIN}
 
 RUN go build -pgo=auto -v -trimpath -o "${GOBIN}/go-away" ./cmd/go-away
 RUN test -e "${GOBIN}/go-away"
