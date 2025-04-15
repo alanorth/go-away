@@ -40,7 +40,7 @@ func (n Network) FetchPrefixes(c *http.Client) (output []net.IPNet, err error) {
 			return nil, err
 		}
 		defer response.Body.Close()
-		if response.StatusCode != 200 {
+		if response.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("unexpected status code: %d", response.StatusCode)
 		}
 		reader = response.Body
