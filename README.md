@@ -15,7 +15,7 @@ The tool is designed highly flexible so the operator can minimize impact to legi
 
 See _[Why?](#why)_ section for the challenges and reasoning behind this tool. 
 
-This documentation and go-away are in active development. See [What's left?](#whats-left) section for a breakdown.
+This documentation and go-away are in active development. See [What's left?](#what-s-left) section for a breakdown.
 
 ## Support
 
@@ -205,6 +205,31 @@ In case a client connects over IPv4 first then IPv6 due to [Fast Fallback / Happ
 
 This is tracked by tagging challenges with a readable flag indicating the type of address.
 
+## Example policies
+
+### Forgejo
+
+The policy file at [examples/forgejo.yml](examples/forgejo.yml) provides a ready template to be used on your own Forgejo instance.
+
+Important notes:
+* Edit the `homesite` rule, as it's targeted to common users or orgs on the instance. A better regex might be possible in the future.
+* Edit the `http-cookie-check` challenge, as this will fetch the listed backend with the given session cookie to check for user login.
+* Adjust the desired blocked networks or others. A template list of network ranges is provided, feel free to remove these if not needed.
+* Check the conditions and base rules to change your challenges offered and other ordering.
+* By default Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot are allowed by useragent and network ranges.
+
+### Generic
+
+The policy file at [examples/generic.yml](examples/generic.yml) provides a baseline to place on any site, that can be modified to fit your needs.
+
+Important notes:
+* Edit the `homesite` rule, as it's targeted to pages you always want to have available, like landing pages.
+* Edit the `is-static-asset` condition or the `allow-static-resources` rule to allow static file access as necessary.
+* If you have an API, add a PASS rule targeting it.
+* Check the conditions and base rules to change your challenges offered and other ordering.
+* Add or modify rules to target specific pages on your site as desired.
+* By default Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot are allowed by useragent and network ranges.
+
 ## Why?
 In the past few years this small git instance has been hit by waves and waves of scraping.
 This was usually fought back by random useragent blocks for bots that did not follow [robots.txt](/robots.txt), until the past half year, where low-effort mass scraping was used more prominently.
@@ -241,37 +266,11 @@ go-away may not be as straight to configure as Anubis but this was chosen to red
 
 Yes, they can. At the moment their spray-and-pray approach is cheap for them.
 
-If they have to start adding an active browser in their scraping, that makes their collection expensive and slow. 
+If they have to start adding an active browser in their scraping, that makes their collection expensive and slow.
 
-This would more or less eliminate the high rate low effort passive scraping and replace it with an active model. 
+This would more or less eliminate the high rate low effort passive scraping and replace it with an active model.
 
 go-anubis offers a highly configurable set of challenges and rules that you can adapt to new ways.
-
-## Example policies
-
-### Forgejo
-
-The policy file at [examples/forgejo.yml](examples/forgejo.yml) provides a ready template to be used on your own Forgejo instance.
-
-Important notes:
-* Edit the `homesite` rule, as it's targeted to common users or orgs on the instance. A better regex might be possible in the future.
-* Edit the `http-cookie-check` challenge, as this will fetch the listed backend with the given session cookie to check for user login.
-* Adjust the desired blocked networks or others. A template list of network ranges is provided, feel free to remove these if not needed.
-* Check the conditions and base rules to change your challenges offered and other ordering.
-* By default Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot are allowed by useragent and network ranges.
-
-### Generic
-
-The policy file at [examples/generic.yml](examples/generic.yml) provides a baseline to place on any site, that can be modified to fit your needs.
-
-Important notes:
-* Edit the `homesite` rule, as it's targeted to pages you always want to have available, like landing pages.
-* Edit the `is-static-asset` condition or the `allow-static-resources` rule to allow static file access as necessary.
-* If you have an API, add a PASS rule targeting it.
-* Check the conditions and base rules to change your challenges offered and other ordering.
-* Add or modify rules to target specific pages on your site as desired.
-* By default Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot are allowed by useragent and network ranges.
-
 
 ## What's left?
 
