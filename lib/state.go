@@ -189,7 +189,8 @@ func NewState(p policy.Policy, settings StateSettings) (handler http.Handler, er
 			}
 			prefixes, err := e.FetchPrefixes(state.Client)
 			if err != nil {
-				return nil, fmt.Errorf("networks %s: error fetching prefixes: %v", k, err)
+				slog.Error("error fetching network url list", "network", k, "url", *e.Url)
+				continue
 			}
 			for _, prefix := range prefixes {
 				err = ranger.Insert(cidranger.NewBasicRangerEntry(prefix))

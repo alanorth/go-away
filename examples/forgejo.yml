@@ -67,7 +67,7 @@ networks:
     - url: https://help.qwant.com/wp-content/uploads/sites/2/2025/01/qwantbot.json
       jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
   duckduckbot:
-    - url: https://duckduckgo.com/duckduckgo-help-pages/results/duckduckbot/
+    - url: https://duckduckgo.com/duckduckgo-help-pages/results/duckduckbot
       regex: "<li>(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)</li>"
   yandexbot:
     # todo: detected as bot
