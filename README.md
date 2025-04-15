@@ -13,7 +13,9 @@ The tool is designed highly flexible so the operator can minimize impact to legi
 
 [Challenges](CHALLENGES.md#challenges) can be transparent (not shown to user, depends on backend or other logic), [non-JavaScript](#non-javascript-challenges) (challenges common browser properties), or [custom JavaScript](#custom-javascript-wasm-challenges) (from Proof of Work to fingerprinting or Captcha is supported)
 
-See _[Why?](#why)_ section for the challenges and reasoning behind this tool.
+See _[Why?](#why)_ section for the challenges and reasoning behind this tool. 
+
+This documentation and go-away are in active development. See [What's left?](#whats-left) section for a breakdown.
 
 ## Support
 
@@ -270,6 +272,23 @@ Important notes:
 * Add or modify rules to target specific pages on your site as desired.
 * By default Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot are allowed by useragent and network ranges.
 
+
+## What's left?
+
+go-away has most of the desired features from the original checklist that was made in its development. 
+However, a few points are left before go-away can be called v1.0.0:
+
+* [ ] Several parts of the code are going through a refactor, which won't impact end users or operators.
+* [ ] Documentation is lacking and a more extensive one with inline example is in the works.
+* [ ] Policy file syntax is going to stay mostly unchanged, except in the challenges definition section.
+* [ ] Allow users to pick fallback challenges if any fail, specially with custom ones.
+* [ ] Replace Anubis-like default template with own one.
+* [ ] Define strings and multi-language support for quick modification by operators without custom templates.
+* [ ] Have highly tested paths that match examples.
+* [ ] Caching of temporary fetches, for example, network ranges.
+* [ ] Allow live policy reloading.
+* [ ] Merge all rules and conditions into one large AST for higher performance.
+* [ ] Explore exposing a module for direct Caddy usage.
 
 ## Setup
 
