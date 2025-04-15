@@ -23,6 +23,8 @@ If you have some suggestion or issue, feel free to open a [New Issue](https://gi
 
 For real-time chat and other support join IRC on [#go-away](ircs://irc.libera.chat/#go-away) on Libera.Chat [[WebIRC]](https://web.libera.chat/?nick=Guest?#go-away). The channel may not be monitored at all times, feel free to ping the operators there.
 
+A mirror exists on [Codeberg.org](https://codeberg.org/WeebDataHoarder/go-away).
+
 
 ## Features
 
