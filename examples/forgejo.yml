@@ -440,6 +440,11 @@ rules:
     conditions:
       - '!(method == "HEAD" || method == "GET")'
 
+  - name: plaintext-browser
+    action: challenge
+    challenges: [http-cookie-check, self-meta-refresh, self-cookie]
+    conditions:
+      - 'userAgent.startsWith("Lynx/")'
 
   - name: standard-tools
     action: challenge
