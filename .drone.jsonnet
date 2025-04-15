@@ -8,6 +8,7 @@ local Build(go, alpine, os, arch) = {
         arch: arch
     },
     environment: {
+        GOTOOLCHAIN: "local",
         CGO_ENABLED: "0",
         GOOS: os,
         GOARCH: arch,
@@ -93,8 +94,6 @@ local Publish(go, alpine, os, arch, trigger, platforms, extra) = {
 #
 
 [
-    Build("1.24", "3.20", "linux", "amd64"),
-    Build("1.24", "3.20", "linux", "arm64"),
     Build("1.24", "3.21", "linux", "amd64"),
     Build("1.24", "3.21", "linux", "arm64"),
 
@@ -103,6 +102,4 @@ local Publish(go, alpine, os, arch, trigger, platforms, extra) = {
 
     # modern
     Publish("1.24", "3.21", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, ["linux/amd64", "linux/arm64"], {auto_tag: true,}),
-    # legacy
-    Publish("1.24", "3.20", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, ["linux/amd64", "linux/arm64"], {auto_tag: true,}),
 ]
