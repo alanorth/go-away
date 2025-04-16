@@ -397,7 +397,7 @@ rules:
   - name: desired-crawlers
     conditions:
       - 'userAgent.contains("+https://kagi.com/bot") && inNetwork("kagibot", remoteAddress)'
-      - '(userAgent.contains("+http://www.google.com/bot.html") || userAgent.contains("Google-InspectionTool") || userAgent.contains("Googlebot")) && inNetwork("googlebot", remoteAddress)'
+      - '(userAgent.contains("+http://www.google.com/bot.html") || userAgent.contains("Google-PageRenderer") || userAgent.contains("Google-InspectionTool") || userAgent.contains("Googlebot")) && inNetwork("googlebot", remoteAddress)'
       - 'userAgent.contains("+http://www.bing.com/bingbot.htm") && inNetwork("bingbot", remoteAddress)'
       - 'userAgent.contains("+http://duckduckgo.com/duckduckbot.html") && inNetwork("duckduckbot", remoteAddress)'
       - 'userAgent.contains("+https://help.qwant.com/bot/") && inNetwork("qwantbot", remoteAddress)'
