@@ -273,7 +273,7 @@ If they have to start adding an active browser in their scraping, that makes the
 
 This would more or less eliminate the high rate low effort passive scraping and replace it with an active model.
 
-go-anubis offers a highly configurable set of challenges and rules that you can adapt to new ways.
+go-away offers a highly configurable set of challenges and rules that you can adapt to new ways.
 
 ## What's left?
 
