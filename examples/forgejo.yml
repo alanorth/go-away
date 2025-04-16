@@ -411,6 +411,12 @@ rules:
     challenges: [self-resource-load, js-pow-sha256, http-cookie-check]
     conditions: ['($is-heavy-resource)']
 
+  - name: standard-bots
+    action: check
+    challenges: [self-meta-refresh, self-resource-load]
+    conditions:
+      - '($is-generic-robot-ua)'
+
   # Allow all source downloads not caught in browser above
   # todo: limit this as needed?
   - name: source-download
@@ -450,7 +456,6 @@ rules:
     action: challenge
     challenges: [self-cookie]
     conditions:
-      - '($is-generic-robot-ua)'
       - '($is-tool-ua)'
       - '!($is-generic-browser)'
 
