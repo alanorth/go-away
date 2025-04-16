@@ -376,10 +376,22 @@ rules:
 
   - name: preview-fetchers
     conditions:
+      # These summary cards are included in most previews at the end of the url
       - 'path.endsWith("/-/summary-card")'
       #- 'userAgent.contains("facebookexternalhit/")'
-      - 'userAgent.contains("Twitterbot/")'
-      - '"X-Purpose" in headers && headers["X-Purpose"] == "preview"'
+      #- 'userAgent.contains("Twitterbot/")'
+    action: pass
+
+  - name: homesite
+    conditions:
+      # Match root of site
+      - 'path == "/"'
+
+      # Match root of any repository
+      # generic /*/*/ match gave too many options for scrapers to trigger random endpoints
+      # this is a negative match of endpoints that Forgejo holds as reserved as users or orgs
+      # see https://codeberg.org/forgejo/forgejo/src/branch/forgejo/models/user/user.go#L582
+      - 'path.matches("^/[^/]+/[^/]+$") && !path.matches("(?i)^/(api|metrics|v2|assets|attachments|avatar|avatars|repo-avatars|captcha|login|org|repo|user|admin|devtest|explore|issues|pulls|milestones|notifications|ghost)/[^/]+$")'
     action: pass
 
   - name: desired-crawlers
@@ -390,15 +402,6 @@ rules:
       - 'userAgent.contains("+http://duckduckgo.com/duckduckbot.html") && inNetwork("duckduckbot", remoteAddress)'
       - 'userAgent.contains("+https://help.qwant.com/bot/") && inNetwork("qwantbot", remoteAddress)'
       - 'userAgent.contains("+http://yandex.com/bots") && inNetwork("yandexbot", remoteAddress)'
-    action: pass
-
-  - name: homesite
-    conditions:
-      - 'path == "/"'
-      # generic /*/*/ match gave too many options for scrapers to trigger random endpoints
-      # edit this with preferential users/orgs for now
-      # todo: create negative match?
-      - 'path.matches("(?i)^/(WeebDataHoarder|P2Pool|mirror|git|S\\.O\\.N\\.G|FM10K|Sillycom|pwgen2155|kaitou|metonym)/[^/]+$")'
     action: pass
 
   # check a sequence of challenges
