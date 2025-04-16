@@ -92,14 +92,15 @@ local Publish(go, alpine, os, arch, trigger, platforms, extra) = {
 };
 
 #
+local containerArchitectures = ["linux/amd64", "linux/arm64", "linux/riscv64"];
 
 [
     Build("1.24", "3.21", "linux", "amd64"),
     Build("1.24", "3.21", "linux", "arm64"),
 
     # latest
-    Publish("1.24", "3.21", "linux", "amd64", {event: ["push"], branch: ["master"], }, ["linux/amd64", "linux/arm64"], {tags: ["latest"],}) + {name: "publish-latest"},
+    Publish("1.24", "3.21", "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest"},
 
     # modern
-    Publish("1.24", "3.21", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, ["linux/amd64", "linux/arm64"], {auto_tag: true,}),
+    Publish("1.24", "3.21", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
 ]

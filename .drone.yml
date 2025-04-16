@@ -104,6 +104,7 @@ steps:
     platform:
     - linux/amd64
     - linux/arm64
+    - linux/riscv64
     registry: git.gammaspectra.live
     repo: git.gammaspectra.live/git/go-away
     tags:
@@ -141,6 +142,7 @@ steps:
     platform:
     - linux/amd64
     - linux/arm64
+    - linux/riscv64
     registry: git.gammaspectra.live
     repo: git.gammaspectra.live/git/go-away
     username:
@@ -154,6 +156,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: 8ce795aa7b59f2a3290390df45a469d21b3e5b46230ac33ba0e24865607544d1
+hmac: 1b7c264865c2cf283d10a02ef6a9e19920f0a81010dec37a92300a7e59e57348
 
 ...
