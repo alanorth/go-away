@@ -79,9 +79,12 @@ External templates for your site can be loaded specifying a full path to the `.g
 
 In addition to the common PASS / CHALLENGE / DENY rules, we offer CHECK and POISON.
 
-CHECK allows the client to be challenged but continue matching rules after these.
+CHECK allows the client to be challenged but continue matching rules after these, for example, chaining a list of challenges that must be passed. 
+For example, you could use this to implement browser in checks without explicitly allowing all requests, and later deferring to a secondary check/challenge.
 
 POISON sends defined responses to bad clients that will annoy them.
+This must be configured by the operator, some networks have been seen to only stop when served back this output.
+Currently, an HTML payload exists that uncompressed to about one GiB of nonsense DOM. You could use this to send garbage for would-be training data.
 
 ### Multiple challenge matching
 
@@ -98,7 +101,7 @@ For example:
 
 This rule has the user be checked against a backend, then attempts pass a few browser challenges.
 
-In this case the processing would stop at `self-meta-refresh` due to the behavior of earlier challenges.
+In this case the processing would stop at `self-meta-refresh` due to the behavior of earlier challenges (cookie check and preload link allow failing / continue due to being silent, while meta-refresh requires displaying a challenge page).
 
 Any of these listed challenges being passed in the past will allow the client through, including non-offered `self-resource-load` and `js-pow-sha256`.
 
