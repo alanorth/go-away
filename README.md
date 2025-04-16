@@ -13,7 +13,7 @@ The tool is designed highly flexible so the operator can minimize impact to legi
 
 [Challenges](CHALLENGES.md#challenges) can be transparent (not shown to user, depends on backend or other logic), [non-JavaScript](#non-javascript-challenges) (challenges common browser properties), or [custom JavaScript](#custom-javascript-wasm-challenges) (from Proof of Work to fingerprinting or Captcha is supported)
 
-See _[Why?](#why)_ section for the challenges and reasoning behind this tool. 
+See _[Why do this?](#why-do-this)_ section for the challenges and reasoning behind this tool. 
 
 This documentation and go-away are in active development. See [What's left?](#what-s-left) section for a breakdown.
 
@@ -233,7 +233,7 @@ Important notes:
 * Add or modify rules to target specific pages on your site as desired.
 * By default Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot are allowed by useragent and network ranges.
 
-## Why?
+## Why do this?
 In the past few years this small git instance has been hit by waves and waves of scraping.
 This was usually fought back by random useragent blocks for bots that did not follow [robots.txt](/robots.txt), until the past half year, where low-effort mass scraping was used more prominently.
 
