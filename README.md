@@ -1,3 +1,4 @@
+### <a id=why></a>
 # go-away
 
 Self-hosted abuse detection and rule enforcement against low-effort mass AI scraping and bots. 
