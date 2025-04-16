@@ -304,6 +304,10 @@ We also support the `autocert` parameter to configure HTTP(s). This will also al
 
 Requires Go 1.24+. Builds statically without CGo usage.
 
+We have Go 1.22+ support on the [go1.22 branch](https://git.gammaspectra.live/git/go-away/src/branch/go1.22).
+It will be regularly rebased to keep current with recent releases, at least until v1.0.0.
+Some features, such as TLS Fingerprinting, are not available on Go 1.22.
+
 ```shell
 git clone https://git.gammaspectra.live/git/go-away.git && cd go-away
 
