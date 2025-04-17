@@ -294,10 +294,11 @@ However, a few points are left before go-away can be called v1.0.0:
 * [ ] Merge all rules and conditions into one large AST for higher performance.
 * [ ] Explore exposing a module for direct Caddy usage.
 * [ ] More defined way of picking HTTP/HTTP(s) listeners and certificates.
+* [ ] Expose metrics for gathering common network ranges, challenge solve rates and acting on them.
 
 ## Setup
 
-go-away can can plaintext take HTTP/1 and _HTTP/2_ / _h2c_ connections if desired over the same port. When doing this, it is recommended to have another reverse proxy above (for example [Caddy](https://caddyserver.com/), nginx, HAProxy) to handle HTTPs or similar.
+go-away can take plaintext HTTP/1 and _HTTP/2_ / _h2c_ connections if desired over the same port. When doing this, it is recommended to have another reverse proxy above (for example [Caddy](https://caddyserver.com/), nginx, HAProxy) to handle HTTPs or similar.
 
 We also support the `autocert` parameter to configure HTTP(s). This will also allow TLS Fingerprinting to be done on incoming clients. This doesn't require any upstream proxies, and we recommend it's exposed directly or via SNI / Layer 4 proxying.
 
