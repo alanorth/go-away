@@ -28,7 +28,6 @@ For real-time chat and other support join IRC on [#go-away](ircs://irc.libera.ch
 
 A source code mirror exists on [sourcehut](https://git.sr.ht/~datahoarder/go-away), [Codeberg.org](https://codeberg.org/WeebDataHoarder/go-away), and [GitHub](https://github.com/WeebDataHoarder/go-away).
 
-
 ## Features
 
 ### Rich rule matching
@@ -405,6 +404,11 @@ services:
 
 ```
 
+
+
+## Other Similar Projects
+* [Anubis](https://anubis.techaro.lol/): Proxy that uses JavaScript proof of work to weight request based on rules [[source]](https://github.com/TecharoHQ/anubis)
+* [anticrawl](https://flak.tedunangst.com/post/anticrawl): Go http handler / proxy for regex based rules [[source]](https://humungus.tedunangst.com/r/anticrawl)
 
 
 ## Development
