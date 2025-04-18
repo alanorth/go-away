@@ -42,26 +42,19 @@ Rules and conditions are served with this environment:
 
 ```
 remoteAddress (net.IP) - Connecting client remote address from headers or properties
+  remoteAddress.network(networkName string) bool - Check whether a given IP is listed on the underlying defined network
+  remoteAddress.network(networkCIDR string) bool - Check whether a given IP is listed on the CIDR
 host (string) - HTTP Host
 method (string) - HTTP Method/Verb
 userAgent (string) - HTTP User-Agent header
 path (string) - HTTP request Path
 query (map[string]string) - HTTP request Query arguments
 headers (map[string]string) - HTTP request headers
-   
+fp (map[string]string) - Available fingerprints
+  
 Only available when TLS is enabled
-   fpJA3N (string) JA3N TLS Fingerprint
-   fpJA4 (string) JA4 TLS Fingerprint
-```
-
-Additionally, these functions are available:
-```
-Check whether a given IP is listed on the underlying defined network or CIDR
-    inNetwork(networkName string, address net.IP) bool
-    inNetwork(networkCIDR string, address net.IP) bool
-
-Check whether a given IP is listed on the provided DNSBL
-    inDNSBL(address net.IP) bool
+   fp.ja3n (string) JA3N TLS Fingerprint
+   fp.ja4 (string) JA4 TLS Fingerprint
 ```
 
 ### Template support
@@ -77,14 +70,23 @@ External templates for your site can be loaded specifying a full path to the `.g
 
 ### Extended rule actions
 
-In addition to the common PASS / CHALLENGE / DENY rules, we offer CHECK and POISON.
+In addition to the common PASS / CHALLENGE / DENY rules, go-away offers more actions that can be extended via code.
+
+|  Action   | Behavior                                                                | Terminating |
+|:---------:|:------------------------------------------------------------------------|:-----------:|
+|   PASS    | Passes the request to the backend immediately                           |     Yes     |
+|   DENY    | Denies the request with a descriptive page                              |     Yes     |
+|   BLOCK   | Denies the request with a response code                                 |     Yes     |
+|   DROP    | Drops the connection without sending a reply                            |     Yes     |
+| CHALLENGE | Issues a challenge that when passed, acts like PASS                     |     Yes     |
+|   CHECK   | Issues a challenge that when passed, continues executing rules          |     No      |
+|   PROXY   | Proxies request to a different backend, with optional path replacements |     Yes     |
+
 
 CHECK allows the client to be challenged but continue matching rules after these, for example, chaining a list of challenges that must be passed. 
 For example, you could use this to implement browser in checks without explicitly allowing all requests, and later deferring to a secondary check/challenge.
 
-POISON sends defined responses to bad clients that will annoy them.
-This must be configured by the operator, some networks have been seen to only stop when served back this output.
-Currently, an HTML payload exists that uncompressed to about one GiB of nonsense DOM. You could use this to send garbage for would-be training data.
+PROXY allows the operator to send matching requests to a different backend, for example, a poison generator or a scraping maze.
 
 ### Multiple challenge matching
 
@@ -94,7 +96,8 @@ For example:
 ```yaml
   - name: standard-browser
     action: challenge
-    challenges: [http-cookie-check, self-preload-link, self-meta-refresh, self-resource-load, js-pow-sha256]
+    settings:
+      challenges: [http-cookie-check, self-preload-link, self-meta-refresh, self-resource-load, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'
 ```
@@ -394,6 +397,7 @@ services:
       # specify a DNSBL for usage in conditions. Defaults to DroneBL 
       # GOAWAY_DNSBL: "dnsbl.dronebl.org"
       
+      # Backend to match. Can be subdomain or full wildcards, "*.example.com" or "*"
       GOAWAY_BACKEND: "git.example.com=http://forgejo:3000"
       
     # additional backends can be specified via more command arguments  
