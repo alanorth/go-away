@@ -219,7 +219,7 @@ func main() {
 	for _, backend := range backends {
 		parts := strings.Split(backend, "=")
 		if len(parts) != 2 {
-			log.Fatal(fmt.Errorf("invalid backend definition: %s", backend))
+			log.Fatal(fmt.Errorf("invalid backend definition: %s, expected 2 parts, got %v", backend, parts))
 		}
 		parsedBackends[parts[0]] = parts[1]
 	}
