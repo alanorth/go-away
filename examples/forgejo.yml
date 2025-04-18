@@ -382,6 +382,8 @@ rules:
       #- 'userAgent.contains("Twitterbot/")'
     action: pass
 
+  # Allow loading and embedding of core pages without challenges
+  # Extended pages like linking to files or tabs are not covered here, but might be included in other challenges
   - name: homesite
     conditions:
       # Match root of site
@@ -391,7 +393,11 @@ rules:
       # generic /*/*/ match gave too many options for scrapers to trigger random endpoints
       # this is a negative match of endpoints that Forgejo holds as reserved as users or orgs
       # see https://codeberg.org/forgejo/forgejo/src/branch/forgejo/models/user/user.go#L582
-      - 'path.matches("^/[^/]+/[^/]+$") && !path.matches("(?i)^/(api|metrics|v2|assets|attachments|avatar|avatars|repo-avatars|captcha|login|org|repo|user|admin|devtest|explore|issues|pulls|milestones|notifications|ghost)/[^/]+$")'
+      - 'path.matches("^/[^/]+/[^/]+/?$") && !path.matches("(?i)^/(api|metrics|v2|assets|attachments|avatar|avatars|repo-avatars|captcha|login|org|repo|user|admin|devtest|explore|issues|pulls|milestones|notifications|ghost)/[^/]+/?$")'
+
+      # Match root of most profiles, disallowing query parameters
+      # this is a negative match of endpoints that Forgejo holds as reserved as users or orgs
+      - 'path.matches("^/[^/]+/?$") && size(query) == 0 && !path.matches("(?i)^/(api|metrics|v2|assets|attachments|avatar|avatars|repo-avatars|captcha|login|org|repo|user|admin|devtest|explore|issues|pulls|milestones|notifications|ghost)/?$")'
     action: pass
 
   - name: desired-crawlers
