@@ -112,7 +112,7 @@ conditions:
 
 
   is-generic-robot-ua:
-    - 'userAgent.contains("compatible;") && !userAgent.contains("Trident/")'
+    - 'userAgent.matches("compatible[;)]") && !userAgent.contains("Trident/")'
     - 'userAgent.matches("\\+https?://")'
     - 'userAgent.contains("@")'
     - 'userAgent.matches("[bB]ot/[0-9]")'
