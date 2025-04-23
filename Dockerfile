@@ -39,6 +39,7 @@ ENV GOAWAY_BIND=":8080"
 ENV GOAWAY_BIND_NETWORK="tcp"
 ENV GOAWAY_SOCKET_MODE="0770"
 ENV GOAWAY_POLICY="/policy.yml"
+ENV GOAWAY_POLICY_SNIPPETS="/policy/snippets"
 ENV GOAWAY_CHALLENGE_TEMPLATE="anubis"
 ENV GOAWAY_CHALLENGE_TEMPLATE_THEME=""
 ENV GOAWAY_SLOG_LEVEL="WARN"
@@ -56,7 +57,8 @@ EXPOSE 8080/udp
 ENV JWT_PRIVATE_KEY_SEED="${GOAWAY_JWT_PRIVATE_KEY_SEED}"
 
 ENTRYPOINT  /bin/go-away --bind "${GOAWAY_BIND}" --bind-network "${GOAWAY_BIND_NETWORK}" --socket-mode "${GOAWAY_SOCKET_MODE}" \
-            --policy ${GOAWAY_POLICY} --client-ip-header "${GOAWAY_CLIENT_IP_HEADER}" --backend-ip-header "${GOAWAY_BACKEND_IP_HEADER}" \
+            --policy "${GOAWAY_POLICY}" --policy-snippets "${GOAWAY_POLICY_SNIPPETS}" \
+            --client-ip-header "${GOAWAY_CLIENT_IP_HEADER}" --backend-ip-header "${GOAWAY_BACKEND_IP_HEADER}" \
             --cache "${GOAWAY_CACHE}" \
             --dnsbl "${GOAWAY_DNSBL}" \
             --challenge-template "${GOAWAY_CHALLENGE_TEMPLATE}" --challenge-template-theme "${GOAWAY_CHALLENGE_TEMPLATE_THEME}" \

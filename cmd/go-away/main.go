@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
@@ -12,13 +13,11 @@ import (
 	"git.gammaspectra.live/git/go-away/lib"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/utils"
-	"github.com/goccy/go-yaml"
 	"github.com/pires/go-proxyproto"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"log/slog"
-	"maps"
 	"net"
 	"net/http"
 	"os"
@@ -137,6 +136,7 @@ func main() {
 	cachePath := flag.String("cache", path.Join(os.TempDir(), "go_away_cache"), "path to temporary cache directory")
 
 	policyFile := flag.String("policy", "", "path to policy YAML file")
+	policySnippets := flag.String("policy-snippets", "", "path to YAML snippets folder")
 	challengeTemplate := flag.String("challenge-template", "anubis", "name or path of the challenge template to use (anubis, forgejo)")
 	challengeTemplateTheme := flag.String("challenge-template-theme", "", "name of the challenge template theme to use (forgejo => [forgejo-auto, forgejo-dark, forgejo-light, gitea...])")
 
@@ -203,17 +203,14 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to read policy file: %w", err))
 	}
 
-	var p policy.Policy
-
-	if err = yaml.Unmarshal(policyData, &p); err != nil {
+	p, err := policy.NewPolicy(bytes.NewReader(policyData), *policySnippets)
+	if err != nil {
 		log.Fatal(fmt.Errorf("failed to parse policy file: %w", err))
 	}
 
 	createdBackends := make(map[string]http.Handler)
 
 	parsedBackends := make(map[string]string)
-	//TODO: deprecate
-	maps.Copy(parsedBackends, p.Backends)
 	for _, backend := range backends {
 		parts := strings.Split(backend, "=")
 		if len(parts) != 2 {
@@ -230,6 +227,10 @@ func main() {
 
 		backend.ErrorLog = slog.NewLogLogger(slog.With("backend", k).Handler(), slog.LevelError)
 		createdBackends[k] = backend
+	}
+
+	if len(createdBackends) == 0 {
+		log.Fatal(fmt.Errorf("no backends defined in policy file"))
 	}
 
 	if *cachePath != "" {
@@ -328,7 +329,7 @@ func main() {
 		ChallengeResponseCode:  http.StatusTeapot,
 	}
 
-	state, err := lib.NewState(p, settings)
+	state, err := lib.NewState(*p, settings)
 
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to create state: %w", err))

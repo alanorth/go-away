@@ -1,0 +1,45 @@
+conditions:
+  is-well-known-asset:
+    - 'path == "/robots.txt"'
+    - 'path == "/favicon.ico"'
+    - 'path.startsWith("/.well-known")'
+
+  is-git-ua:
+    - 'userAgent.startsWith("git/") || userAgent.contains("libgit")'
+    - 'userAgent.startsWith("go-git")'
+    - 'userAgent.startsWith("JGit/") || userAgent.startsWith("JGit-")'
+    # Golang proxy and initial fetch
+    - 'userAgent.startsWith("GoModuleMirror/")'
+    - 'userAgent.startsWith("Go-http-client/") && "go-get" in query && query["go-get"] == "1"'
+    - '"Git-Protocol" in headers && headers["Git-Protocol"] == "version=2"'
+
+  is-generic-browser:
+    - 'userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")'
+
+  is-generic-robot-ua:
+    - 'userAgent.matches("compatible[;)]") && !userAgent.contains("Trident/")'
+    - 'userAgent.matches("\\+https?://")'
+    - 'userAgent.contains("@")'
+    - 'userAgent.matches("[bB]ot/[0-9]")'
+
+  is-tool-ua:
+    - 'userAgent.startsWith("python-requests/")'
+    - 'userAgent.startsWith("Python-urllib/")'
+    - 'userAgent.startsWith("python-httpx/")'
+    - 'userAgent.contains("aoihttp/")'
+    - 'userAgent.startsWith("http.rb/")'
+    - 'userAgent.startsWith("curl/")'
+    - 'userAgent.startsWith("Wget/")'
+    - 'userAgent.startsWith("libcurl/")'
+    - 'userAgent.startsWith("okhttp/")'
+    - 'userAgent.startsWith("Java/")'
+    - 'userAgent.startsWith("Apache-HttpClient//")'
+    - 'userAgent.startsWith("Go-http-client/")'
+    - 'userAgent.startsWith("node-fetch/")'
+    - 'userAgent.startsWith("reqwest/")'
+
+  # Checks to detect a headless chromium via headers only
+  is-headless-chromium:
+    - 'userAgent.contains("HeadlessChrome") || userAgent.contains("HeadlessChromium")'
+    - '"Sec-Ch-Ua" in headers && (headers["Sec-Ch-Ua"].contains("HeadlessChrome") || headers["Sec-Ch-Ua"].contains("HeadlessChromium"))'
+    #- '(userAgent.contains("Chrome/") || userAgent.contains("Chromium/")) && (!("Accept-Language" in headers) || !("Accept-Encoding" in headers))'

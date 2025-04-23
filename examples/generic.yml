@@ -1,137 +1,26 @@
 # Example cmdline (forward requests from upstream to port :8080)
-# $ go-away --bind :8080 --backend site.example.com=http://site:3000 --policy examples/generic.yml --challenge-template anubis
+# $ go-away --bind :8080 --backend site.example.com=http://site:3000 --policy examples/generic.yml --policy-snippets example/snippets/ --challenge-template anubis
 
 
 
 # Define networks to be used later below
 networks:
-
-  googlebot:
-    - url: https://developers.google.com/static/search/apis/ipranges/googlebot.json
-      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
-  bingbot:
-    - url: https://www.bing.com/toolbox/bingbot.json
-      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
-  qwantbot:
-    - url: https://help.qwant.com/wp-content/uploads/sites/2/2025/01/qwantbot.json
-      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
-  duckduckbot:
-    - url: https://duckduckgo.com/duckduckgo-help-pages/results/duckduckbot
-      regex: "<li><div>(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)</div></li>"
-  yandexbot:
-    # todo: detected as bot
-    # - url: https://yandex.com/ips
-    #  regex: "<span>(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+)[ \\\\t]*</span><br/>"
-    - prefixes:
-        - "5.45.192.0/18"
-        - "5.255.192.0/18"
-        - "37.9.64.0/18"
-        - "37.140.128.0/18"
-        - "77.88.0.0/18"
-        - "84.252.160.0/19"
-        - "87.250.224.0/19"
-        - "90.156.176.0/22"
-        - "93.158.128.0/18"
-        - "95.108.128.0/17"
-        - "141.8.128.0/18"
-        - "178.154.128.0/18"
-        - "185.32.187.0/24"
-        - "2a02:6b8::/29"
-  kagibot:
-    - url: https://kagi.com/bot
-      regex: "\\n(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+) "
+  # Networks will get included from snippets
 
 
 challenges:
-  js-pow-sha256:
-    runtime: js
-    parameters:
-      # needs to be under static folder
-      js-loader: load.mjs
-      # needs to be under runtime folder
-      wasm-runtime: runtime.wasm
-      wasm-runtime-settings:
-        difficulty: 15
-      verify-probability: 0.02
-
-  # Challenges with a cookie, self redirect (non-JS, requires HTTP parsing)
-  self-cookie:
-    runtime: "cookie"
-
-
-  # Challenges with a redirect via Link header with rel=preload and early hints (non-JS, requires HTTP parsing, fetching and logic)
-  # Works on HTTP/2 and above!
-  self-preload-link:
-    condition: '"Sec-Fetch-Mode" in headers && headers["Sec-Fetch-Mode"] == "navigate"'
-    runtime: "preload-link"
-    parameters:
-      preload-early-hint-deadline: 3s
-
-  # Challenges with a redirect via Refresh header (non-JS, requires HTTP parsing and logic)
-  self-header-refresh:
-    runtime: "refresh"
-    parameters:
-      refresh-via: "header"
-
-  # Challenges with a redirect via Refresh meta (non-JS, requires HTML parsing and logic)
-  self-meta-refresh:
-    runtime: "refresh"
-    parameters:
-      refresh-via: "meta"
-
-  # Challenges with loading a random CSS or image document (non-JS, requires HTML parsing and logic)
-  self-resource-load:
-    runtime: "resource-load"
-
-  dnsbl:
-    runtime: dnsbl
-    parameters:
-      dnsbl-decay: 1h
-      dnsbl-timeout: 1s
-
+  # Challenges will get included from snippets
+  
 conditions:
   # Conditions will get replaced on rules AST when found as ($condition-name)
-  # Checks to detect a headless chromium via headers only
-  is-headless-chromium:
-    - 'userAgent.contains("HeadlessChrome") || userAgent.contains("HeadlessChromium")'
-    - '"Sec-Ch-Ua" in headers && (headers["Sec-Ch-Ua"].contains("HeadlessChrome") || headers["Sec-Ch-Ua"].contains("HeadlessChromium"))'
-    #- '(userAgent.contains("Chrome/") || userAgent.contains("Chromium/")) && (!("Accept-Language" in headers) || !("Accept-Encoding" in headers))'
 
-  is-generic-browser:
-    - 'userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")'
+  # Conditions will get included from snippets
 
-  is-well-known-asset:
-    - 'path == "/robots.txt"'
-    - 'path.startsWith("/.well-known")'
 
   is-static-asset:
-    - 'path == "/favicon.ico"'
     - 'path == "/apple-touch-icon.png"'
     - 'path == "/apple-touch-icon-precomposed.png"'
     - 'path.matches("\\.(manifest|ttf|woff|woff2|jpg|jpeg|gif|png|webp|avif|svg|mp4|webm|css|js|mjs|wasm)$")'
-
-
-  is-generic-robot-ua:
-    - 'userAgent.matches("compatible[;)]") && !userAgent.contains("Trident/")'
-    - 'userAgent.matches("\\+https?://")'
-    - 'userAgent.contains("@")'
-    - 'userAgent.matches("[bB]ot/[0-9]")'
-
-  is-tool-ua:
-    - 'userAgent.startsWith("python-requests/")'
-    - 'userAgent.startsWith("Python-urllib/")'
-    - 'userAgent.startsWith("python-httpx/")'
-    - 'userAgent.contains("aoihttp/")'
-    - 'userAgent.startsWith("http.rb/")'
-    - 'userAgent.startsWith("curl/")'
-    - 'userAgent.startsWith("Wget/")'
-    - 'userAgent.startsWith("libcurl/")'
-    - 'userAgent.startsWith("okhttp/")'
-    - 'userAgent.startsWith("Java/")'
-    - 'userAgent.startsWith("Apache-HttpClient//")'
-    - 'userAgent.startsWith("Go-http-client/")'
-    - 'userAgent.startsWith("node-fetch/")'
-    - 'userAgent.startsWith("reqwest/")'
 
   is-suspicious-crawler:
     - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
@@ -203,20 +92,20 @@ rules:
       - name: 1
         action: check
         settings:
-          challenges: [self-preload-link, self-resource-load]
+          challenges: [preload-link, resource-load]
       - name: 2
         action: check
         settings:
-          challenges: [self-header-refresh]
+          challenges: [header-refresh]
 
   - name: desired-crawlers
     conditions:
-      - 'userAgent.contains("+https://kagi.com/bot") && remoteAddress.network("kagibot")'
-      - '(userAgent.contains("+http://www.google.com/bot.html") || userAgent.contains("Google-PageRenderer") || userAgent.contains("Google-InspectionTool") || userAgent.contains("Googlebot")) && remoteAddress.network("googlebot")'
-      - 'userAgent.contains("+http://www.bing.com/bingbot.htm") && remoteAddress.network("bingbot")'
-      - 'userAgent.contains("+http://duckduckgo.com/duckduckbot.html") && remoteAddress.network("duckduckbot")'
-      - 'userAgent.contains("+https://help.qwant.com/bot/") && remoteAddress.network("qwantbot")'
-      - 'userAgent.contains("+http://yandex.com/bots") && remoteAddress.network("yandexbot")'
+      - *is-bot-googlebot
+      - *is-bot-bingbot
+      - *is-bot-duckduckbot
+      - *is-bot-kagibot
+      - *is-bot-qwantbot
+      - *is-bot-yandexbot
     action: pass
 
   - name: homesite
@@ -251,14 +140,14 @@ rules:
   - name: plaintext-browser
     action: challenge
     settings:
-      challenges: [self-meta-refresh, self-cookie]
+      challenges: [meta-refresh, cookie]
     conditions:
       - 'userAgent.startsWith("Lynx/")'
 
   - name: standard-tools
     action: challenge
     settings:
-      challenges: [self-cookie]
+      challenges: [cookie]
     conditions:
       - '($is-generic-robot-ua)'
       - '($is-tool-ua)'
@@ -267,6 +156,6 @@ rules:
   - name: standard-browser
     action: challenge
     settings:
-      challenges: [self-preload-link, self-meta-refresh, self-resource-load, js-pow-sha256]
+      challenges: [preload-link, meta-refresh, resource-load, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'

@@ -1,0 +1,37 @@
+networks:
+#  aws-cloud:
+#    - url: https://ip-ranges.amazonaws.com/ip-ranges.json
+#      jq-path: '(.prefixes[] | select(has("ip_prefix")) | .ip_prefix), (.prefixes[] | select(has("ipv6_prefix")) | .ipv6_prefix)'
+#  google-cloud:
+#    - url: https://www.gstatic.com/ipranges/cloud.json
+#      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
+#  oracle-cloud:
+#    - url: https://docs.oracle.com/en-us/iaas/tools/public_ip_ranges.json
+#      jq-path: '.regions[] | .cidrs[] | .cidr'
+#  azure-cloud:
+#    # todo: https://www.microsoft.com/en-us/download/details.aspx?id=56519 does not provide direct JSON
+#    - url: https://raw.githubusercontent.com/femueller/cloud-ip-ranges/refs/heads/master/microsoft-azure-ip-ranges.json
+#      jq-path: '.values[] | .properties.addressPrefixes[]'
+#
+#  digitalocean:
+#    - url: https://www.digitalocean.com/geo/google.csv
+#      regex: "(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+),"
+#  linode:
+#    - url: https://geoip.linode.com/
+#      regex: "(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+),"
+#  vultr:
+#    - url: "https://geofeed.constant.com/?json"
+#      jq-path: '.subnets[] | .ip_prefix'
+#  cloudflare:
+#    - url: https://www.cloudflare.com/ips-v4
+#      regex: "(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
+#    - url: https://www.cloudflare.com/ips-v6
+#      regex: "(?P<prefix>[0-9a-f:]+::/[0-9]+)"
+#
+#  icloud-private-relay:
+#    - url: https://mask-api.icloud.com/egress-ip-ranges.csv
+#      regex: "(?P<prefix>(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|([0-9a-f:]+::))/[0-9]+),"
+#  tunnelbroker-relay:
+#    # HE Tunnelbroker
+#    - url: https://tunnelbroker.net/export/google
+#      regex: "(?P<prefix>([0-9a-f:]+::)/[0-9]+),"

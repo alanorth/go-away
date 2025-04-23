@@ -1,37 +1,12 @@
 package policy
 
 import (
-	"errors"
-	"fmt"
-	"net"
+	"bytes"
+	"github.com/goccy/go-yaml"
+	"io"
+	"os"
+	"path"
 )
-
-func parseCIDROrIP(value string) (net.IPNet, error) {
-	_, ipNet, err := net.ParseCIDR(value)
-	if err != nil {
-		ip := net.ParseIP(value)
-		if ip == nil {
-			return net.IPNet{}, fmt.Errorf("failed to parse CIDR: %s", err)
-		}
-
-		if ip4 := ip.To4(); ip4 != nil {
-			return net.IPNet{
-				IP: ip4,
-				// single ip
-				Mask: net.CIDRMask(len(ip4)*8, len(ip4)*8),
-			}, nil
-		}
-		return net.IPNet{
-			IP: ip,
-			// single ip
-			Mask: net.CIDRMask(len(ip)*8, len(ip)*8),
-		}, nil
-	} else if ipNet != nil {
-		return *ipNet, nil
-	} else {
-		return net.IPNet{}, errors.New("invalid CIDR")
-	}
-}
 
 type Policy struct {
 
@@ -43,8 +18,70 @@ type Policy struct {
 	Challenges map[string]Challenge `yaml:"challenges"`
 
 	Rules []Rule `yaml:"rules"`
+}
 
-	// Backends
-	// Deprecated
-	Backends map[string]string `json:"backends"`
+func NewPolicy(r io.Reader, snippetsDirectory string) (*Policy, error) {
+	var p Policy
+	p.Networks = make(map[string][]Network)
+	p.Conditions = make(map[string][]string)
+	p.Challenges = make(map[string]Challenge)
+
+	if snippetsDirectory == "" {
+		err := yaml.NewDecoder(r).Decode(&p)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err := yaml.NewDecoder(r, yaml.ReferenceDirs(snippetsDirectory)).Decode(&p)
+		if err != nil {
+			return nil, err
+		}
+
+		// add specific entries from snippets
+		entries, err := os.ReadDir(snippetsDirectory)
+		if err != nil {
+			return nil, err
+		}
+		for _, entry := range entries {
+			var entryPolicy Policy
+			if !entry.IsDir() {
+				entryData, err := os.ReadFile(path.Join(snippetsDirectory, entry.Name()))
+				if err != nil {
+					return nil, err
+				}
+				err = yaml.NewDecoder(bytes.NewReader(entryData), yaml.ReferenceDirs(snippetsDirectory)).Decode(&entryPolicy)
+				if err != nil {
+					return nil, err
+				}
+
+				// add networks / conditions / challenges definitions if they don't exist already
+
+				for k, v := range entryPolicy.Networks {
+					// add network if policy entry does not exist
+					_, ok := p.Networks[k]
+					if !ok {
+						p.Networks[k] = v
+					}
+				}
+
+				for k, v := range entryPolicy.Conditions {
+					// add condition if policy entry does not exist
+					_, ok := p.Conditions[k]
+					if !ok {
+						p.Conditions[k] = v
+					}
+				}
+
+				for k, v := range entryPolicy.Challenges {
+					// add challenge if policy entry does not exist
+					_, ok := p.Challenges[k]
+					if !ok {
+						p.Challenges[k] = v
+					}
+				}
+
+			}
+		}
+	}
+	return &p, nil
 }

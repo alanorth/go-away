@@ -357,6 +357,7 @@ services:
     volumes:
       - "goaway_cache:/cache"
       - "./examples/forgejo.yml:/policy.yml:ro"
+      - "./examples/snippets/:/policy/snippets/:ro"
     environment:
       #GOAWAY_BIND: ":8080"
       # Supported tcp, unix, and proxy (for enabling PROXY module for request unwrapping)
@@ -391,6 +392,8 @@ services:
       #GOAWAY_BACKEND_IP_HEADER: ""
       
       GOAWAY_POLICY: "/policy.yml"
+
+      GOAWAY_POLICY_SNIPPETS: "/policy/snippets"
       
       # Template, and theme for the template to pick. defaults to an anubis-like one
       # An file path can be specified. See embed/templates for a few examples
