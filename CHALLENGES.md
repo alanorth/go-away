@@ -34,7 +34,7 @@ The server waits until solved or defined timeout, then continues on other challe
 
 Example:
 ```yaml
-  self-preload-link:
+  preload-link:
     condition: '"Sec-Fetch-Mode" in headers && headers["Sec-Fetch-Mode"] == "navigate"'
     runtime: "preload-link"
     parameters:

@@ -109,16 +109,16 @@ For example:
   - name: standard-browser
     action: challenge
     settings:
-      challenges: [http-cookie-check, self-preload-link, self-meta-refresh, self-resource-load, js-pow-sha256]
+      challenges: [http-cookie-check, preload-link, meta-refresh, resource-load, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'
 ```
 
 This rule has the user be checked against a backend, then attempts pass a few browser challenges.
 
-In this case the processing would stop at `self-meta-refresh` due to the behavior of earlier challenges (cookie check and preload link allow failing / continue due to being silent, while meta-refresh requires displaying a challenge page).
+In this case the processing would stop at `meta-refresh` due to the behavior of earlier challenges (cookie check and preload link allow failing / continue due to being silent, while meta-refresh requires displaying a challenge page).
 
-Any of these listed challenges being passed in the past will allow the client through, including non-offered `self-resource-load` and `js-pow-sha256`.
+Any of these listed challenges being passed in the past will allow the client through, including non-offered `resource-load` and `js-pow-sha256`.
 
 ### Non-Javascript challenges
 
@@ -290,7 +290,7 @@ However, a few points are left before go-away can be called v1.0.0:
 * [ ] Define strings and multi-language support for quick modification by operators without custom templates.
 * [ ] Have highly tested paths that match examples.
 * [ ] Caching of temporary fetches, for example, network ranges.
-* [ ] Allow live and dynamic policy reloading.
+* [x] Allow live and dynamic policy reloading.
 * [x] Multiple domains / subdomains -> one backend handling, CEL rules for backends
 * [ ] Merge all rules and conditions into one large AST for higher performance.
 * [ ] Explore exposing a module for direct Caddy usage.

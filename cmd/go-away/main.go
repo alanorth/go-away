@@ -20,11 +20,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"syscall"
 )
 
 func setupListener(network, address, socketMode string, proxy bool) (net.Listener, string) {
@@ -279,15 +281,15 @@ func main() {
 		serverHandler.Store(&fn)
 	}
 
-	go func() {
+	loadPolicyState := func() (http.Handler, error) {
 		policyData, err := os.ReadFile(*policyFile)
 		if err != nil {
-			log.Fatal(fmt.Errorf("failed to read policy file: %w", err))
+			return nil, fmt.Errorf("failed to read policy file: %w", err)
 		}
 
 		p, err := policy.NewPolicy(bytes.NewReader(policyData), *policySnippets)
 		if err != nil {
-			log.Fatal(fmt.Errorf("failed to parse policy file: %w", err))
+			return nil, fmt.Errorf("failed to parse policy file: %w", err)
 		}
 
 		settings := policy.Settings{
@@ -305,14 +307,38 @@ func main() {
 		state, err := lib.NewState(*p, settings)
 
 		if err != nil {
-			log.Fatal(fmt.Errorf("failed to create state: %w", err))
+			return nil, fmt.Errorf("failed to create state: %w", err)
+		}
+		return state, nil
+	}
+
+	go func() {
+		handler, err := loadPolicyState()
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to load policy state: %w", err))
 		}
 
-		serverHandler.Store(&state)
-
+		serverHandler.Store(&handler)
 		slog.Warn(
-			"handler started",
+			"handler configuration loaded",
 		)
+
+		// allow reloading from now on
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGHUP)
+		for sig := range c {
+			if sig != syscall.SIGHUP {
+				continue
+			}
+			handler, err = loadPolicyState()
+			if err != nil {
+				slog.Error("handler configuration reload error", "err", err)
+				continue
+			}
+
+			serverHandler.Store(&handler)
+			slog.Warn("handler configuration reloaded")
+		}
 	}()
 
 	if tlsConfig != nil {
