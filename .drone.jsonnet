@@ -97,15 +97,20 @@ local Publish(registry, repo, secret, go, alpine, os, arch, trigger, platforms, 
 #
 local containerArchitectures = ["linux/amd64", "linux/arm64", "linux/riscv64"];
 
+local alpineVersion = "3.21";
+local goVersion = "1.24";
+
 [
-    Build("1.24", "3.21", "linux", "amd64"),
-    Build("1.24", "3.21", "linux", "arm64"),
+    Build(goVersion, alpineVersion, "linux", "amd64"),
+    Build(goVersion, alpineVersion, "linux", "arm64"),
 
     # latest
-    Publish("git.gammaspectra.live", "git.gammaspectra.live/git/go-away", "git", "1.24", "3.21", "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-git"},
-    Publish("codeberg.org", "codeberg.org/weebdatahoarder/go-away", "codeberg", "1.24", "3.21", "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-codeberg"},
+    Publish("git.gammaspectra.live", "git.gammaspectra.live/git/go-away", "git", goVersion, alpineVersion, "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-git"},
+    Publish("codeberg.org", "codeberg.org/weebdatahoarder/go-away", "codeberg", goVersion, alpineVersion, "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-codeberg"},
+    Publish("ghcr.io", "ghcr.io/weebdatahoarder/go-away", "github", goVersion, alpineVersion, "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-github"},
 
     # modern
-    Publish("git.gammaspectra.live", "git.gammaspectra.live/git/go-away", "git", "1.24", "3.21", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
-    Publish("codeberg.org", "codeberg.org/weebdatahoarder/go-away", "codeberg", "1.24", "3.21", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
+    Publish("git.gammaspectra.live", "git.gammaspectra.live/git/go-away", "git", goVersion, alpineVersion, "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
+    Publish("codeberg.org", "codeberg.org/weebdatahoarder/go-away", "codeberg", goVersion, alpineVersion, "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
+    Publish("ghcr.io", "ghcr.io/weebdatahoarder/go-away", "github", goVersion, alpineVersion, "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
 ]

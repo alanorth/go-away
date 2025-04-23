@@ -162,6 +162,46 @@ trigger:
 type: docker
 ---
 kind: pipeline
+name: publish-latest-github
+platform:
+  arch: amd64
+  os: linux
+steps:
+- environment:
+    DOCKER_BUILDKIT: "1"
+    LC_ALL: C
+    SOURCE_DATE_EPOCH: 0
+    TZ: UTC
+  image: plugins/buildx
+  name: docker
+  privileged: true
+  settings:
+    auto_tag_suffix: alpine3.21
+    build_args:
+      from: alpine:3.21
+      from_builder: golang:1.24-alpine3.21
+    builder_driver: docker-container
+    compress: true
+    password:
+      from_secret: github_password
+    platform:
+    - linux/amd64
+    - linux/arm64
+    - linux/riscv64
+    registry: ghcr.io
+    repo: ghcr.io/weebdatahoarder/go-away
+    tags:
+    - latest
+    username:
+      from_secret: github_username
+trigger:
+  branch:
+  - master
+  event:
+  - push
+type: docker
+---
+kind: pipeline
 name: publish-1.24-alpine3.21-git
 platform:
   arch: amd64
@@ -241,7 +281,47 @@ trigger:
   - production
 type: docker
 ---
+kind: pipeline
+name: publish-1.24-alpine3.21-github
+platform:
+  arch: amd64
+  os: linux
+steps:
+- environment:
+    DOCKER_BUILDKIT: "1"
+    LC_ALL: C
+    SOURCE_DATE_EPOCH: 0
+    TZ: UTC
+  image: plugins/buildx
+  name: docker
+  privileged: true
+  settings:
+    auto_tag: true
+    auto_tag_suffix: alpine3.21
+    build_args:
+      from: alpine:3.21
+      from_builder: golang:1.24-alpine3.21
+    builder_driver: docker-container
+    compress: true
+    password:
+      from_secret: github_password
+    platform:
+    - linux/amd64
+    - linux/arm64
+    - linux/riscv64
+    registry: ghcr.io
+    repo: ghcr.io/weebdatahoarder/go-away
+    username:
+      from_secret: github_username
+trigger:
+  event:
+  - promote
+  - tag
+  target:
+  - production
+type: docker
+---
 kind: signature
-hmac: d487230b53d511ea07b872c70e0d3c21a3b7883d960e4011bc402c3467196baa
+hmac: f27dd6fbc73d3dd6e26739576a02b6bf0f9d1c43ee9d6d1439afacdf4e4dbf96
 
 ...
