@@ -124,10 +124,6 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 			data.State.Logger(r).Debug("dnsbl lookup failed", "address", data.RemoteAddress.String(), "result", result, "err", err)
 		}
 
-		if err != nil {
-			return challenge.VerifyResultFail
-		}
-
 		if result.Bad() {
 			token, err := reg.IssueChallengeToken(state.PrivateKey(), key, nil, expiry, false)
 			if err != nil {
