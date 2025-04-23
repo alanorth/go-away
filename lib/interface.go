@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
-	"strings"
 )
 
 // Defines challenge.StateInterface
@@ -142,17 +141,5 @@ func (state *State) Settings() policy.Settings {
 }
 
 func (state *State) GetBackend(host string) http.Handler {
-	backend, ok := state.Settings().Backends[host]
-	if !ok {
-		// do wildcard match
-		wildcard := "*." + strings.Join(strings.Split(host, ".")[1:], ".")
-		backend, ok = state.Settings().Backends[wildcard]
-
-		if !ok {
-			// return fallback
-			backend = state.Settings().Backends["*"]
-		}
-	}
-	//TODO: dynamic
-	return backend
+	return utils.SelectHTTPHandler(state.Settings().Backends, host)
 }

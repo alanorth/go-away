@@ -15,7 +15,6 @@ import (
 )
 
 func NewServer(handler http.Handler, tlsConfig *tls.Config) *http.Server {
-
 	if tlsConfig == nil {
 		proto := new(http.Protocols)
 		proto.SetHTTP1(true)
@@ -34,6 +33,21 @@ func NewServer(handler http.Handler, tlsConfig *tls.Config) *http.Server {
 		applyTLSFingerprinter(server)
 		return server
 	}
+}
+
+func SelectHTTPHandler(backends map[string]http.Handler, host string) http.Handler {
+	backend, ok := backends[host]
+	if !ok {
+		// do wildcard match
+		wildcard := "*." + strings.Join(strings.Split(host, ".")[1:], ".")
+		backend, ok = backends[wildcard]
+
+		if !ok {
+			// return fallback
+			backend = backends["*"]
+		}
+	}
+	return backend
 }
 
 func EnsureNoOpenRedirect(redirect string) (string, error) {
