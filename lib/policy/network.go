@@ -27,6 +27,7 @@ type Network struct {
 }
 
 func (n Network) FetchPrefixes(c *http.Client, whois *utils.RADb) (output []net.IPNet, err error) {
+
 	if len(n.Prefixes) > 0 {
 		for _, prefix := range n.Prefixes {
 			ipNet, err := parseCIDROrIP(prefix)

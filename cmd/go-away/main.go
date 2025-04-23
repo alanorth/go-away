@@ -223,10 +223,22 @@ func main() {
 		log.Fatal(fmt.Errorf("no backends defined in policy file"))
 	}
 
+	var cache utils.Cache
 	if *cachePath != "" {
 		err = os.MkdirAll(*cachePath, 0755)
 		if err != nil {
 			log.Fatal(fmt.Errorf("failed to create cache directory: %w", err))
+		}
+		for _, n := range []string{"networks", "acme"} {
+			err = os.MkdirAll(path.Join(*cachePath, n), 0755)
+			if err != nil {
+				log.Fatal(fmt.Errorf("failed to create cache sub directory %s: %w", n, err))
+			}
+		}
+
+		cache, err = utils.CacheDirectory(*cachePath)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to open cache directory: %w", err))
 		}
 	}
 
@@ -293,6 +305,7 @@ func main() {
 		}
 
 		settings := policy.Settings{
+			Cache:                  cache,
 			Backends:               createdBackends,
 			Debug:                  *debugMode,
 			PackageName:            *packageName,

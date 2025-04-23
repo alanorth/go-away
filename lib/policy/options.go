@@ -1,10 +1,12 @@
 package policy
 
 import (
+	"git.gammaspectra.live/git/go-away/utils"
 	"net/http"
 )
 
 type Settings struct {
+	Cache                  utils.Cache
 	Backends               map[string]http.Handler
 	PrivateKeySeed         []byte
 	Debug                  bool

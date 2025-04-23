@@ -298,7 +298,7 @@ However, a few points are left before go-away can be called v1.0.0:
 * [ ] Replace Anubis-like default template with own one.
 * [ ] Define strings and multi-language support for quick modification by operators without custom templates.
 * [ ] Have highly tested paths that match examples.
-* [ ] Caching of temporary fetches, for example, network ranges.
+* [x] Caching of temporary fetches, for example, network ranges.
 * [x] Allow live and dynamic policy reloading.
 * [x] Multiple domains / subdomains -> one backend handling, CEL rules for backends
 * [ ] Merge all rules and conditions into one large AST for higher performance.
