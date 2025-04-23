@@ -9,7 +9,7 @@ require (
 	github.com/alphadose/haxmap v1.4.1
 	github.com/go-jose/go-jose/v4 v4.1.0
 	github.com/goccy/go-yaml v1.17.1
-	github.com/google/cel-go v0.24.1
+	github.com/google/cel-go v0.25.0
 	github.com/itchyny/gojq v0.12.17
 	github.com/pires/go-proxyproto v0.8.0
 	github.com/tetratelabs/wazero v1.9.0
@@ -26,7 +26,7 @@ require (
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250414145226-207652e42e2e // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250414145226-207652e42e2e // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250422160041-2d3770c4ea7f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250422160041-2d3770c4ea7f // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 )
