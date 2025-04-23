@@ -21,8 +21,24 @@ local Build(go, alpine, os, arch) = {
                 "apk update",
                 "apk add --no-cache git",
                 "mkdir .bin",
-                "go build -v -o ./.bin/go-away ./cmd/go-away",
+                "go build -v -pgo=auto -v -trimpath -ldflags=-buildid= -o ./.bin/go-away ./cmd/go-away",
                 "go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime",
+            ],
+        },
+        {
+            name: "check-policy-forgejo",
+            image: "alpine:" + alpine,
+            depends_on: ["build"],
+            commands: [
+                "./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80 --policy examples/forgejo.yml --policy-snippets examples/snippets/"
+            ],
+        },
+        {
+            name: "check-policy-generic",
+            image: "alpine:" + alpine,
+            depends_on: ["build"],
+            commands: [
+                "./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80 --policy examples/generic.yml --policy-snippets examples/snippets/"
             ],
         },
         {

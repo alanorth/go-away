@@ -14,10 +14,24 @@ steps:
   - apk update
   - apk add --no-cache git
   - mkdir .bin
-  - go build -v -o ./.bin/go-away ./cmd/go-away
+  - go build -v -pgo=auto -v -trimpath -ldflags=-buildid= -o ./.bin/go-away ./cmd/go-away
   - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
   image: golang:1.24-alpine3.21
   name: build
+- commands:
+  - ./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80
+    --policy examples/forgejo.yml --policy-snippets examples/snippets/
+  depends_on:
+  - build
+  image: alpine:3.21
+  name: check-policy-forgejo
+- commands:
+  - ./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80
+    --policy examples/generic.yml --policy-snippets examples/snippets/
+  depends_on:
+  - build
+  image: alpine:3.21
+  name: check-policy-generic
 - commands:
   - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
     -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
@@ -55,10 +69,24 @@ steps:
   - apk update
   - apk add --no-cache git
   - mkdir .bin
-  - go build -v -o ./.bin/go-away ./cmd/go-away
+  - go build -v -pgo=auto -v -trimpath -ldflags=-buildid= -o ./.bin/go-away ./cmd/go-away
   - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
   image: golang:1.24-alpine3.21
   name: build
+- commands:
+  - ./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80
+    --policy examples/forgejo.yml --policy-snippets examples/snippets/
+  depends_on:
+  - build
+  image: alpine:3.21
+  name: check-policy-forgejo
+- commands:
+  - ./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80
+    --policy examples/generic.yml --policy-snippets examples/snippets/
+  depends_on:
+  - build
+  image: alpine:3.21
+  name: check-policy-generic
 - commands:
   - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
     -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
@@ -322,6 +350,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: f27dd6fbc73d3dd6e26739576a02b6bf0f9d1c43ee9d6d1439afacdf4e4dbf96
+hmac: 8aed9810938e4aa4b34c4afb35e1101f27f98a61ffe5349be9a30f22ce7480ed
 
 ...

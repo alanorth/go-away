@@ -128,6 +128,7 @@ func main() {
 	slogLevel := flag.String("slog-level", "WARN", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
 	debugMode := flag.Bool("debug", false, "debug mode with logs and server timings")
 	passThrough := flag.Bool("passthrough", false, "passthrough mode sends all requests to matching backends until state is loaded")
+	check := flag.Bool("check", false, "check configuration and policies, then exit")
 	acmeAutocert := flag.String("acme-autocert", "", "enables HTTP(s) mode and uses the provided ACME server URL or available service (available: letsencrypt)")
 
 	clientIpHeader := flag.String("client-ip-header", "", "Client HTTP header to fetch their IP address from (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
@@ -265,34 +266,6 @@ func main() {
 		tlsConfig = acmeManager.TLSConfig()
 	}
 
-	listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode, *bindProxy)
-	slog.Warn(
-		"listening",
-		"url", listenUrl,
-	)
-
-	var serverHandler atomic.Pointer[http.Handler]
-	server := utils.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if handler := serverHandler.Load(); handler == nil {
-			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
-		} else {
-			(*handler).ServeHTTP(w, r)
-		}
-	}), tlsConfig)
-
-	if *passThrough {
-		// setup a passthrough handler temporarily
-		fn := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			backend := utils.SelectHTTPHandler(createdBackends, r.Host)
-			if backend == nil {
-				http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
-			} else {
-				backend.ServeHTTP(w, r)
-			}
-		}))
-		serverHandler.Store(&fn)
-	}
-
 	loadPolicyState := func() (http.Handler, error) {
 		policyData, err := os.ReadFile(*policyFile)
 		if err != nil {
@@ -323,6 +296,44 @@ func main() {
 			return nil, fmt.Errorf("failed to create state: %w", err)
 		}
 		return state, nil
+	}
+
+	if *check {
+		_, err := loadPolicyState()
+		if err != nil {
+			slog.Error(err.Error())
+			os.Exit(1)
+		}
+		slog.Info("load ok")
+		os.Exit(0)
+	}
+
+	listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode, *bindProxy)
+	slog.Warn(
+		"listening",
+		"url", listenUrl,
+	)
+
+	var serverHandler atomic.Pointer[http.Handler]
+	server := utils.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if handler := serverHandler.Load(); handler == nil {
+			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+		} else {
+			(*handler).ServeHTTP(w, r)
+		}
+	}), tlsConfig)
+
+	if *passThrough {
+		// setup a passthrough handler temporarily
+		fn := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			backend := utils.SelectHTTPHandler(createdBackends, r.Host)
+			if backend == nil {
+				http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			} else {
+				backend.ServeHTTP(w, r)
+			}
+		}))
+		serverHandler.Store(&fn)
 	}
 
 	go func() {

@@ -128,6 +128,7 @@ func NewState(p policy.Policy, settings policy.Settings) (handler http.Handler, 
 				cacheKey := fmt.Sprintf("%s-%d", k, i)
 				var cached []net.IPNet
 				if useCache && networkCache != nil {
+					//TODO: add randomness
 					cachedData, err := networkCache.Get(cacheKey, time.Hour*24)
 					var l []string
 					_ = json.Unmarshal(cachedData, &l)
