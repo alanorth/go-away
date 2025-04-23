@@ -82,7 +82,7 @@ steps:
 type: docker
 ---
 kind: pipeline
-name: publish-latest
+name: publish-latest-git
 platform:
   arch: amd64
   os: linux
@@ -119,7 +119,44 @@ trigger:
 type: docker
 ---
 kind: pipeline
-name: publish-1.24-alpine3.21
+name: publish-latest-codeberg
+platform:
+  arch: amd64
+  os: linux
+steps:
+- environment:
+    DOCKER_BUILDKIT: "1"
+  image: plugins/buildx
+  name: docker
+  privileged: true
+  settings:
+    auto_tag_suffix: alpine3.21
+    build_args:
+      from: alpine:3.21
+      from_builder: golang:1.24-alpine3.21
+    builder_driver: docker-container
+    compress: true
+    password:
+      from_secret: codeberg_password
+    platform:
+    - linux/amd64
+    - linux/arm64
+    - linux/riscv64
+    registry: codeberg.org
+    repo: codeberg.org/weebdatahoarder/go-away
+    tags:
+    - latest
+    username:
+      from_secret: codeberg_username
+trigger:
+  branch:
+  - master
+  event:
+  - push
+type: docker
+---
+kind: pipeline
+name: publish-1.24-alpine3.21-git
 platform:
   arch: amd64
   os: linux
@@ -155,7 +192,44 @@ trigger:
   - production
 type: docker
 ---
+kind: pipeline
+name: publish-1.24-alpine3.21-codeberg
+platform:
+  arch: amd64
+  os: linux
+steps:
+- environment:
+    DOCKER_BUILDKIT: "1"
+  image: plugins/buildx
+  name: docker
+  privileged: true
+  settings:
+    auto_tag: true
+    auto_tag_suffix: alpine3.21
+    build_args:
+      from: alpine:3.21
+      from_builder: golang:1.24-alpine3.21
+    builder_driver: docker-container
+    compress: true
+    password:
+      from_secret: codeberg_password
+    platform:
+    - linux/amd64
+    - linux/arm64
+    - linux/riscv64
+    registry: codeberg.org
+    repo: codeberg.org/weebdatahoarder/go-away
+    username:
+      from_secret: codeberg_username
+trigger:
+  event:
+  - promote
+  - tag
+  target:
+  - production
+type: docker
+---
 kind: signature
-hmac: 1b7c264865c2cf283d10a02ef6a9e19920f0a81010dec37a92300a7e59e57348
+hmac: 6df9c42b8cc689f661dc3612f39f5ffce2dea2f50a92e45355fed1d882ee8c5a
 
 ...

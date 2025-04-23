@@ -52,10 +52,10 @@ local Build(go, alpine, os, arch) = {
     ]
 };
 
-local Publish(go, alpine, os, arch, trigger, platforms, extra) = {
+local Publish(registry, repo, secret, go, alpine, os, arch, trigger, platforms, extra) = {
     kind: "pipeline",
     type: "docker",
-    name: "publish-" + go + "-alpine" + alpine,
+    name: "publish-" + go + "-alpine" + alpine + "-" + secret,
     platform: {
         os: os,
         arch: arch,
@@ -70,8 +70,8 @@ local Publish(go, alpine, os, arch, trigger, platforms, extra) = {
                 DOCKER_BUILDKIT: "1"
             },
             settings: {
-                  registry: "git.gammaspectra.live",
-                  repo: "git.gammaspectra.live/git/go-away",
+                  registry: registry,
+                  repo: repo,
                   compress: true,
                   platform: platforms,
                   builder_driver: "docker-container",
@@ -81,10 +81,10 @@ local Publish(go, alpine, os, arch, trigger, platforms, extra) = {
                   },
                   auto_tag_suffix: "alpine" + alpine,
                   username: {
-                    from_secret: "git_username",
+                    from_secret: secret + "_username",
                   },
                   password: {
-                    from_secret: "git_password",
+                    from_secret: secret + "_password",
                   },
             } + extra,
         },
@@ -99,8 +99,10 @@ local containerArchitectures = ["linux/amd64", "linux/arm64", "linux/riscv64"];
     Build("1.24", "3.21", "linux", "arm64"),
 
     # latest
-    Publish("1.24", "3.21", "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest"},
+    Publish("git.gammaspectra.live", "git.gammaspectra.live/git/go-away", "git", "1.24", "3.21", "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-git"},
+    Publish("codeberg.org", "codeberg.org/weebdatahoarder/go-away", "codeberg", "1.24", "3.21", "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-codeberg"},
 
     # modern
-    Publish("1.24", "3.21", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
+    Publish("git.gammaspectra.live", "git.gammaspectra.live/git/go-away", "git", "1.24", "3.21", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
+    Publish("codeberg.org", "codeberg.org/weebdatahoarder/go-away", "codeberg", "1.24", "3.21", "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
 ]
