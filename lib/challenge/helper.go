@@ -138,7 +138,7 @@ func VerifyHandlerFunc(state StateInterface, reg *Registration, verify VerifyFun
 			if err != nil {
 				return err
 			} else if !verifyResult.Ok() {
-				utils.ClearCookie(utils.CookiePrefix+reg.Name, w, r)
+				utils.ClearCookie(data.CookiePrefix+reg.Name, w, r)
 				state.ChallengeFailed(r, reg, nil, redirect, nil)
 				responseFunc(state, data, w, r, verifyResult, nil, redirect)
 				return nil
@@ -146,9 +146,9 @@ func VerifyHandlerFunc(state StateInterface, reg *Registration, verify VerifyFun
 
 			challengeToken, err := reg.IssueChallengeToken(state.PrivateKey(), key, []byte(token), expiration, true)
 			if err != nil {
-				utils.ClearCookie(utils.CookiePrefix+reg.Name, w, r)
+				utils.ClearCookie(data.CookiePrefix+reg.Name, w, r)
 			} else {
-				utils.SetCookie(utils.CookiePrefix+reg.Name, challengeToken, expiration, w, r)
+				utils.SetCookie(data.CookiePrefix+reg.Name, challengeToken, expiration, w, r)
 			}
 			data.ChallengeVerify[reg.id] = verifyResult
 			state.ChallengePassed(r, reg, redirect, nil)
@@ -157,7 +157,7 @@ func VerifyHandlerFunc(state StateInterface, reg *Registration, verify VerifyFun
 			return nil
 		}()
 		if err != nil {
-			utils.ClearCookie(utils.CookiePrefix+reg.Name, w, r)
+			utils.ClearCookie(data.CookiePrefix+reg.Name, w, r)
 			state.ChallengeFailed(r, reg, err, redirect, nil)
 			responseFunc(state, data, w, r, VerifyResultFail, fmt.Errorf("access denied: error in challenge %s: %w", reg.Name, err), redirect)
 			return

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
-	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/goccy/go-yaml/ast"
@@ -193,7 +192,7 @@ var ErrVerifyVerifyMismatch = errors.New("verify: verification mismatch")
 var ErrTokenExpired = errors.New("token: expired")
 
 func (reg Registration) VerifyChallengeToken(publicKey ed25519.PublicKey, expectedKey Key, r *http.Request) (VerifyResult, VerifyState, error) {
-	cookie, err := r.Cookie(utils.CookiePrefix + reg.Name)
+	cookie, err := r.Cookie(RequestDataFromContext(r.Context()).CookiePrefix + reg.Name)
 	if err != nil {
 		return VerifyResultNone, VerifyStateNone, err
 	}

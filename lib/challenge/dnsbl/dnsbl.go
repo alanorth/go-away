@@ -133,14 +133,14 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 			if err != nil {
 				return challenge.VerifyResultFail
 			}
-			utils.SetCookie(utils.CookiePrefix+reg.Name, token, expiry, w, r)
+			utils.SetCookie(data.CookiePrefix+reg.Name, token, expiry, w, r)
 			return challenge.VerifyResultNotOK
 		} else {
 			token, err := reg.IssueChallengeToken(state.PrivateKey(), key, nil, expiry, true)
 			if err != nil {
 				return challenge.VerifyResultFail
 			}
-			utils.SetCookie(utils.CookiePrefix+reg.Name, token, expiry, w, r)
+			utils.SetCookie(data.CookiePrefix+reg.Name, token, expiry, w, r)
 			return challenge.VerifyResultOK
 		}
 	}

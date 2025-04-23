@@ -409,9 +409,6 @@ services:
       GOAWAY_CHALLENGE_TEMPLATE: forgejo
       GOAWAY_CHALLENGE_TEMPLATE_THEME: forgejo-dark
       
-      # specify a DNSBL for usage in conditions. Defaults to DroneBL 
-      # GOAWAY_DNSBL: "dnsbl.dronebl.org"
-      
       # Backend to match. Can be subdomain or full wildcards, "*.example.com" or "*"
       GOAWAY_BACKEND: "git.example.com=http://forgejo:3000"
       
@@ -426,9 +423,12 @@ services:
 
 
 ## Other Similar Projects
-* [Anubis](https://anubis.techaro.lol/): Proxy that uses JavaScript proof of work to weight request based on rules [[source]](https://github.com/TecharoHQ/anubis)
-* [powxy](https://sr.ht/~runxiyu/powxy/): Powxy is a reverse proxy that protects your upstream service by challenging clients with SHA-256 proof-of-work. [[source](https://git.sr.ht/~runxiyu/powxy)]
-* [anticrawl](https://flak.tedunangst.com/post/anticrawl): Go http handler / proxy for regex based rules [[source]](https://humungus.tedunangst.com/r/anticrawl)
+
+|                         Project                         |                                                                                                                          Forge                                                                                                                          | Description                                                                                                     |
+|:-------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------|
+|          [Anubis](https://anubis.techaro.lol/)          |        [![GitHub](https://img.shields.io/badge/GitHub-TecharoHQ/anubis-blue?style=flat&logo=github&labelColor=fff&logoColor=24292f)](https://github.com/TecharoHQ/anubis)<br/>Go / [MIT](https://github.com/TecharoHQ/anubis/blob/main/LICENSE)         | Proxy that uses JavaScript proof of work to weight request based on simple match rules                          |
+|         [powxy](https://sr.ht/~runxiyu/powxy/)          | [![sourcehut](https://img.shields.io/badge/sourcehut-~runxiyu/powxy-blue?style=flat&logo=sourcehut&labelColor=fff&logoColor=000)](https://git.sr.ht/~runxiyu/powxy)<br/> Go / [BSD 2-Clause](https://git.sr.ht/~runxiyu/powxy/tree/master/item/LICENSE) | Powxy is a reverse proxy that protects your upstream service by challenging clients with SHA-256 proof-of-work. |
+| [anticrawl](https://flak.tedunangst.com/post/anticrawl) |                                                                                          [[source]](https://humungus.tedunangst.com/r/anticrawl)<br/>Go / None                                                                                          | Go http handler / proxy for regex based rules                                                                   |
 
 
 ## Development

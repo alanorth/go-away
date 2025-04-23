@@ -3,6 +3,7 @@ package challenge
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -37,6 +38,7 @@ type RequestData struct {
 	ChallengeState  map[Id]VerifyState
 	RemoteAddress   net.IP
 	State           StateInterface
+	CookiePrefix    string
 
 	r *http.Request
 
@@ -74,6 +76,13 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 
 	data.query = condition.NewValuesMap(r.URL.Query())
 	data.header = condition.NewMIMEMap(textproto.MIMEHeader(r.Header))
+
+	sum := sha256.New()
+	sum.Write([]byte(r.Host))
+	sum.Write([]byte{0})
+	sum.Write(state.PublicKey())
+	sum.Write([]byte{0})
+	data.CookiePrefix = utils.CookiePrefix + hex.EncodeToString(sum.Sum(nil)[:4]) + "-"
 
 	r = r.WithContext(context.WithValue(r.Context(), requestDataContextKey{}, &data))
 
@@ -118,7 +127,7 @@ func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request)
 		verifyResult, verifyState, err := reg.VerifyChallengeToken(d.State.PublicKey(), key, r)
 		if err != nil && !errors.Is(err, http.ErrNoCookie) {
 			// clear invalid cookie
-			utils.ClearCookie(utils.CookiePrefix+reg.Name, w, r)
+			utils.ClearCookie(d.CookiePrefix+reg.Name, w, r)
 		}
 
 		// prevent evaluating the challenge if not solved

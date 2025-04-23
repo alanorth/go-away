@@ -23,7 +23,7 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 			return challenge.VerifyResultFail
 		}
 
-		utils.SetCookie(utils.CookiePrefix+reg.Name, token, expiry, w, r)
+		utils.SetCookie(challenge.RequestDataFromContext(r.Context()).CookiePrefix+reg.Name, token, expiry, w, r)
 
 		uri, err := challenge.RedirectUrl(r, reg)
 		if err != nil {

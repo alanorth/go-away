@@ -137,19 +137,21 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 		defer response.Body.Close()
 		defer io.Copy(io.Discard, response.Body)
 
+		data := challenge.RequestDataFromContext(r.Context())
+
 		if response.StatusCode != params.HttpCode {
 			token, err := reg.IssueChallengeToken(state.PrivateKey(), key, sum, expiry, false)
 			if err != nil {
 				return challenge.VerifyResultFail
 			}
-			utils.SetCookie(utils.CookiePrefix+reg.Name, token, expiry, w, r)
+			utils.SetCookie(data.CookiePrefix+reg.Name, token, expiry, w, r)
 			return challenge.VerifyResultNotOK
 		} else {
 			token, err := reg.IssueChallengeToken(state.PrivateKey(), key, sum, expiry, true)
 			if err != nil {
 				return challenge.VerifyResultFail
 			}
-			utils.SetCookie(utils.CookiePrefix+reg.Name, token, expiry, w, r)
+			utils.SetCookie(data.CookiePrefix+reg.Name, token, expiry, w, r)
 			return challenge.VerifyResultOK
 		}
 	}
