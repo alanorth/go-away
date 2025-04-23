@@ -108,6 +108,11 @@ func (d *RequestData) Parent() cel.Activation {
 }
 
 func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	var issuedChallenge string
+	if q.Has(QueryArgChallenge) {
+		issuedChallenge = q.Get(QueryArgChallenge)
+	}
 	for _, reg := range d.State.GetChallenges() {
 		key := GetChallengeKeyForRequest(d.State, reg, d.Expiration(reg.Duration), r)
 		verifyResult, verifyState, err := reg.VerifyChallengeToken(d.State.PublicKey(), key, r)
@@ -129,6 +134,11 @@ func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request)
 					continue
 				}
 			}
+		}
+
+		if !verifyResult.Ok() && issuedChallenge == reg.Name {
+			// we issued the challenge, must skip to prevent loops
+			verifyResult = VerifyResultSkip
 		}
 		d.ChallengeVerify[reg.Id()] = verifyResult
 		d.ChallengeState[reg.Id()] = verifyState
