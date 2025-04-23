@@ -235,6 +235,14 @@ Important notes:
 * Add or modify rules to target specific pages on your site as desired.
 * By default Googlebot / Bingbot / DuckDuckBot / Kagibot / Qwantbot / Yandexbot are allowed by useragent and network ranges.
 
+### Snippets
+
+You can define snippets to be included. YAML anchors/aliases are supported.
+
+See [examples/snippets/](examples/snippets/) for some defaults including indexer bots, challenges and other general matches.
+
+
+
 ## Why do this?
 In the past few years this small git instance has been hit by waves and waves of scraping.
 This was usually fought back by random useragent blocks for bots that did not follow [robots.txt](/robots.txt), until the past half year, where low-effort mass scraping was used more prominently.
