@@ -154,5 +154,5 @@ func NewMIMEMap(m textproto.MIMEHeader) traits.Mapper {
 }
 
 func NewValuesMap(m map[string][]string) traits.Mapper {
-	return mimeLike{m: m}
+	return valuesLike{m: m}
 }
