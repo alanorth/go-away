@@ -10,6 +10,8 @@ type Settings struct {
 	Backends               map[string]http.Handler
 	PrivateKeySeed         []byte
 	Debug                  bool
+	MainName               string
+	MainVersion            string
 	PackageName            string
 	ChallengeTemplate      string
 	ChallengeTemplateTheme string

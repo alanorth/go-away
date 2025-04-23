@@ -179,8 +179,9 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	data.EvaluateChallenges(w, r)
 
-	// TODO: make this configurable!
-	w.Header().Add("Via", fmt.Sprintf("%s %s", r.Proto, "go-away"))
+	if state.Settings().MainName != "" {
+		w.Header().Add("Via", fmt.Sprintf("%s %s@%s", r.Proto, state.Settings().MainName, state.Settings().MainVersion))
+	}
 
 	state.Mux.ServeHTTP(w, r)
 }
