@@ -8,17 +8,11 @@ networks:
   # Networks will get included from snippets
 
   huawei-cloud:
-    # AS136907
-    - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/136907/aggregated.json
-      jq-path: '.subnets.ipv4[], .subnets.ipv6[]'
+    - asn: 136907
   alibaba-cloud:
-    # AS45102
-    - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/45102/aggregated.json
-      jq-path: '.subnets.ipv4[], .subnets.ipv6[]'
+    - asn: 45102
   zenlayer-inc:
-    # AS21859
-    - url: https://raw.githubusercontent.com/ipverse/asn-ip/refs/heads/master/as/21859/aggregated.json
-      jq-path: '.subnets.ipv4[], .subnets.ipv6[]'
+    - asn: 21859
 
 
 challenges:

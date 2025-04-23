@@ -196,6 +196,8 @@ By default, a random temporary key is generated every run.
 
 Multiple backends are supported, and rules specific on backend can be defined, and conditions and rules can match this as well.
 
+Subdomain wildcards like `*.example.com`, or full fallback wildcard `*` are supported.
+
 This allows one instance to run multiple domains or subdomains.
 
 ### Package path
@@ -217,7 +219,6 @@ This is tracked by tagging challenges with a readable flag indicating the type o
 The policy file at [examples/forgejo.yml](examples/forgejo.yml) provides a ready template to be used on your own Forgejo instance.
 
 Important notes:
-* Edit the `homesite` rule, as it's targeted to common users or orgs on the instance. A better regex might be possible in the future.
 * Edit the `http-cookie-check` challenge, as this will fetch the listed backend with the given session cookie to check for user login.
 * Adjust the desired blocked networks or others. A template list of network ranges is provided, feel free to remove these if not needed.
 * Check the conditions and base rules to change your challenges offered and other ordering.

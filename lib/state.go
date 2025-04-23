@@ -7,6 +7,7 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
+	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/google/cel-go/cel"
 	"github.com/yl2chen/cidranger"
 	"log/slog"
@@ -19,6 +20,7 @@ import (
 
 type State struct {
 	client  *http.Client
+	radb    *utils.RADb
 	urlPath string
 
 	programEnv *cel.Env
@@ -48,6 +50,11 @@ func NewState(p policy.Policy, settings policy.Settings) (handler http.Handler, 
 			return http.ErrUseLastResponse
 		},
 	}
+	state.radb, err = utils.NewRADb()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize RADb client: %w", err)
+	}
+
 	state.urlPath = "/.well-known/." + state.Settings().PackageName
 
 	// set a reasonable configuration for default http proxy if there is none
@@ -104,9 +111,12 @@ func NewState(p policy.Policy, settings policy.Settings) (handler http.Handler, 
 			if e.Url != nil {
 				slog.Debug("loading network url list", "network", k, "url", *e.Url)
 			}
-			prefixes, err := e.FetchPrefixes(state.client)
+			if e.ASN != nil {
+				slog.Debug("loading ASN", "network", k, "asn", *e.ASN)
+			}
+			prefixes, err := e.FetchPrefixes(state.client, state.radb)
 			if err != nil {
-				slog.Error("error fetching network url list", "network", k, "url", *e.Url)
+				slog.Error("error fetching network list", "network", k, "url", *e.Url)
 				continue
 			}
 			for _, prefix := range prefixes {
