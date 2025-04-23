@@ -26,7 +26,19 @@ If you have some suggestion or issue, feel free to open a [New Issue](https://gi
 
 For real-time chat and other support join IRC on [#go-away](ircs://irc.libera.chat/#go-away) on Libera.Chat [[WebIRC]](https://web.libera.chat/?nick=Guest?#go-away). The channel may not be monitored at all times, feel free to ping the operators there.
 
-A source code mirror exists on [sourcehut](https://git.sr.ht/~datahoarder/go-away), [Codeberg.org](https://codeberg.org/WeebDataHoarder/go-away), and [GitHub](https://github.com/WeebDataHoarder/go-away).
+## Code Mirrors
+
+Source code is automatically pushed to the following mirrors. Packages are also mirrored on Codeberg and GitHub.
+
+[![GammaSpectra.live](https://img.shields.io/badge/GammaSpectra.live-main+packages-green?style=flat&logo=data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgd2lkdGg9IjYwMCIgaGVpZ2h0PSI2MDAiIHZpZXdCb3g9Ii0zMDAgLTMwMCA2MDAgNjAwIj4KPGNpcmNsZSByPSI1MCIvPgo8cGF0aCBkPSJNNzUsMCBBIDc1LDc1IDAgMCwwIDM3LjUsLTY0Ljk1MiBMIDEyNSwtMjE2LjUwNiBBIDI1MCwyNTAgMCAwLDEgMjUwLDAgeiIgaWQ9ImJsZCIvPgo8dXNlIHhsaW5rOmhyZWY9IiNibGQiIHRyYW5zZm9ybT0icm90YXRlKDEyMCkiLz4KPHVzZSB4bGluazpocmVmPSIjYmxkIiB0cmFuc2Zvcm09InJvdGF0ZSgyNDApIi8+Cjwvc3ZnPg==&labelColor=fff)](https://git.gammaspectra.live/git/go-away) ![](https://git.gammaspectra.live/git/go-away/badges/stars.svg?style=flat) [![](https://git.gammaspectra.live/git/go-away/badges/issues/open.svg?style=flat)](https://git.gammaspectra.live/git/go-away/issues?state=open) [![](https://git.gammaspectra.live/git/go-away/badges/pulls/open.svg?style=flat)](https://git.gammaspectra.live/git/go-away/pulls?state=open)
+
+[![Codeberg](https://img.shields.io/badge/Codeberg-mirror+packages-2185D0?style=flat&logo=codeberg&labelColor=fff)](https://codeberg.org/WeebDataHoarder/go-away) ![](https://codeberg.org/WeebDataHoarder/go-away/badges/stars.svg?style=flat)
+
+[![GitHub](https://img.shields.io/badge/GitHub-mirror+packages-blue?style=flat&logo=github&labelColor=fff&logoColor=24292f)](https://github.com/WeebDataHoarder/go-away) ![](https://img.shields.io/github/stars/WeebDataHoarder/go-away?style=flat)
+
+[![sourcehut](https://img.shields.io/badge/sourcehut-mirror-blue?style=flat&logo=sourcehut&labelColor=fff&logoColor=000)](https://git.sr.ht/~datahoarder/go-away)
+
+Note that issues or pull requests should be issued on the [main Forge](https://git.gammaspectra.live/git/go-away).
 
 ## Features
 
@@ -146,19 +158,6 @@ When running with TLS via autocert, TLS Fingerprinting of the incoming client is
 This can be targeted on conditions or other application logic.
 
 Read more about [JA3](https://medium.com/salesforce-engineering/tls-fingerprinting-with-ja3-and-ja3s-247362855967) and [JA4](https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/README.md).
-
-
-### DNSBL
-
-You can configure a [DNSBL (Domain Name System blocklist)](https://en.wikipedia.org/wiki/Domain_Name_System_blocklist) to be queried on rules and conditions.
-
-This allows you to serve harder or different challenges to higher risk clients, or block them from specific sections.
-
-Only rules that match DNSBL will cause a query to be sent, meaning the bulk of requests will not be sent to this service upstream.
-
-Results will be temporarily cached
-
-By default, [DroneBL](https://dronebl.org/) is used.
 
 ### Network range and automated filtering
 
@@ -283,16 +282,16 @@ go-away offers a highly configurable set of challenges and rules that you can ad
 go-away has most of the desired features from the original checklist that was made in its development. 
 However, a few points are left before go-away can be called v1.0.0:
 
-* [ ] Several parts of the code are going through a refactor, which won't impact end users or operators.
+* [x] Several parts of the code are going through a refactor, which won't impact end users or operators.
 * [ ] Documentation is lacking and a more extensive one with inline example is in the works.
-* [ ] Policy file syntax is going to stay mostly unchanged, except in the challenges definition section.
+* [x] Policy file syntax is going to stay mostly unchanged, except in the challenges definition section.
 * [ ] Allow users to pick fallback challenges if any fail, specially with custom ones.
 * [ ] Replace Anubis-like default template with own one.
 * [ ] Define strings and multi-language support for quick modification by operators without custom templates.
 * [ ] Have highly tested paths that match examples.
 * [ ] Caching of temporary fetches, for example, network ranges.
 * [ ] Allow live and dynamic policy reloading.
-* [ ] Multiple domains / subdomains -> one backend handling, CEL rules for backends
+* [x] Multiple domains / subdomains -> one backend handling, CEL rules for backends
 * [ ] Merge all rules and conditions into one large AST for higher performance.
 * [ ] Explore exposing a module for direct Caddy usage.
 * [ ] More defined way of picking HTTP/HTTP(s) listeners and certificates.
@@ -333,6 +332,8 @@ Available under [Dockerfile](Dockerfile). See the _docker compose_ below for the
 
 Example follows a hypothetical Forgejo server running on `http://forgejo:3000` serving `git.example.com`
 
+Container images are published under `git.gammaspectra.live/git/go-away`, `codeberg.org/weebdatahoarder/go-away` and `ghcr.io/weebdatahoarder/go-away`
+
 ```yaml
 networks:
   forgejo:
@@ -343,6 +344,8 @@ volumes:
     
 services:
   go-away:
+    # image: codeberg.org/weebdatahoarder/go-away:latest
+    # image: ghcr.io/weebdatahoarder/go-away:latest
     image: git.gammaspectra.live/git/go-away:latest
     restart: always
     ports:
