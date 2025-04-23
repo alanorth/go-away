@@ -47,7 +47,6 @@ ENV GOAWAY_CLIENT_IP_HEADER=""
 ENV GOAWAY_BACKEND_IP_HEADER=""
 ENV GOAWAY_JWT_PRIVATE_KEY_SEED=""
 ENV GOAWAY_BACKEND=""
-ENV GOAWAY_DNSBL="dnsbl.dronebl.org"
 ENV GOAWAY_ACME_AUTOCERT=""
 ENV GOAWAY_CACHE="/cache"
 
@@ -60,7 +59,6 @@ ENTRYPOINT  /bin/go-away --bind "${GOAWAY_BIND}" --bind-network "${GOAWAY_BIND_N
             --policy "${GOAWAY_POLICY}" --policy-snippets "${GOAWAY_POLICY_SNIPPETS}" \
             --client-ip-header "${GOAWAY_CLIENT_IP_HEADER}" --backend-ip-header "${GOAWAY_BACKEND_IP_HEADER}" \
             --cache "${GOAWAY_CACHE}" \
-            --dnsbl "${GOAWAY_DNSBL}" \
             --challenge-template "${GOAWAY_CHALLENGE_TEMPLATE}" --challenge-template-theme "${GOAWAY_CHALLENGE_TEMPLATE_THEME}" \
             --slog-level "${GOAWAY_SLOG_LEVEL}" \
             --acme-autocert "${GOAWAY_ACME_AUTOCERT}" \
