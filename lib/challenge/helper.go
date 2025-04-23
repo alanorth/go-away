@@ -39,11 +39,13 @@ const VerifyChallengeUrlSuffix = "/verify-challenge"
 
 func GetVerifyInformation(r *http.Request, reg *Registration) (requestId RequestId, redirect, token string, err error) {
 
-	if r.FormValue(QueryArgChallenge) != reg.Name {
-		return RequestId{}, "", "", fmt.Errorf("unexpected challenge: got %s", r.FormValue(QueryArgChallenge))
+	q := r.URL.Query()
+
+	if q.Get(QueryArgChallenge) != reg.Name {
+		return RequestId{}, "", "", fmt.Errorf("unexpected challenge: got %s", q.Get(QueryArgChallenge))
 	}
 
-	requestIdHex := r.FormValue(QueryArgRequestId)
+	requestIdHex := q.Get(QueryArgRequestId)
 
 	if len(requestId) != hex.DecodedLen(len(requestIdHex)) {
 		return RequestId{}, "", "", errors.New("invalid request id")
@@ -55,8 +57,8 @@ func GetVerifyInformation(r *http.Request, reg *Registration) (requestId Request
 		return RequestId{}, "", "", errors.New("invalid request id")
 	}
 
-	token = r.FormValue(QueryArgToken)
-	redirect, err = utils.EnsureNoOpenRedirect(r.FormValue(QueryArgRedirect))
+	token = q.Get(QueryArgToken)
+	redirect, err = utils.EnsureNoOpenRedirect(q.Get(QueryArgRedirect))
 	if err != nil {
 		return RequestId{}, "", "", err
 	}

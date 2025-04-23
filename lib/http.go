@@ -96,11 +96,12 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		if fromChallenge {
 			r.Header.Del("Referer")
 		}
-		if ref := r.FormValue(challenge.QueryArgReferer); ref != "" {
+		q := r.URL.Query()
+
+		if ref := q.Get(challenge.QueryArgReferer); ref != "" {
 			r.Header.Set("Referer", ref)
 		}
 
-		q := r.URL.Query()
 		// delete query parameters that were set by go-away
 		for k := range q {
 			if strings.HasPrefix(k, challenge.QueryArgPrefix) {
