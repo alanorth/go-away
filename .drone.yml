@@ -89,6 +89,9 @@ platform:
 steps:
 - environment:
     DOCKER_BUILDKIT: "1"
+    LC_ALL: C
+    SOURCE_DATE_EPOCH: 0
+    TZ: UTC
   image: plugins/buildx
   name: docker
   privileged: true
@@ -126,6 +129,9 @@ platform:
 steps:
 - environment:
     DOCKER_BUILDKIT: "1"
+    LC_ALL: C
+    SOURCE_DATE_EPOCH: 0
+    TZ: UTC
   image: plugins/buildx
   name: docker
   privileged: true
@@ -163,6 +169,9 @@ platform:
 steps:
 - environment:
     DOCKER_BUILDKIT: "1"
+    LC_ALL: C
+    SOURCE_DATE_EPOCH: 0
+    TZ: UTC
   image: plugins/buildx
   name: docker
   privileged: true
@@ -200,6 +209,9 @@ platform:
 steps:
 - environment:
     DOCKER_BUILDKIT: "1"
+    LC_ALL: C
+    SOURCE_DATE_EPOCH: 0
+    TZ: UTC
   image: plugins/buildx
   name: docker
   privileged: true
@@ -230,6 +242,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: 6df9c42b8cc689f661dc3612f39f5ffce2dea2f50a92e45355fed1d882ee8c5a
+hmac: d487230b53d511ea07b872c70e0d3c21a3b7883d960e4011bc402c3467196baa
 
 ...

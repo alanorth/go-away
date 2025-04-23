@@ -67,7 +67,10 @@ local Publish(registry, repo, secret, go, alpine, os, arch, trigger, platforms, 
             image: "plugins/buildx",
             privileged: true,
             environment: {
-                DOCKER_BUILDKIT: "1"
+                DOCKER_BUILDKIT: "1",
+                SOURCE_DATE_EPOCH: 0,
+                TZ: "UTC",
+                LC_ALL: "C",
             },
             settings: {
                   registry: registry,

@@ -25,7 +25,7 @@ ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 ENV GOTOOLCHAIN=${GOTOOLCHAIN}
 
-RUN go build -pgo=auto -v -trimpath -o "${GOBIN}/go-away" ./cmd/go-away
+RUN go build -pgo=auto -v -trimpath -ldflags=-buildid= -o "${GOBIN}/go-away" ./cmd/go-away
 RUN test -e "${GOBIN}/go-away"
 
 
