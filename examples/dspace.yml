@@ -1,0 +1,242 @@
+# 2025-04-22: Based on examples/generic.yml
+
+# Example cmdline (forward requests from upstream to port :8080)
+# $ go-away --bind :8923 --backend site.example.com=http://site:4000 --policy examples/generic.yml --challenge-template anubis
+
+
+
+# Define networks to be used later below
+networks:
+  # Networks will get included from snippets
+
+  # TENCENT
+  asn-132203:
+    - asn: 132203
+  # Huawei Cloud
+  asn-136907:
+    - asn: 136907
+  # Alibaba US
+  asn-45102:
+    - asn: 45102
+  # Alibaba
+  asn-37963:
+    - asn: 37963
+
+
+challenges:
+  # Challenges will get included from snippets
+
+conditions:
+  # Conditions will get replaced on rules AST when found as ($condition-name)
+
+  # Conditions will get included from snippets
+
+
+  is-static-asset:
+    - 'path == "/favicon.ico"'
+    - 'path == "/favicon.svg"'
+    - 'path == "/apple-touch-icon.png"'
+    - 'path == "/apple-touch-icon-precomposed.png"'
+    - 'path.startsWith("/assets/")'
+    - 'path.matches("\\.(avif|css|gif|js|json|jpeg|jpg|manifest|mjs|mp4|png|svg|ttf|wasm|webm|webp|woff|woff2)$")'
+
+  is-suspicious-crawler:
+    - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
+    # Old IE browsers
+    - 'userAgent.matches("MSIE ([2-9]|10|11)\\.")'
+    # Old Linux browsers
+    - 'userAgent.contains("Linux i[63]86") || userAgent.contains("FreeBSD i[63]86")'
+    # Old Windows browsers
+    - 'userAgent.matches("Windows (3|95|98|CE)") || userAgent.matches("Windows NT [1-5]\\.")'
+    # Old mobile browsers
+    - 'userAgent.matches("Android [1-5]\\.") || userAgent.matches("(iPad|iPhone) OS [1-9]_")'
+    # Old generic browsers
+    - 'userAgent.startsWith("Opera/")'
+    #- 'userAgent.matches("Gecko/(201[0-9]|200[0-9])")'
+    - 'userAgent.matches("^Mozilla/[1-4]")'
+
+  is-heavy-resource:
+    # DSpace 7+ top-level browse: https://demo.dspace.org/browse/dateissued
+    # DSpace 8+ community/collection browse: https://demo.dspace.org/collections/6a259fbf-b49b-47c3-9122-748930752229/browse/dateissued
+    - 'path.contains("/browse/")'
+    # DSpace 7+ top-level search: https://demo.dspace.org/search?query=simmons
+    - 'path.startsWith("/search")'
+    # DSpace 7+ top-level search filters: https://demo.dspace.org/search?f.author=Simmons%2C%20Cameron%2Cequals
+    # DSpace 8+ community/collection search filters: https://demo.dspace.org/communities/830a00fb-62a8-4bf2-8170-d4e63ee06e35?f.author=Autor%20desconocido%2Cequals
+    # Note: this checks if there are ANY query parameters for example filters (not just `query`)
+    - 'size(query) > 0'
+
+# Rules are checked sequentially in order, from top to bottom
+rules:
+  - name: allow-well-known-resources
+    conditions:
+      - '($is-well-known-asset)'
+    action: pass
+
+  - name: allow-static-resources
+    conditions:
+      - '($is-static-asset)'
+    action: pass
+
+  - name: desired-crawlers
+    conditions:
+      - *is-bot-googlebot
+      - *is-bot-bingbot
+      - *is-bot-duckduckbot
+      - *is-bot-kagibot
+      - *is-bot-qwantbot
+      - *is-bot-yandexbot
+      - *is-bot-uptimerobot
+    action: pass
+
+  - name: undesired-networks
+    conditions:
+      - 'remoteAddress.network("asn-132203")'
+      - 'remoteAddress.network("asn-136907")'
+      - 'remoteAddress.network("asn-45102")'
+      - 'remoteAddress.network("asn-37963")'
+    action: drop
+
+  - name: undesired-crawlers
+    conditions:
+      - '($is-headless-chromium)'
+      - 'userAgent.startsWith("Lightpanda/")'
+      - 'userAgent.startsWith("masscan/")'
+      # Typo'd opera botnet
+      - 'userAgent.matches("^Opera/[0-9.]+\\.\\(")'
+      # AI bullshit stuff, they do not respect robots.txt even while they read it
+      # TikTok Bytedance AI training
+      - 'userAgent.contains("Bytedance") || userAgent.contains("Bytespider") || userAgent.contains("TikTokSpider")'
+      # Meta AI training; The Meta-ExternalAgent crawler crawls the web for use cases such as training AI models or improving products by indexing content directly.
+      - 'userAgent.contains("meta-externalagent/") || userAgent.contains("meta-externalfetcher/") || userAgent.contains("FacebookBot")'
+      # Anthropic AI training and usage
+      - 'userAgent.contains("ClaudeBot") || userAgent.contains("Claude-User")|| userAgent.contains("Claude-SearchBot")'
+      # Common Crawl AI crawlers
+      - 'userAgent.contains("CCBot")'
+      # ChatGPT AI crawlers https://platform.openai.com/docs/bots
+      - 'userAgent.contains("GPTBot") || userAgent.contains("OAI-SearchBot") || userAgent.contains("ChatGPT-User")'
+      # Other AI crawlers
+      - 'userAgent.contains("Amazonbot") || userAgent.contains("Google-Extended") || userAgent.contains("PanguBot") || userAgent.contains("AI2Bot") || userAgent.contains("Diffbot") || userAgent.contains("cohere-training-data-crawler") || userAgent.contains("Applebot-Extended")'
+      # SEO / Ads and marketing
+      - 'userAgent.contains("BLEXBot")'
+    action: drop
+
+  - name: unknown-crawlers
+    conditions:
+      # No user agent set
+      - 'userAgent == ""'
+    action: deny
+
+  # check a sequence of challenges
+  - name: suspicious-crawlers
+    conditions: ['($is-suspicious-crawler)']
+    action: none
+    children:
+      - name: 0
+        action: check
+        settings:
+          challenges: [js-pow-sha256]
+      - name: 1
+        action: check
+        settings:
+          challenges: [preload-link, resource-load]
+      - name: 2
+        action: check
+        settings:
+          challenges: [header-refresh]
+
+  - name: sitemap
+    conditions:
+      - 'path.matches("^/sitemap([0-9]+|_index)\\.xml$")'
+    action: pass
+
+  # check a sequence of challenges
+  - name: heavy-operations
+    conditions: ['($is-heavy-resource)']
+    action: none
+    children:
+      - name: 0
+        action: check
+        settings:
+          challenges: [preload-link, header-refresh, js-pow-sha256]
+      - name: 1
+        action: check
+        settings:
+          challenges: [ resource-load, js-pow-sha256 ]
+
+  - name: standard-bots
+    action: check
+    settings:
+      challenges: [meta-refresh, resource-load]
+    conditions:
+      - '($is-generic-robot-ua)'
+
+  # Allow loading of core pages without challenges
+  - name: homesite
+    conditions:
+      - 'path == "/"'
+      - 'path == "/home"'
+    action: pass
+
+  # check DNSBL and serve harder challenges
+  # todo: make this specific to score
+  - name: undesired-dnsbl
+    action: check
+    settings:
+      challenges: [dnsbl]
+      # if DNSBL fails, check additional challenges
+      fail: check
+      fail-settings:
+        challenges: [js-pow-sha256]
+
+  - name: suspicious-fetchers
+    action: check
+    settings:
+      challenges: [js-pow-sha256]
+    conditions:
+      - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
+
+  # Allow PUT/DELETE/PATCH/POST requests in general
+  - name: non-get-request
+    action: pass
+    conditions:
+      - '!(method == "HEAD" || method == "GET")'
+
+  - name: plaintext-browser
+    action: challenge
+    settings:
+      challenges: [meta-refresh, cookie]
+    conditions:
+      - 'userAgent.startsWith("Lynx/")'
+
+  # Comment this rule out to not challenge tool-like user agents
+  - name: standard-tools
+    action: challenge
+    settings:
+      challenges: [cookie]
+    conditions:
+      - '($is-generic-robot-ua)'
+      - '($is-tool-ua)'
+      - '!($is-generic-browser)'
+
+  # Allow loading of DSpace objects without challenges
+  - name: homesite-dspace-objects
+    conditions:
+      - 'path.startsWith("/bitstream/")'
+      - 'path.startsWith("/bitstreams/")'
+      - 'path.startsWith("/collections/")'
+      - 'path.startsWith("/communities/")'
+      - 'path.startsWith("/entities/")'
+      - 'path.startsWith("/handle/")'
+      - 'path.startsWith("/items/")'
+      - 'path.startsWith("/reload/")'
+    action: pass
+
+  - name: standard-browser
+    action: challenge
+    settings:
+      challenges: [preload-link, meta-refresh, resource-load, js-pow-sha256]
+    conditions:
+      - '($is-generic-browser)'
+
+# If end of rules is reached, default is PASS
