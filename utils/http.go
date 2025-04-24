@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"net/netip"
 	"net/url"
 	"strings"
 )
@@ -75,6 +76,7 @@ func MakeReverseProxy(target string) (*httputil.ReverseProxy, error) {
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{}
 
 	// https://github.com/oauth2-proxy/oauth2-proxy/blob/4e2100a2879ef06aea1411790327019c1a09217c/pkg/upstream/http.go#L124
 	if u.Scheme == "unix" {
@@ -91,6 +93,7 @@ func MakeReverseProxy(target string) (*httputil.ReverseProxy, error) {
 	}
 
 	rp := httputil.NewSingleHostReverseProxy(u)
+
 	rp.Transport = transport
 
 	return rp, nil
@@ -108,22 +111,44 @@ func GetRequestScheme(r *http.Request) string {
 	return "http"
 }
 
-func GetRequestAddress(r *http.Request, clientHeader string) net.IP {
-	var ipStr string
+func GetRequestAddress(r *http.Request, clientHeader string) netip.AddrPort {
+	strVal := r.RemoteAddr
+
 	if clientHeader != "" {
-		ipStr = r.Header.Get(clientHeader)
+		strVal = r.Header.Get(clientHeader)
 	}
-	if ipStr != "" {
+	if strVal != "" {
 		// handle X-Forwarded-For
-		ipStr = strings.Split(ipStr, ",")[0]
+		strVal = strings.Split(strVal, ",")[0]
 	}
 
 	// fallback
-	if ipStr == "" {
-		ipStr, _, _ = net.SplitHostPort(r.RemoteAddr)
+	if strVal == "" {
+		strVal = r.RemoteAddr
 	}
-	ipStr = strings.Trim(ipStr, "[]")
-	return net.ParseIP(ipStr)
+
+	addrPort, err := netip.ParseAddrPort(strVal)
+	if err != nil {
+		addr, err2 := netip.ParseAddr(strVal)
+		if err2 != nil {
+			return netip.AddrPort{}
+		}
+		addrPort = netip.AddrPortFrom(addr, 0)
+	}
+	return addrPort
+}
+
+type remoteAddress struct{}
+
+func SetRemoteAddress(r *http.Request, addrPort netip.AddrPort) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), remoteAddress{}, addrPort))
+}
+func GetRemoteAddress(ctx context.Context) *netip.AddrPort {
+	ip, ok := ctx.Value(remoteAddress{}).(netip.AddrPort)
+	if !ok {
+		return nil
+	}
+	return &ip
 }
 
 func CacheBust() string {

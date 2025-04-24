@@ -4,77 +4,26 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/tls"
 	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/lib"
 	"git.gammaspectra.live/git/go-away/lib/policy"
+	"git.gammaspectra.live/git/go-away/lib/settings"
 	"git.gammaspectra.live/git/go-away/utils"
-	"github.com/pires/go-proxyproto"
-	"golang.org/x/crypto/acme"
-	"golang.org/x/crypto/acme/autocert"
+	"github.com/goccy/go-yaml"
 	"log"
 	"log/slog"
-	"net"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"path"
 	"runtime/debug"
-	"strconv"
 	"strings"
-	"sync/atomic"
 	"syscall"
 )
-
-func setupListener(network, address, socketMode string, proxy bool) (net.Listener, string) {
-	if network == "proxy" {
-		network = "tcp"
-		proxy = true
-	}
-
-	formattedAddress := ""
-	switch network {
-	case "unix":
-		formattedAddress = "unix:" + address
-	case "tcp":
-		formattedAddress = "http://localhost" + address
-	default:
-		formattedAddress = fmt.Sprintf(`(%s) %s`, network, address)
-	}
-
-	listener, err := net.Listen(network, address)
-	if err != nil {
-		log.Fatal(fmt.Errorf("failed to bind to %s: %w", formattedAddress, err))
-	}
-
-	// additional permission handling for unix sockets
-	if network == "unix" {
-		mode, err := strconv.ParseUint(socketMode, 8, 0)
-		if err != nil {
-			listener.Close()
-			log.Fatal(fmt.Errorf("could not parse socket mode %s: %w", socketMode, err))
-		}
-
-		err = os.Chmod(address, os.FileMode(mode))
-		if err != nil {
-			listener.Close()
-			log.Fatal(fmt.Errorf("could not change socket mode: %w", err))
-		}
-	}
-
-	if proxy {
-		slog.Warn("listener PROXY enabled")
-		formattedAddress += " +PROXY"
-		listener = &proxyproto.Listener{
-			Listener: listener,
-		}
-	}
-
-	return listener, formattedAddress
-}
 
 var internalCmdName = "go-away"
 var internalMainName = "go-away"
@@ -101,40 +50,20 @@ func (v *MultiVar) Set(value string) error {
 	return nil
 }
 
-func newACMEManager(clientDirectory string, backends map[string]http.Handler) *autocert.Manager {
-
-	var domains []string
-	for d := range backends {
-		parts := strings.Split(d, ":")
-		d = parts[0]
-		if net.ParseIP(d) != nil {
-			continue
-		}
-		domains = append(domains, d)
-	}
-
-	manager := &autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(domains...),
-		Client: &acme.Client{
-			HTTPClient:   http.DefaultClient,
-			DirectoryURL: clientDirectory,
-		},
-	}
-	return manager
-}
-
 func main() {
-	bind := flag.String("bind", ":8080", "network address to bind HTTP/HTTP(s) to")
-	bindNetwork := flag.String("bind-network", "tcp", "network family to bind HTTP to, e.g. unix, tcp")
-	bindProxy := flag.Bool("bind-proxy", false, "use PROXY protocol in front of the listener")
-	socketMode := flag.String("socket-mode", "0770", "socket mode (permissions) for unix domain sockets.")
+
+	opt := settings.DefaultSettings
+
+	flag.StringVar(&opt.Bind.Address, "bind", opt.Bind.Address, "network address to bind HTTP/HTTP(s) to")
+	flag.StringVar(&opt.Bind.Network, "bind-network", opt.Bind.Network, "network family to bind HTTP to, e.g. unix, tcp")
+	flag.BoolVar(&opt.Bind.Proxy, "bind-proxy", opt.Bind.Proxy, "use PROXY protocol in front of the listener")
+	flag.StringVar(&opt.Bind.SocketMode, "socket-mode", opt.Bind.SocketMode, "socket mode (permissions) for unix domain sockets.")
 
 	slogLevel := flag.String("slog-level", "WARN", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
 	debugMode := flag.Bool("debug", false, "debug mode with logs and server timings")
-	passThrough := flag.Bool("passthrough", false, "passthrough mode sends all requests to matching backends until state is loaded")
+	flag.BoolVar(&opt.Bind.Passthrough, "passthrough", opt.Bind.Passthrough, "passthrough mode sends all requests to matching backends until state is loaded")
 	check := flag.Bool("check", false, "check configuration and policies, then exit")
-	acmeAutocert := flag.String("acme-autocert", "", "enables HTTP(s) mode and uses the provided ACME server URL or available service (available: letsencrypt)")
+	flag.StringVar(&opt.Bind.TLSAcmeAutoCert, "acme-autocert", opt.Bind.TLSAcmeAutoCert, "enables HTTP(s) mode and uses the provided ACME server URL or available service (available: letsencrypt)")
 
 	clientIpHeader := flag.String("client-ip-header", "", "Client HTTP header to fetch their IP address from (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
 	backendIpHeader := flag.String("backend-ip-header", "", "Backend HTTP header to set the client IP address from, if empty defaults to leaving Client header alone (X-Real-Ip, X-Client-Ip, X-Forwarded-For, Cf-Connecting-Ip, etc.)")
@@ -143,8 +72,9 @@ func main() {
 
 	policyFile := flag.String("policy", "", "path to policy YAML file")
 	policySnippets := flag.String("policy-snippets", "", "path to YAML snippets folder")
-	challengeTemplate := flag.String("challenge-template", "anubis", "name or path of the challenge template to use (anubis, forgejo)")
-	challengeTemplateTheme := flag.String("challenge-template-theme", "", "name of the challenge template theme to use (forgejo => [forgejo-auto, forgejo-dark, forgejo-light, gitea...])")
+	flag.StringVar(&opt.ChallengeTemplate, "challenge-template", opt.ChallengeTemplate, "name or path of the challenge template to use (anubis, forgejo)")
+
+	templateTheme := flag.String("challenge-template-theme", opt.ChallengeTemplateOverrides["Theme"], "name of the challenge template theme to use (forgejo => [forgejo-auto, forgejo-dark, forgejo-light, gitea...])")
 
 	packageName := flag.String("package-path", internalCmdName, "package name to expose in .well-known url path")
 
@@ -152,6 +82,8 @@ func main() {
 
 	var backends MultiVar
 	flag.Var(&backends, "backend", "backend definition in the form of an.example.com=http://backend:1234 (can be specified multiple times)")
+
+	settingsFile := flag.String("config", "", "path to config override YAML file")
 
 	flag.Parse()
 
@@ -175,6 +107,21 @@ func main() {
 	}
 
 	slog.Info("go-away", "package", internalMainName, "version", internalMainVersion, "cmd", internalCmdName)
+
+	// preload missing settings
+	opt.ChallengeTemplateOverrides["Theme"] = *templateTheme
+
+	// load overrides
+	if *settingsFile != "" {
+		settingsData, err := os.ReadFile(*settingsFile)
+		if err != nil {
+			log.Fatal(fmt.Errorf("could not read settings file: %w", err))
+		}
+		err = yaml.Unmarshal(settingsData, &opt)
+		if err != nil {
+			log.Fatal(fmt.Errorf("could not parse settings file: %w", err))
+		}
+	}
 
 	var seed []byte
 
@@ -207,18 +154,24 @@ func main() {
 	}
 
 	createdBackends := make(map[string]http.Handler)
-
-	parsedBackends := make(map[string]string)
 	for _, backend := range backends {
+		if backend == "" {
+			// skip empty to allow no values
+			continue
+		}
 		parts := strings.Split(backend, "=")
 		if len(parts) != 2 {
 			log.Fatal(fmt.Errorf("invalid backend definition: %s, expected 2 parts, got %v", backend, parts))
 		}
-		parsedBackends[parts[0]] = parts[1]
+
+		// make no-settings, default backend
+		opt.Backends[parts[0]] = settings.Backend{
+			URL: parts[1],
+		}
 	}
 
-	for k, v := range parsedBackends {
-		backend, err := utils.MakeReverseProxy(v)
+	for k, v := range opt.Backends {
+		backend, err := v.Create()
 		if err != nil {
 			log.Fatal(fmt.Errorf("backend %s: failed to make reverse proxy: %w", k, err))
 		}
@@ -228,10 +181,11 @@ func main() {
 	}
 
 	if len(createdBackends) == 0 {
-		log.Fatal(fmt.Errorf("no backends defined in policy file"))
+		log.Fatal(fmt.Errorf("no backends defined in cmdline or settings file"))
 	}
 
 	var cache utils.Cache
+	var acmeCache string
 	if *cachePath != "" {
 		err = os.MkdirAll(*cachePath, 0755)
 		if err != nil {
@@ -248,29 +202,8 @@ func main() {
 		if err != nil {
 			log.Fatal(fmt.Errorf("failed to open cache directory: %w", err))
 		}
-	}
 
-	var tlsConfig *tls.Config
-
-	if *acmeAutocert != "" {
-		switch *acmeAutocert {
-		case "letsencrypt":
-			*acmeAutocert = acme.LetsEncryptURL
-		}
-
-		acmeManager := newACMEManager(*acmeAutocert, createdBackends)
-		if *cachePath != "" {
-			err = os.MkdirAll(path.Join(*cachePath, "acme"), 0755)
-			if err != nil {
-				log.Fatal(fmt.Errorf("failed to create acme cache directory: %w", err))
-			}
-			acmeManager.Cache = autocert.DirCache(path.Join(*cachePath, "acme"))
-		}
-		slog.Warn(
-			"acme-autocert enabled",
-			"directory", *acmeAutocert,
-		)
-		tlsConfig = acmeManager.TLSConfig()
+		acmeCache = path.Join(*cachePath, "acme")
 	}
 
 	loadPolicyState := func() (http.Handler, error) {
@@ -284,22 +217,19 @@ func main() {
 			return nil, fmt.Errorf("failed to parse policy file: %w", err)
 		}
 
-		settings := policy.Settings{
-			Cache:                  cache,
-			Backends:               createdBackends,
-			Debug:                  *debugMode,
-			MainName:               internalMainName,
-			MainVersion:            internalMainVersion,
-			PackageName:            *packageName,
-			ChallengeTemplate:      *challengeTemplate,
-			ChallengeTemplateTheme: *challengeTemplateTheme,
-			PrivateKeySeed:         seed,
-			ClientIpHeader:         *clientIpHeader,
-			BackendIpHeader:        *backendIpHeader,
-			ChallengeResponseCode:  http.StatusTeapot,
+		stateSettings := policy.StateSettings{
+			Cache:                 cache,
+			Backends:              createdBackends,
+			MainName:              internalMainName,
+			MainVersion:           internalMainVersion,
+			PackageName:           *packageName,
+			PrivateKeySeed:        seed,
+			ClientIpHeader:        *clientIpHeader,
+			BackendIpHeader:       *backendIpHeader,
+			ChallengeResponseCode: http.StatusTeapot,
 		}
 
-		state, err := lib.NewState(*p, settings)
+		state, err := lib.NewState(*p, opt, stateSettings)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to create state: %w", err)
@@ -317,32 +247,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	listener, listenUrl := setupListener(*bindNetwork, *bind, *socketMode, *bindProxy)
+	listener, listenUrl := opt.Bind.Listener()
 	slog.Warn(
 		"listening",
 		"url", listenUrl,
 	)
 
-	var serverHandler atomic.Pointer[http.Handler]
-	server := utils.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if handler := serverHandler.Load(); handler == nil {
-			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
-		} else {
-			(*handler).ServeHTTP(w, r)
-		}
-	}), tlsConfig)
-
-	if *passThrough {
-		// setup a passthrough handler temporarily
-		fn := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			backend := utils.SelectHTTPHandler(createdBackends, r.Host)
-			if backend == nil {
-				http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
-			} else {
-				backend.ServeHTTP(w, r)
-			}
-		}))
-		serverHandler.Store(&fn)
+	server, swap, err := opt.Bind.Server(createdBackends, acmeCache)
+	if err != nil {
+		log.Fatal(fmt.Errorf("failed to create server: %w", err))
 	}
 
 	go func() {
@@ -351,7 +264,7 @@ func main() {
 			log.Fatal(fmt.Errorf("failed to load policy state: %w", err))
 		}
 
-		serverHandler.Store(&handler)
+		swap(handler)
 		slog.Warn(
 			"handler configuration loaded",
 		)
@@ -369,12 +282,34 @@ func main() {
 				continue
 			}
 
-			serverHandler.Store(&handler)
+			swap(handler)
 			slog.Warn("handler configuration reloaded")
 		}
 	}()
 
-	if tlsConfig != nil {
+	if opt.BindDebug != "" {
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/debug/pprof/", pprof.Index)
+			mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			debugServer := http.Server{
+				Addr:    opt.BindDebug,
+				Handler: mux,
+			}
+
+			slog.Warn(
+				"listening metrics",
+				"bind", opt.BindDebug,
+			)
+			if err = debugServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				log.Fatal(err)
+			}
+		}()
+	}
+
+	if server.TLSConfig != nil {
 		if err := server.ServeTLS(listener, "", ""); !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}

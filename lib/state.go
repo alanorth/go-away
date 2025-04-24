@@ -8,6 +8,7 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
+	"git.gammaspectra.live/git/go-away/lib/settings"
 	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/google/cel-go/cel"
 	"github.com/yl2chen/cidranger"
@@ -31,7 +32,8 @@ type State struct {
 	publicKey  ed25519.PublicKey
 	privateKey ed25519.PrivateKey
 
-	settings policy.Settings
+	opt      settings.Settings
+	settings policy.StateSettings
 
 	networks map[string]cidranger.Ranger
 
@@ -44,10 +46,11 @@ type State struct {
 	Mux *http.ServeMux
 }
 
-func NewState(p policy.Policy, settings policy.Settings) (handler http.Handler, err error) {
+func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSettings) (handler http.Handler, err error) {
 	state := new(State)
 	state.close = make(chan struct{})
 	state.settings = settings
+	state.opt = opt
 	state.client = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -89,22 +92,18 @@ func NewState(p policy.Policy, settings policy.Settings) (handler http.Handler, 
 		}
 	}
 
-	if state.Settings().ChallengeTemplate == "" {
-		state.settings.ChallengeTemplate = "anubis"
-	}
+	if templates["challenge-"+state.Options().ChallengeTemplate+".gohtml"] == nil {
 
-	if templates["challenge-"+state.Settings().ChallengeTemplate+".gohtml"] == nil {
-
-		if data, err := os.ReadFile(state.Settings().ChallengeTemplate); err == nil && len(data) > 0 {
-			name := path.Base(state.Settings().ChallengeTemplate)
+		if data, err := os.ReadFile(state.Options().ChallengeTemplate); err == nil && len(data) > 0 {
+			name := path.Base(state.Options().ChallengeTemplate)
 			err := initTemplate(name, string(data))
 			if err != nil {
-				return nil, fmt.Errorf("error loading template %s: %w", settings.ChallengeTemplate, err)
+				return nil, fmt.Errorf("error loading template %s: %w", state.Options().ChallengeTemplate, err)
 			}
-			state.settings.ChallengeTemplate = name
+			state.opt.ChallengeTemplate = name
 		}
 
-		return nil, fmt.Errorf("no template defined for %s", settings.ChallengeTemplate)
+		return nil, fmt.Errorf("no template defined for %s", state.Options().ChallengeTemplate)
 	}
 
 	state.networks = make(map[string]cidranger.Ranger)

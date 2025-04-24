@@ -47,7 +47,8 @@ func GetChallengeKeyForRequest(state StateInterface, reg *Registration, until ti
 	hasher.Write([]byte("challenge\x00"))
 	hasher.Write([]byte(reg.Name))
 	hasher.Write([]byte{0})
-	hasher.Write(address.To16())
+	ipBuf := address.Addr().Unmap().As16()
+	hasher.Write(ipBuf[:])
 	hasher.Write([]byte{0})
 
 	// specific headers
@@ -72,7 +73,7 @@ func GetChallengeKeyForRequest(state StateInterface, reg *Registration, until ti
 
 	sum[0] = 0
 
-	if address.To4() != nil {
+	if address.Addr().Unmap().Is4() {
 		// Is IPv4, mark
 		sum.Set(KeyFlagIsIPv4)
 	}

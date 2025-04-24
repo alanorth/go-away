@@ -12,8 +12,8 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/traits"
-	"net"
 	"net/http"
+	"net/netip"
 	"net/textproto"
 	"time"
 )
@@ -36,7 +36,7 @@ type RequestData struct {
 	Time            time.Time
 	ChallengeVerify map[Id]VerifyResult
 	ChallengeState  map[Id]VerifyState
-	RemoteAddress   net.IP
+	RemoteAddress   netip.AddrPort
 	State           StateInterface
 	CookiePrefix    string
 
@@ -57,7 +57,6 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 	data.ChallengeState = make(map[Id]VerifyState, len(state.GetChallenges()))
 	data.Time = time.Now().UTC()
 	data.State = state
-	data.r = r
 
 	data.fp = make(map[string]string, 2)
 
@@ -85,6 +84,8 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 	data.CookiePrefix = utils.CookiePrefix + hex.EncodeToString(sum.Sum(nil)[:4]) + "-"
 
 	r = r.WithContext(context.WithValue(r.Context(), requestDataContextKey{}, &data))
+	r = utils.SetRemoteAddress(r, data.RemoteAddress)
+	data.r = r
 
 	return r, &data
 }
@@ -96,7 +97,7 @@ func (d *RequestData) ResolveName(name string) (any, bool) {
 	case "method":
 		return d.r.Method, true
 	case "remoteAddress":
-		return d.RemoteAddress, true
+		return d.RemoteAddress.Addr().AsSlice(), true
 	case "userAgent":
 		return d.r.UserAgent(), true
 	case "path":

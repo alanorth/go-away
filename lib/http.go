@@ -10,10 +10,7 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
-	"net/http/pprof"
-	"strconv"
 	"strings"
-	"time"
 )
 
 var templates map[string]*template.Template
@@ -51,17 +48,11 @@ func initTemplate(name, data string) error {
 	return nil
 }
 
-func (state *State) addTiming(w http.ResponseWriter, name, desc string, duration time.Duration) {
-	if state.Settings().Debug {
-		w.Header().Add("Server-Timing", fmt.Sprintf("%s;desc=%s;dur=%d", name, strconv.Quote(desc), duration.Milliseconds()))
-	}
-}
-
 func GetLoggerForRequest(r *http.Request) *slog.Logger {
 	data := challenge.RequestDataFromContext(r.Context())
 	args := []any{
 		"request_id", data.Id.String(),
-		"remote_address", data.RemoteAddress.String(),
+		"remote_address", data.RemoteAddress.Addr().String(),
 		"user_agent", r.UserAgent(),
 		"host", r.Host,
 		"path", r.URL.Path,
@@ -151,14 +142,6 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 func (state *State) setupRoutes() error {
 
 	state.Mux.HandleFunc("/", state.handleRequest)
-
-	if state.Settings().Debug {
-		//TODO: split this to a different listener, metrics listener
-		http.HandleFunc(state.urlPath+"/debug/pprof/", pprof.Index)
-		http.HandleFunc(state.urlPath+"/debug/pprof/profile", pprof.Profile)
-		http.HandleFunc(state.urlPath+"/debug/pprof/symbol", pprof.Symbol)
-		http.HandleFunc(state.urlPath+"/debug/pprof/trace", pprof.Trace)
-	}
 
 	state.Mux.Handle("GET "+state.urlPath+"/assets/", http.StripPrefix(state.UrlPath()+"/assets/", gzipped.FileServer(gzipped.FS(embed.AssetsFs))))
 

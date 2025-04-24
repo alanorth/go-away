@@ -119,9 +119,9 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 
 		data := challenge.RequestDataFromContext(r.Context())
 
-		result, err := lookup(r.Context(), params.Decay, params.Timeout, dnsbl, decayMap, data.RemoteAddress)
+		result, err := lookup(r.Context(), params.Decay, params.Timeout, dnsbl, decayMap, data.RemoteAddress.Addr().Unmap().AsSlice())
 		if err != nil {
-			data.State.Logger(r).Debug("dnsbl lookup failed", "address", data.RemoteAddress.String(), "result", result, "err", err)
+			data.State.Logger(r).Debug("dnsbl lookup failed", "address", data.RemoteAddress.Addr().String(), "result", result, "err", err)
 		}
 
 		if result.Bad() {
