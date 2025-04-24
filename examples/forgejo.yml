@@ -196,6 +196,7 @@ rules:
       # OCI packages API and package managers
       - 'path.startsWith("/api/packages/") || path == "/api/packages"'
       - 'path.startsWith("/v2/") || path == "/v2"'
+      - 'path.endsWith("/branches/list") || path.endsWith("/tags/list")'
     action: pass
 
   - name: preview-fetchers
