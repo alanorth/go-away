@@ -140,11 +140,11 @@ local mirror = "https://mirror.gcr.io";
 
     # latest
     Publish(mirror, "git.gammaspectra.live", "git.gammaspectra.live/git/go-away", "git", goVersion, alpineVersion, "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-git"},
-    Publish(mirror, "codeberg.org", "codeberg.org/weebdatahoarder/go-away", "codeberg", goVersion, alpineVersion, "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-codeberg"},
+    Publish(mirror, "codeberg.org", "codeberg.org/gone/go-away", "codeberg", goVersion, alpineVersion, "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-codeberg"},
     Publish(mirror, "ghcr.io", "ghcr.io/weebdatahoarder/go-away", "github", goVersion, alpineVersion, "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-github"},
 
     # modern
     Publish(mirror, "git.gammaspectra.live", "git.gammaspectra.live/git/go-away", "git", goVersion, alpineVersion, "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
-    Publish(mirror, "codeberg.org", "codeberg.org/weebdatahoarder/go-away", "codeberg", goVersion, alpineVersion, "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
+    Publish(mirror, "codeberg.org", "codeberg.org/gone/go-away", "codeberg", goVersion, alpineVersion, "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
     Publish(mirror, "ghcr.io", "ghcr.io/weebdatahoarder/go-away", "github", goVersion, alpineVersion, "linux", "amd64", {event: ["promote", "tag"], target: ["production"], }, containerArchitectures, {auto_tag: true,}),
 ]

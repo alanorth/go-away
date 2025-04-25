@@ -32,7 +32,7 @@ Source code is automatically pushed to the following mirrors. Packages are also 
 
 [![GammaSpectra.live](https://img.shields.io/badge/GammaSpectra.live-main+packages-green?style=flat&logo=data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgd2lkdGg9IjYwMCIgaGVpZ2h0PSI2MDAiIHZpZXdCb3g9Ii0zMDAgLTMwMCA2MDAgNjAwIj4KPGNpcmNsZSByPSI1MCIvPgo8cGF0aCBkPSJNNzUsMCBBIDc1LDc1IDAgMCwwIDM3LjUsLTY0Ljk1MiBMIDEyNSwtMjE2LjUwNiBBIDI1MCwyNTAgMCAwLDEgMjUwLDAgeiIgaWQ9ImJsZCIvPgo8dXNlIHhsaW5rOmhyZWY9IiNibGQiIHRyYW5zZm9ybT0icm90YXRlKDEyMCkiLz4KPHVzZSB4bGluazpocmVmPSIjYmxkIiB0cmFuc2Zvcm09InJvdGF0ZSgyNDApIi8+Cjwvc3ZnPg==&labelColor=fff)](https://git.gammaspectra.live/git/go-away) ![](https://git.gammaspectra.live/git/go-away/badges/stars.svg?style=flat) [![](https://git.gammaspectra.live/git/go-away/badges/issues/open.svg?style=flat)](https://git.gammaspectra.live/git/go-away/issues?state=open) [![](https://git.gammaspectra.live/git/go-away/badges/pulls/open.svg?style=flat)](https://git.gammaspectra.live/git/go-away/pulls?state=open)
 
-[![Codeberg](https://img.shields.io/badge/Codeberg-mirror+packages-2185D0?style=flat&logo=codeberg&labelColor=fff)](https://codeberg.org/WeebDataHoarder/go-away) ![](https://codeberg.org/WeebDataHoarder/go-away/badges/stars.svg?style=flat)
+[![Codeberg](https://img.shields.io/badge/Codeberg-mirror+packages-2185D0?style=flat&logo=codeberg&labelColor=fff)](https://codeberg.org/gone/go-away) ![](https://codeberg.org/gone/go-away/badges/stars.svg?style=flat)
 
 [![GitHub](https://img.shields.io/badge/GitHub-mirror+packages-blue?style=flat&logo=github&labelColor=fff&logoColor=24292f)](https://github.com/WeebDataHoarder/go-away) ![](https://img.shields.io/github/stars/WeebDataHoarder/go-away?style=flat)
 
@@ -342,7 +342,7 @@ Available under [Dockerfile](Dockerfile). See the _docker compose_ below for the
 
 Example follows a hypothetical Forgejo server running on `http://forgejo:3000` serving `git.example.com`
 
-Container images are published under `git.gammaspectra.live/git/go-away`, `codeberg.org/weebdatahoarder/go-away` and `ghcr.io/weebdatahoarder/go-away`
+Container images are published under `git.gammaspectra.live/git/go-away`, `codeberg.org/gone/go-away` and `ghcr.io/weebdatahoarder/go-away`
 
 ```yaml
 networks:
@@ -354,7 +354,7 @@ volumes:
     
 services:
   go-away:
-    # image: codeberg.org/weebdatahoarder/go-away:latest
+    # image: codeberg.org/gone/go-away:latest
     # image: ghcr.io/weebdatahoarder/go-away:latest
     image: git.gammaspectra.live/git/go-away:latest
     restart: always

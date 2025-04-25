@@ -203,7 +203,7 @@ steps:
     - linux/arm64
     - linux/riscv64
     registry: codeberg.org
-    repo: codeberg.org/weebdatahoarder/go-away
+    repo: codeberg.org/gone/go-away
     tags:
     - latest
     username:
@@ -348,7 +348,7 @@ steps:
     - linux/arm64
     - linux/riscv64
     registry: codeberg.org
-    repo: codeberg.org/weebdatahoarder/go-away
+    repo: codeberg.org/gone/go-away
     username:
       from_secret: codeberg_username
 trigger:
@@ -408,6 +408,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: ad13c88b81cd1c6ebd4bb8d33479ffe8e67bc8caefdcc1c06dd1a6b75476bcd7
+hmac: 7d15ec708707d96b5741471555875d0001b84da74a7688baf0bae6fea0dbf138
 
 ...
