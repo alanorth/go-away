@@ -41,7 +41,7 @@ func (state *State) ChallengeFailed(r *http.Request, reg *challenge.Registration
 	}
 	logger.Warn("challenge failed", "challenge", reg.Name, "err", err, "redirect", redirect)
 
-	state.metrics.Challenge(reg.Name, "fail")
+	metrics.Challenge(reg.Name, "fail")
 }
 
 func (state *State) ChallengePassed(r *http.Request, reg *challenge.Registration, redirect string, logger *slog.Logger) {
@@ -50,7 +50,7 @@ func (state *State) ChallengePassed(r *http.Request, reg *challenge.Registration
 	}
 	logger.Warn("challenge passed", "challenge", reg.Name, "redirect", redirect)
 
-	state.metrics.Challenge(reg.Name, "pass")
+	metrics.Challenge(reg.Name, "pass")
 }
 
 func (state *State) ChallengeIssued(r *http.Request, reg *challenge.Registration, redirect string, logger *slog.Logger) {
@@ -59,23 +59,23 @@ func (state *State) ChallengeIssued(r *http.Request, reg *challenge.Registration
 	}
 	logger.Info("challenge issued", "challenge", reg.Name, "redirect", redirect)
 
-	state.metrics.Challenge(reg.Name, "issue")
+	metrics.Challenge(reg.Name, "issue")
 }
 
 func (state *State) ChallengeChecked(r *http.Request, reg *challenge.Registration, redirect string, logger *slog.Logger) {
-	state.metrics.Challenge(reg.Name, "check")
+	metrics.Challenge(reg.Name, "check")
 }
 
 func (state *State) RuleHit(r *http.Request, name string, logger *slog.Logger) {
-	state.metrics.Rule(name, "hit")
+	metrics.Rule(name, "hit")
 }
 
 func (state *State) RuleMiss(r *http.Request, name string, logger *slog.Logger) {
-	state.metrics.Rule(name, "miss")
+	metrics.Rule(name, "miss")
 }
 
 func (state *State) ActionHit(r *http.Request, name policy.RuleAction, logger *slog.Logger) {
-	state.metrics.Action(name)
+	metrics.Action(name)
 }
 
 func (state *State) Logger(r *http.Request) *slog.Logger {

@@ -40,3 +40,11 @@ func (metrics *stateMetrics) Action(action policy.RuleAction) {
 func (metrics *stateMetrics) Challenge(name, result string) {
 	metrics.challenges.With(prometheus.Labels{"challenge": name, "action": result}).Inc()
 }
+
+func (metrics *stateMetrics) Reset() {
+	metrics.rules.Reset()
+	metrics.actions.Reset()
+	metrics.challenges.Reset()
+}
+
+var metrics = newMetrics()

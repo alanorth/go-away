@@ -44,8 +44,6 @@ type State struct {
 	close chan struct{}
 
 	Mux *http.ServeMux
-
-	metrics *stateMetrics
 }
 
 func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSettings) (handler http.Handler, err error) {
@@ -53,7 +51,7 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 	state.close = make(chan struct{})
 	state.settings = settings
 	state.opt = opt
-	state.metrics = newMetrics()
+	metrics.Reset()
 	state.client = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
