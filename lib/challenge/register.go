@@ -2,10 +2,10 @@ package challenge
 
 import (
 	"bytes"
+	http_cel "codeberg.org/gone/http-cel"
 	"crypto/ed25519"
 	"errors"
 	"fmt"
-	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
@@ -67,11 +67,11 @@ func (r Register) Create(state StateInterface, name string, pol policy.Challenge
 	}
 
 	if len(conditions) > 0 {
-		ast, err := condition.FromStrings(state.ProgramEnv(), condition.OperatorOr, conditions...)
+		ast, err := http_cel.NewAst(state.ProgramEnv(), http_cel.OperatorOr, conditions...)
 		if err != nil {
 			return nil, 0, fmt.Errorf("error compiling conditions: %v", err)
 		}
-		reg.Condition, err = condition.Program(state.ProgramEnv(), ast)
+		reg.Condition, err = http_cel.ProgramAst(state.ProgramEnv(), ast)
 		if err != nil {
 			return nil, 0, fmt.Errorf("error compiling program: %v", err)
 		}

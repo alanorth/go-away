@@ -1,12 +1,12 @@
 package lib
 
 import (
+	http_cel "codeberg.org/gone/http-cel"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/lib/action"
 	"git.gammaspectra.live/git/go-away/lib/challenge"
-	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
@@ -66,12 +66,12 @@ func NewRuleState(state challenge.StateInterface, r policy.Rule, replacer *strin
 			conditions = append(conditions, cond)
 		}
 
-		ast, err := condition.FromStrings(state.ProgramEnv(), condition.OperatorOr, conditions...)
+		ast, err := http_cel.NewAst(state.ProgramEnv(), http_cel.OperatorOr, conditions...)
 		if err != nil {
 			return RuleState{}, fmt.Errorf("error compiling conditions: %w", err)
 		}
 
-		program, err := condition.Program(state.ProgramEnv(), ast)
+		program, err := http_cel.ProgramAst(state.ProgramEnv(), ast)
 		if err != nil {
 			return RuleState{}, fmt.Errorf("error compiling program: %w", err)
 		}

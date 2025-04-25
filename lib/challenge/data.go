@@ -1,13 +1,13 @@
 package challenge
 
 import (
+	http_cel "codeberg.org/gone/http-cel"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
@@ -73,8 +73,8 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 		}
 	}
 
-	data.query = condition.NewValuesMap(r.URL.Query())
-	data.header = condition.NewMIMEMap(textproto.MIMEHeader(r.Header))
+	data.query = http_cel.NewValuesMap(r.URL.Query())
+	data.header = http_cel.NewMIMEMap(textproto.MIMEHeader(r.Header))
 
 	sum := sha256.New()
 	sum.Write([]byte(r.Host))

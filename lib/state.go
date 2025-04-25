@@ -1,12 +1,12 @@
 package lib
 
 import (
+	http_cel "codeberg.org/gone/http-cel"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/lib/challenge"
-	"git.gammaspectra.live/git/go-away/lib/condition"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/lib/settings"
 	"git.gammaspectra.live/git/go-away/utils"
@@ -191,7 +191,7 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 
 	var replacements []string
 	for k, entries := range p.Conditions {
-		ast, err := condition.FromStrings(state.programEnv, condition.OperatorOr, entries...)
+		ast, err := http_cel.NewAst(state.programEnv, http_cel.OperatorOr, entries...)
 		if err != nil {
 			return nil, fmt.Errorf("conditions %s: error compiling conditions: %v", k, err)
 		}
