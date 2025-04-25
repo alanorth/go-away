@@ -106,7 +106,7 @@ rules:
       - 'userAgent.matches("^Opera/[0-9.]+\\.\\(")'
       # AI bullshit stuff, they do not respect robots.txt even while they read it
       # TikTok Bytedance AI training
-      - 'userAgent.contains("Bytedance") || userAgent.contains("Bytespider")'
+      - 'userAgent.contains("Bytedance") || userAgent.contains("Bytespider") || userAgent.contains("TikTokSpider")'
       # Meta AI training; The Meta-ExternalAgent crawler crawls the web for use cases such as training AI models or improving products by indexing content directly.
       - 'userAgent.contains("meta-externalagent/") || userAgent.contains("meta-externalfetcher/") || userAgent.contains("FacebookBot")'
       # Anthropic AI training and usage
