@@ -1,0 +1,114 @@
+package lib
+
+import (
+	"bytes"
+	"git.gammaspectra.live/git/go-away/embed"
+	"git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/utils"
+	"html/template"
+	"maps"
+	"net/http"
+)
+
+var templates map[string]*template.Template
+
+func init() {
+
+	templates = make(map[string]*template.Template)
+
+	dir, err := embed.TemplatesFs.ReadDir(".")
+	if err != nil {
+		panic(err)
+	}
+	for _, e := range dir {
+		if e.IsDir() {
+			continue
+		}
+		data, err := embed.TemplatesFs.ReadFile(e.Name())
+		if err != nil {
+			panic(err)
+		}
+		err = initTemplate(e.Name(), string(data))
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func initTemplate(name, data string) error {
+	tpl := template.New(name)
+	_, err := tpl.Parse(data)
+	if err != nil {
+		return err
+	}
+	templates[name] = tpl
+	return nil
+}
+
+func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status int, reg *challenge.Registration, params map[string]any) {
+	data := challenge.RequestDataFromContext(r.Context())
+	input := make(map[string]any)
+	input["Id"] = data.Id.String()
+	input["Random"] = utils.CacheBust()
+
+	input["Path"] = state.UrlPath()
+	input["Links"] = state.Options().Links
+	input["Strings"] = state.Options().Strings
+	for k, v := range state.Options().ChallengeTemplateOverrides {
+		input[k] = v
+	}
+
+	if reg != nil {
+		input["Challenge"] = reg.Name
+	}
+
+	maps.Copy(input, params)
+
+	if _, ok := input["Title"]; !ok {
+		input["Title"] = state.Options().Strings.Get("title_challenge")
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	buf := bytes.NewBuffer(make([]byte, 0, 8192))
+
+	err := templates["challenge-"+state.Options().ChallengeTemplate+".gohtml"].Execute(buf, input)
+	if err != nil {
+		state.ErrorPage(w, r, http.StatusInternalServerError, err, "")
+	} else {
+		w.WriteHeader(status)
+		_, _ = w.Write(buf.Bytes())
+	}
+}
+
+func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int, err error, redirect string) {
+	data := challenge.RequestDataFromContext(r.Context())
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	buf := bytes.NewBuffer(make([]byte, 0, 8192))
+
+	input := map[string]any{
+		"Id":        data.Id.String(),
+		"Random":    utils.CacheBust(),
+		"Error":     err.Error(),
+		"Path":      state.UrlPath(),
+		"Theme":     "",
+		"Title":     template.HTML(string(state.Options().Strings.Get("title_error")) + " " + http.StatusText(status)),
+		"Challenge": "",
+		"Redirect":  redirect,
+		"Links":     state.Options().Links,
+		"Strings":   state.Options().Strings,
+	}
+	for k, v := range state.Options().ChallengeTemplateOverrides {
+		input[k] = v
+	}
+
+	err2 := templates["challenge-"+state.Options().ChallengeTemplate+".gohtml"].Execute(buf, input)
+	if err2 != nil {
+		// nested errors!
+		panic(err2)
+	} else {
+		w.WriteHeader(status)
+		_, _ = w.Write(buf.Bytes())
+	}
+}

@@ -8,46 +8,10 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/utils"
-	"html/template"
 	"log/slog"
 	"net/http"
 	"strings"
 )
-
-var templates map[string]*template.Template
-
-func init() {
-
-	templates = make(map[string]*template.Template)
-
-	dir, err := embed.TemplatesFs.ReadDir(".")
-	if err != nil {
-		panic(err)
-	}
-	for _, e := range dir {
-		if e.IsDir() {
-			continue
-		}
-		data, err := embed.TemplatesFs.ReadFile(e.Name())
-		if err != nil {
-			panic(err)
-		}
-		err = initTemplate(e.Name(), string(data))
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
-func initTemplate(name, data string) error {
-	tpl := template.New(name)
-	_, err := tpl.Parse(data)
-	if err != nil {
-		return err
-	}
-	templates[name] = tpl
-	return nil
-}
 
 func GetLoggerForRequest(r *http.Request) *slog.Logger {
 	data := challenge.RequestDataFromContext(r.Context())

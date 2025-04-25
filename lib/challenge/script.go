@@ -33,6 +33,7 @@ func ServeChallengeScript(w http.ResponseWriter, r *http.Request, reg *Registrat
 		"Random":          utils.CacheBust(),
 		"Challenge":       reg.Name,
 		"ChallengeScript": script,
+		"Strings":         data.State.Options().Strings,
 	})
 	if err != nil {
 		//TODO: log

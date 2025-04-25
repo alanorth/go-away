@@ -313,6 +313,10 @@ go-away can take plaintext HTTP/1 and _HTTP/2_ / _h2c_ connections if desired ov
 
 We also support the `autocert` parameter to configure HTTP(s). This will also allow TLS Fingerprinting to be done on incoming clients. This doesn't require any upstream proxies, and we recommend it's exposed directly or via SNI / Layer 4 proxying.
 
+### Config
+
+While most basic configuration can be passed via the command line, we support passing a [config.yml](examples/config.yml) with more advanced setup, including string replacement or custom backends configuration.
+
 ### Binary / Go
 
 Requires Go 1.24+. Builds statically without CGo usage.

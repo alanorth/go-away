@@ -3,12 +3,12 @@ package settings
 import "maps"
 
 type Settings struct {
-	Bind Bind `json:"bind"`
+	Bind Bind `yaml:"bind"`
 
-	Backends map[string]Backend `json:"backends"`
+	Backends map[string]Backend `yaml:"backends"`
 
-	BindDebug   string `json:"bind-debug"`
-	BindMetrics string `json:"bind-metrics"`
+	BindDebug   string `yaml:"bind-debug"`
+	BindMetrics string `yaml:"bind-metrics"`
 
 	Strings Strings `yaml:"strings"`
 

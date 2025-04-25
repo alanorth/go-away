@@ -103,3 +103,17 @@ footer {
         padding: 0.5em 10px;
     }
 }
+
+body,
+html {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.centered-div {
+    text-align: center;
+}

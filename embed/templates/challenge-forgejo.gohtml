@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>{{ .Title }}</title>
-    <meta name="referrer" content="no-referrer">
+    <meta name="referrer" content="origin">
 
     {{ range $key, $value := .Meta }}
         {{ if eq $key "refresh"}}
@@ -61,36 +61,30 @@
                     </h2>
 
                     {{if .Challenge }}
-                    <h3 id="status">Loading challenge <em>{{ .Challenge }}</em>...</h3>
+                    <h3 id="status">{{ .Strings.Get "status_loading_challenge" }} <em>{{ .Challenge }}</em>...</h3>
                     {{else if .Error}}
-                    <h3 id="status">Error: {{ .Error }}</h3>
+                    <h3 id="status">{{ .Strings.Get "status_error" }} {{ .Error }}</h3>
                     {{else}}
-                    <h3 id="status">Loading...</h3>
+                    <h3 id="status">{{ .Strings.Get "status_loading" }}</h3>
                     {{end}}
-                    <div id="spinner"></div>
 
-                    <details style="padding-bottom: 2em;">
-                        <summary>Why am I seeing this?</summary>
-                        <p>You are seeing this because the administrator of this website has set up <a href="https://git.gammaspectra.live/git/go-away">go-away</a> to protect the server against the scourge of <a href="https://thelibre.news/foss-infrastructure-is-under-attack-by-ai-companies/">AI companies aggressively scraping websites</a>. This can and does cause downtime for the websites, which makes their resources inaccessible for everyone.</p>
-                        <p>Please note that some challenges requires the use of modern JavaScript features and some plugins may will disable. Please disable such plugins for this domain (for example, JShelter).</p>
-                        <p>If you have any issues contact the administrator and provide the Request Id: <em>{{ .Id }}</em></p>
+                    <details>
+                        <summary>{{ .Strings.Get "details_title" }}</summary>
+
+                        {{.Strings.Get "details_text"}}
                     </details>
 
-                    <noscript>
-                        <p>
-                            Sadly, you may need to enable JavaScript to get past this challenge. This is required because AI companies have changed
-                            the social contract around how website hosting works.
-                        </p>
-                    </noscript>
-
                     {{if .Redirect }}
-                    <div class="button-row">
-                        <a role="button" class="ui small primary button" href="{{ .Redirect }}">Refresh page</a>
-                    </div>
+                        <div class="button-row" style="margin-top: 2em; margin-bottom: 2em;" >
+                            <a role="button" class="ui small primary button" href="{{ .Redirect }}">{{ .Strings.Get "button_refresh_page" }}</a>
+                        </div>
                     {{end}}
 
+                    <noscript>
+                        {{ .Strings.Get "noscript" }}
+                    </noscript>
 
-                    <div id="testarea"></div>
+                    <p><small>{{ .Strings.Get "details_contact_admin_with_request_id" }}: <em>{{ .Id }}</em></small></p>
                 </div>
             </div>
         </div>
@@ -106,6 +100,9 @@
 <footer class="page-footer" role="group" aria-label="">
     <div class="left-links" role="contentinfo" aria-label="">
         Protected by <a href="https://git.gammaspectra.live/git/go-away">go-away</a> :: Request Id <em>{{ .Id }}</em>
+        {{ range .Links }}
+            :: <a href="{{ .URL }}">{{ .Name }}</a>
+        {{ end }}
     </div>
 </footer>
 
