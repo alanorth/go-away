@@ -296,16 +296,16 @@ However, a few points are left before go-away can be called v1.0.0:
 * [x] Several parts of the code are going through a refactor, which won't impact end users or operators.
 * [ ] Documentation is lacking and a more extensive one with inline example is in the works.
 * [x] Policy file syntax is going to stay mostly unchanged, except in the challenges definition section.
-* [ ] Allow users to pick fallback challenges if any fail, specially with custom ones.
+* [ ] Allow end users to pick fallback challenges if any fail, specially with custom ones.
 * [ ] Replace Anubis-like default template with own one.
-* [ ] Define strings and multi-language support for quick modification by operators without custom templates.
+* [x] Define strings and multi-language support for quick modification by operators without custom templates.
 * [ ] Have highly tested paths that match examples.
 * [x] Caching of temporary fetches, for example, network ranges.
 * [x] Allow live and dynamic policy reloading.
 * [x] Multiple domains / subdomains -> one backend handling, CEL rules for backends
 * [ ] Merge all rules and conditions into one large AST for higher performance.
 * [ ] Explore exposing a module for direct Caddy usage.
-* [ ] More defined way of picking HTTP/HTTP(s) listeners and certificates.
+* [x] More defined way of picking HTTP/HTTP(s) listeners and certificates.
 * [x] Expose metrics for challenge solve rates and acting on them.
   * [ ] Metrics for common network ranges / AS / useragent
 
