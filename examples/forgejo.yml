@@ -92,6 +92,16 @@ rules:
       - '($is-static-asset)'
     action: pass
 
+  - name: desired-crawlers
+    conditions:
+      - *is-bot-googlebot
+      - *is-bot-bingbot
+      - *is-bot-duckduckbot
+      - *is-bot-kagibot
+      - *is-bot-qwantbot
+      - *is-bot-yandexbot
+    action: pass
+
   - name: undesired-networks
     conditions:
       - 'remoteAddress.network("huawei-cloud") || remoteAddress.network("alibaba-cloud") || remoteAddress.network("zenlayer-inc")'
@@ -219,16 +229,6 @@ rules:
       # this is a negative match of endpoints that Forgejo holds as reserved as users or orgs
       # see https://codeberg.org/forgejo/forgejo/src/branch/forgejo/models/user/user.go#L582
       - '(path.matches("^/[^/]+/[^/]+/?$") || path.matches("^/[^/]+/[^/]+/badges/") || path.matches("^/[^/]+/[^/]+/(issues|pulls)/[0-9]+$") || (path.matches("^/[^/]+/?$") && size(query) == 0)) && !path.matches("(?i)^/(api|metrics|v2|assets|attachments|avatar|avatars|repo-avatars|captcha|login|org|repo|user|admin|devtest|explore|issues|pulls|milestones|notifications|ghost)(/|$)")'
-    action: pass
-
-  - name: desired-crawlers
-    conditions:
-      - *is-bot-googlebot
-      - *is-bot-bingbot
-      - *is-bot-duckduckbot
-      - *is-bot-kagibot
-      - *is-bot-qwantbot
-      - *is-bot-yandexbot
     action: pass
 
   # check a sequence of challenges

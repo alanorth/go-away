@@ -50,6 +50,16 @@ rules:
       - '($is-static-asset)'
     action: pass
 
+  - name: desired-crawlers
+    conditions:
+      - *is-bot-googlebot
+      - *is-bot-bingbot
+      - *is-bot-duckduckbot
+      - *is-bot-kagibot
+      - *is-bot-qwantbot
+      - *is-bot-yandexbot
+    action: pass
+
   - name: undesired-crawlers
     conditions:
       - '($is-headless-chromium)'
@@ -97,16 +107,6 @@ rules:
         action: check
         settings:
           challenges: [header-refresh]
-
-  - name: desired-crawlers
-    conditions:
-      - *is-bot-googlebot
-      - *is-bot-bingbot
-      - *is-bot-duckduckbot
-      - *is-bot-kagibot
-      - *is-bot-qwantbot
-      - *is-bot-yandexbot
-    action: pass
 
   - name: homesite
     conditions:
