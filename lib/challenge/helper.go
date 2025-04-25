@@ -42,7 +42,7 @@ func GetVerifyInformation(r *http.Request, reg *Registration) (requestId Request
 	q := r.URL.Query()
 
 	if q.Get(QueryArgChallenge) != reg.Name {
-		return RequestId{}, "", "", fmt.Errorf("unexpected challenge: got %s", q.Get(QueryArgChallenge))
+		return RequestId{}, "", "", fmt.Errorf("unexpected challenge: got \"%s\"", q.Get(QueryArgChallenge))
 	}
 
 	requestIdHex := q.Get(QueryArgRequestId)
