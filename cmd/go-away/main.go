@@ -73,7 +73,9 @@ func main() {
 	cachePath := flag.String("cache", path.Join(os.TempDir(), "go_away_cache"), "path to temporary cache directory")
 
 	policyFile := flag.String("policy", "", "path to policy YAML file")
-	policySnippets := flag.String("policy-snippets", "", "path to YAML snippets folder")
+	var policySnippets MultiVar
+	flag.Var(&policySnippets, "policy-snippets", "path to YAML snippets folder (can be specified multiple times)")
+
 	flag.StringVar(&opt.ChallengeTemplate, "challenge-template", opt.ChallengeTemplate, "name or path of the challenge template to use (anubis, forgejo)")
 
 	templateTheme := flag.String("challenge-template-theme", opt.ChallengeTemplateOverrides["Theme"], "name of the challenge template theme to use (forgejo => [forgejo-auto, forgejo-dark, forgejo-light, gitea...])")
@@ -232,7 +234,7 @@ func main() {
 			return nil, fmt.Errorf("failed to read policy file: %w", err)
 		}
 
-		p, err := policy.NewPolicy(bytes.NewReader(policyData), *policySnippets)
+		p, err := policy.NewPolicy(bytes.NewReader(policyData), policySnippets...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse policy file: %w", err)
 		}
