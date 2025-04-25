@@ -373,6 +373,11 @@ services:
       # Supported tcp, unix, and proxy (for enabling PROXY module for request unwrapping)
       #GOAWAY_BIND_NETWORK: "tcp"
       #GOAWAY_SOCKET_MODE: "0770"
+
+      # Enable Prometheus metrics under /metrics on this bind
+      #GOAWAY_METRICS_BIND: ":9090"
+      # Enable Go debug profiles under this bind
+      #GOAWAY_DEBUG_BIND: ":6060"
       
       # set to letsencrypt or other directory URL to enable HTTPS. Above ports will be TLS only.
       # enables request JA3N / JA4 client TLS fingerprinting
@@ -400,6 +405,10 @@ services:
       # HTTP header that go-away will set the obtained ip will be set to
       # If left empty, the header on GOAWAY_CLIENT_IP_HEADER will be left as-is
       #GOAWAY_BACKEND_IP_HEADER: ""
+      
+      # Alternate way of specifying parameters or more advanced settings
+      # Pass path to YAML file
+      #GOAWAY_CONFIG: ""
       
       GOAWAY_POLICY: "/policy.yml"
 

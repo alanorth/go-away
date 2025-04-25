@@ -35,9 +35,13 @@ COPY --from=build /go/bin/go-away /bin/go-away
 
 ENV TZ UTC
 
+ENV GOAWAY_METRICS_BIND=""
+ENV GOAWAY_DEBUG_BIND=""
+
 ENV GOAWAY_BIND=":8080"
 ENV GOAWAY_BIND_NETWORK="tcp"
 ENV GOAWAY_SOCKET_MODE="0770"
+ENV GOAWAY_CONFIG=""
 ENV GOAWAY_POLICY="/policy.yml"
 ENV GOAWAY_POLICY_SNIPPETS="/policy/snippets"
 ENV GOAWAY_CHALLENGE_TEMPLATE="anubis"
@@ -50,12 +54,17 @@ ENV GOAWAY_BACKEND=""
 ENV GOAWAY_ACME_AUTOCERT=""
 ENV GOAWAY_CACHE="/cache"
 
+
 EXPOSE 8080/tcp
 EXPOSE 8080/udp
+EXPOSE 9090/tcp
+EXPOSE 6060/tcp
 
 ENV JWT_PRIVATE_KEY_SEED="${GOAWAY_JWT_PRIVATE_KEY_SEED}"
 
 ENTRYPOINT  /bin/go-away --bind "${GOAWAY_BIND}" --bind-network "${GOAWAY_BIND_NETWORK}" --socket-mode "${GOAWAY_SOCKET_MODE}" \
+            --metrics-bind "${GOAWAY_METRICS_BIND}" --debug-bind "${GOAWAY_DEBUG_BIND}" \
+            --config "${GOAWAY_CONFIG}" \
             --policy "${GOAWAY_POLICY}" --policy-snippets "${GOAWAY_POLICY_SNIPPETS}" \
             --client-ip-header "${GOAWAY_CLIENT_IP_HEADER}" --backend-ip-header "${GOAWAY_BACKEND_IP_HEADER}" \
             --cache "${GOAWAY_CACHE}" \
