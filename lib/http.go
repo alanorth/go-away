@@ -129,6 +129,8 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	state.RuleHit(r, "DEFAULT", lg)
+
 	// default pass
 	_, _ = action.Pass{}.Handle(lg, w, r, func() http.Handler {
 		r.Header.Set("X-Away-Rule", "DEFAULT")
