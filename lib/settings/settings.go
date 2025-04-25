@@ -18,8 +18,6 @@ type Settings struct {
 	ChallengeTemplate string `yaml:"challenge-template"`
 
 	// ChallengeTemplateOverrides Key/Value overrides for the current chosen template
-	// Replacements TODO:
-	// Path -> go-away path
 	ChallengeTemplateOverrides map[string]string `yaml:"challenge-template-overrides"`
 }
 

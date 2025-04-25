@@ -11,7 +11,7 @@ type StateSettings struct {
 	PrivateKeySeed  []byte
 	MainName        string
 	MainVersion     string
-	PackageName     string
+	BasePath        string
 	ClientIpHeader  string
 	BackendIpHeader string
 

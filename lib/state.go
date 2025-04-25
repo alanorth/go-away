@@ -62,7 +62,7 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 		return nil, fmt.Errorf("failed to initialize RADb client: %w", err)
 	}
 
-	state.urlPath = "/.well-known/." + state.Settings().PackageName
+	state.urlPath = state.Settings().BasePath
 
 	// set a reasonable configuration for default http proxy if there is none
 	for _, backend := range state.Settings().Backends {
