@@ -304,7 +304,8 @@ However, a few points are left before go-away can be called v1.0.0:
 * [ ] Merge all rules and conditions into one large AST for higher performance.
 * [ ] Explore exposing a module for direct Caddy usage.
 * [ ] More defined way of picking HTTP/HTTP(s) listeners and certificates.
-* [ ] Expose metrics for gathering common network ranges, challenge solve rates and acting on them.
+* [x] Expose metrics for challenge solve rates and acting on them.
+  * [ ] Metrics for common network ranges / AS / useragent
 
 ## Setup
 

@@ -97,6 +97,10 @@ type StateInterface interface {
 	ChallengeFailed(r *http.Request, reg *Registration, err error, redirect string, logger *slog.Logger)
 	ChallengePassed(r *http.Request, reg *Registration, redirect string, logger *slog.Logger)
 	ChallengeIssued(r *http.Request, reg *Registration, redirect string, logger *slog.Logger)
+	ChallengeChecked(r *http.Request, reg *Registration, redirect string, logger *slog.Logger)
+
+	RuleHit(r *http.Request, name string, logger *slog.Logger)
+	RuleMiss(r *http.Request, name string, logger *slog.Logger)
 
 	Logger(r *http.Request) *slog.Logger
 

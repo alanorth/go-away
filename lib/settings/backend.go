@@ -20,9 +20,16 @@ type Backend struct {
 
 	// TLSSkipVerify Disable TLS certificate verification, if any
 	TLSSkipVerify bool `yaml:"tls-skip-verify"`
+
+	// IpHeader HTTP header to set containing the IP header. Set - to forcefully ignore global defaults.
+	IpHeader string `yaml:"ip-header"`
 }
 
 func (b Backend) Create() (*httputil.ReverseProxy, error) {
+	if b.IpHeader == "-" {
+		b.IpHeader = ""
+	}
+
 	proxy, err := utils.MakeReverseProxy(b.URL)
 	if err != nil {
 		return nil, err
@@ -40,9 +47,19 @@ func (b Backend) Create() (*httputil.ReverseProxy, error) {
 
 	if b.Host != "" {
 		transport.TLSClientConfig.ServerName = b.Host
+	}
+
+	if b.IpHeader != "" || b.Host != "" {
 		director := proxy.Director
 		proxy.Director = func(req *http.Request) {
-			req.Host = b.Host
+			if b.IpHeader != "" {
+				if ip := utils.GetRemoteAddress(req.Context()); ip != nil {
+					req.Header.Set(b.IpHeader, ip.Addr().Unmap().String())
+				}
+			}
+			if b.Host != "" {
+				req.Host = b.Host
+			}
 			director(req)
 		}
 	}

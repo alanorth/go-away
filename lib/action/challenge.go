@@ -112,6 +112,9 @@ func (a Challenge) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Re
 	data := challenge.RequestDataFromContext(r.Context())
 	for _, reg := range a.Challenges {
 		if data.HasValidChallenge(reg.Id()) {
+
+			data.State.ChallengeChecked(r, reg, r.URL.String(), logger)
+
 			if a.Continue {
 				return true, nil
 			}

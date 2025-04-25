@@ -107,6 +107,8 @@ func (rule RuleState) Evaluate(logger *slog.Logger, w http.ResponseWriter, r *ht
 		return false, fmt.Errorf("error: evaluating administrative rule %s/%s: %w", data.Id.String(), rule.Hash, err)
 	} else if out != nil && out.Type() == types.BoolType {
 		if out.Equal(types.True) == types.True {
+			data.State.RuleHit(r, rule.Name, logger)
+
 			next, err = rule.Handler.Handle(lg, w, r, func() http.Handler {
 				r.Header.Set("X-Away-Rule", rule.Name)
 				r.Header.Set("X-Away-Hash", rule.Hash)
@@ -134,7 +136,13 @@ func (rule RuleState) Evaluate(logger *slog.Logger, w http.ResponseWriter, r *ht
 					return next, nil
 				}
 			}
+		} else {
+			data.State.RuleMiss(r, rule.Name, logger)
 		}
+	} else if out != nil {
+		err := fmt.Errorf("return type not Bool, got %s", out.Type().TypeName())
+		lg.Error(err.Error())
+		return false, fmt.Errorf("error: evaluating administrative rule %s/%s: %w", data.Id.String(), rule.Hash, err)
 	}
 
 	return true, nil

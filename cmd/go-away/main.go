@@ -13,6 +13,7 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/settings"
 	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/goccy/go-yaml"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net/http"
@@ -58,9 +59,10 @@ func main() {
 	flag.StringVar(&opt.Bind.Network, "bind-network", opt.Bind.Network, "network family to bind HTTP to, e.g. unix, tcp")
 	flag.BoolVar(&opt.Bind.Proxy, "bind-proxy", opt.Bind.Proxy, "use PROXY protocol in front of the listener")
 	flag.StringVar(&opt.Bind.SocketMode, "socket-mode", opt.Bind.SocketMode, "socket mode (permissions) for unix domain sockets.")
+	flag.StringVar(&opt.BindMetrics, "metrics-bind", opt.BindMetrics, "network address to bind metrics on")
+	flag.StringVar(&opt.BindDebug, "debug-bind", opt.BindDebug, "network address to bind debug on")
 
 	slogLevel := flag.String("slog-level", "WARN", "logging level (see https://pkg.go.dev/log/slog#hdr-Levels)")
-	debugMode := flag.Bool("debug", false, "debug mode with logs and server timings")
 	flag.BoolVar(&opt.Bind.Passthrough, "passthrough", opt.Bind.Passthrough, "passthrough mode sends all requests to matching backends until state is loaded")
 	check := flag.Bool("check", false, "check configuration and policies, then exit")
 	flag.StringVar(&opt.Bind.TLSAcmeAutoCert, "acme-autocert", opt.Bind.TLSAcmeAutoCert, "enables HTTP(s) mode and uses the provided ACME server URL or available service (available: letsencrypt)")
@@ -87,6 +89,10 @@ func main() {
 
 	flag.Parse()
 
+	if *backendIpHeader == "" {
+		*backendIpHeader = *clientIpHeader
+	}
+
 	var err error
 
 	{
@@ -100,8 +106,16 @@ func main() {
 		leveler.Set(programLevel)
 
 		h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
-			AddSource: *debugMode,
+			AddSource: programLevel <= slog.LevelDebug,
 			Level:     leveler,
+			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+				if a.Key == "source" {
+					if src, ok := a.Value.Any().(*slog.Source); ok {
+						return slog.String(a.Key, fmt.Sprintf("%s:%d", src.File, src.Line))
+					}
+				}
+				return a
+			},
 		})
 		slog.SetDefault(slog.New(h))
 	}
@@ -166,11 +180,17 @@ func main() {
 
 		// make no-settings, default backend
 		opt.Backends[parts[0]] = settings.Backend{
-			URL: parts[1],
+			URL:      parts[1],
+			IpHeader: *backendIpHeader,
 		}
 	}
 
 	for k, v := range opt.Backends {
+		if v.IpHeader == "" {
+			//set default value
+			v.IpHeader = *backendIpHeader
+		}
+
 		backend, err := v.Create()
 		if err != nil {
 			log.Fatal(fmt.Errorf("backend %s: failed to make reverse proxy: %w", k, err))
@@ -300,10 +320,29 @@ func main() {
 			}
 
 			slog.Warn(
-				"listening metrics",
+				"listening debug",
 				"bind", opt.BindDebug,
 			)
 			if err = debugServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				log.Fatal(err)
+			}
+		}()
+	}
+
+	if opt.BindMetrics != "" {
+		go func() {
+			mux := http.NewServeMux()
+			mux.Handle("/metrics", promhttp.Handler())
+			metricsServer := http.Server{
+				Addr:    opt.BindMetrics,
+				Handler: mux,
+			}
+
+			slog.Warn(
+				"listening metrics",
+				"bind", opt.BindMetrics,
+			)
+			if err = metricsServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 				log.Fatal(err)
 			}
 		}()
