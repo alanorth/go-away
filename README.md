@@ -80,6 +80,8 @@ These templates are included by default:
 
 External templates for your site can be loaded specifying a full path to the `.gohtml` file. See [embed/templates/](embed/templates/) for examples to follow.
 
+You can alter the language and strings in the templates directly from the [config.yml](#config) file if specified.
+
 ### Extended rule actions
 
 In addition to the common PASS / CHALLENGE / DENY rules, go-away offers more actions that can be extended via code.
