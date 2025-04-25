@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/textproto"
+	"strings"
 	"time"
 )
 
@@ -73,7 +74,15 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 		}
 	}
 
-	data.query = http_cel.NewValuesMap(r.URL.Query())
+	q := r.URL.Query()
+	// delete query parameters that were set by go-away
+	for k := range q {
+		if strings.HasPrefix(k, QueryArgPrefix) {
+			q.Del(k)
+		}
+	}
+
+	data.query = http_cel.NewValuesMap(q)
 	data.header = http_cel.NewMIMEMap(textproto.MIMEHeader(r.Header))
 
 	sum := sha256.New()
