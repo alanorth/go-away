@@ -109,6 +109,7 @@ func (rule RuleState) Evaluate(logger *slog.Logger, w http.ResponseWriter, r *ht
 		if out.Equal(types.True) == types.True {
 			data.State.RuleHit(r, rule.Name, logger)
 
+			data.State.ActionHit(r, rule.Action, logger)
 			next, err = rule.Handler.Handle(lg, w, r, func() http.Handler {
 				r.Header.Set("X-Away-Rule", rule.Name)
 				r.Header.Set("X-Away-Hash", rule.Hash)

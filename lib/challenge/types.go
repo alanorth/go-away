@@ -101,6 +101,7 @@ type StateInterface interface {
 
 	RuleHit(r *http.Request, name string, logger *slog.Logger)
 	RuleMiss(r *http.Request, name string, logger *slog.Logger)
+	ActionHit(r *http.Request, name policy.RuleAction, logger *slog.Logger)
 
 	Logger(r *http.Request) *slog.Logger
 

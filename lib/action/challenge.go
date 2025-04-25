@@ -43,7 +43,8 @@ func init() {
 			return nil, fmt.Errorf("no registered challenges found in rule %s", ruleName)
 		}
 
-		passHandler, ok := Register[policy.RuleAction(strings.ToUpper(params.PassAction))]
+		passAction := policy.RuleAction(strings.ToUpper(params.PassAction))
+		passHandler, ok := Register[passAction]
 		if !ok {
 			return nil, fmt.Errorf("unknown pass action %s", params.PassAction)
 		}
@@ -53,7 +54,8 @@ func init() {
 			return nil, err
 		}
 
-		failHandler, ok := Register[policy.RuleAction(strings.ToUpper(params.FailAction))]
+		failAction := policy.RuleAction(strings.ToUpper(params.FailAction))
+		failHandler, ok := Register[failAction]
 		if !ok {
 			return nil, fmt.Errorf("unknown pass action %s", params.FailAction)
 		}
@@ -69,8 +71,10 @@ func init() {
 			Continue:   cont,
 			Challenges: regs,
 
-			PassAction: passActionHandler,
-			FailAction: failActionHandler,
+			PassAction:        passAction,
+			PassActionHandler: passActionHandler,
+			FailAction:        failAction,
+			FailActionHandler: failActionHandler,
 		}, nil
 	}
 	Register[policy.RuleActionCHALLENGE] = func(state challenge.StateInterface, ruleName, ruleHash string, settings ast.Node) (Handler, error) {
@@ -104,8 +108,10 @@ type Challenge struct {
 	Continue   bool
 	Challenges []*challenge.Registration
 
-	PassAction Handler
-	FailAction Handler
+	PassAction        policy.RuleAction
+	PassActionHandler Handler
+	FailAction        policy.RuleAction
+	FailActionHandler Handler
 }
 
 func (a Challenge) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Request, done func() (backend http.Handler)) (next bool, err error) {
@@ -120,7 +126,8 @@ func (a Challenge) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Re
 			}
 
 			// we passed!
-			return a.PassAction.Handle(logger.With("challenge", reg.Name), w, r, done)
+			data.State.ActionHit(r, a.PassAction, logger)
+			return a.PassActionHandler.Handle(logger.With("challenge", reg.Name), w, r, done)
 		}
 	}
 	// none matched, issue challenges in sequential priority
@@ -146,7 +153,8 @@ func (a Challenge) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Re
 				return true, nil
 			}
 
-			return a.PassAction.Handle(logger.With("challenge", reg.Name), w, r, done)
+			data.State.ActionHit(r, a.PassAction, logger)
+			return a.PassActionHandler.Handle(logger.With("challenge", reg.Name), w, r, done)
 		case challenge.VerifyResultNotOK:
 			// we have had the challenge checked, but it's not ok!
 			// safe to continue
@@ -160,7 +168,8 @@ func (a Challenge) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Re
 				continue
 			}
 
-			return a.FailAction.Handle(logger, w, r, done)
+			data.State.ActionHit(r, a.FailAction, logger)
+			return a.FailActionHandler.Handle(logger, w, r, done)
 		case challenge.VerifyResultNone:
 			// challenge was issued
 			if reg.Class == challenge.ClassTransparent {
@@ -177,5 +186,6 @@ func (a Challenge) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Re
 	}
 
 	// nothing matched, execute default action
-	return a.FailAction.Handle(logger, w, r, done)
+	data.State.ActionHit(r, a.FailAction, logger)
+	return a.FailActionHandler.Handle(logger, w, r, done)
 }

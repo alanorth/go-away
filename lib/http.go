@@ -6,6 +6,7 @@ import (
 	"git.gammaspectra.live/git/go-away/embed"
 	"git.gammaspectra.live/git/go-away/lib/action"
 	"git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/utils"
 	"html/template"
 	"log/slog"
@@ -130,6 +131,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state.RuleHit(r, "DEFAULT", lg)
+	data.State.ActionHit(r, policy.RuleActionPASS, lg)
 
 	// default pass
 	_, _ = action.Pass{}.Handle(lg, w, r, func() http.Handler {

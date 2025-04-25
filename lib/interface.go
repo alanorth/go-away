@@ -76,6 +76,10 @@ func (state *State) RuleMiss(r *http.Request, name string, logger *slog.Logger) 
 	state.metrics.Rule(name, "miss")
 }
 
+func (state *State) ActionHit(r *http.Request, name policy.RuleAction, logger *slog.Logger) {
+	state.metrics.Action(name)
+}
+
 func (state *State) Logger(r *http.Request) *slog.Logger {
 	return GetLoggerForRequest(r)
 }
