@@ -90,11 +90,6 @@ func (db *RADb) query(fn func(n int, record []byte) error, queries ...string) er
 	return nil
 }
 
-func init() {
-	db, _ := NewRADb()
-	db.FetchIPInfo(net.ParseIP("162.158.62.1"))
-}
-
 func (db *RADb) FetchIPInfo(ip net.IP) (result []string, err error) {
 	var ipNet net.IPNet
 	if ip4 := ip.To4(); ip4 != nil {
