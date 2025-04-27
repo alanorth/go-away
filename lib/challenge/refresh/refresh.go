@@ -13,7 +13,7 @@ func init() {
 }
 
 type Parameters struct {
-	Mode string `yaml:"refresh-mode"`
+	Mode string `yaml:"refresh-via"`
 }
 
 var DefaultParameters = Parameters{
