@@ -36,7 +36,14 @@ func init() {
 }
 
 func initTemplate(name, data string) error {
-	tpl := template.New(name)
+	tpl := template.New(name).Funcs(template.FuncMap{
+		"attr": func(s string) template.HTMLAttr {
+			return template.HTMLAttr(s)
+		},
+		"safe": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+	})
 	_, err := tpl.Parse(data)
 	if err != nil {
 		return err
@@ -66,6 +73,22 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 
 	if _, ok := input["Title"]; !ok {
 		input["Title"] = state.Options().Strings.Get("title_challenge")
+	}
+
+	if data.GetOptBool(challenge.RequestOptCacheMetaTags, false) {
+		backend, host := data.BackendHost()
+		if tags := state.fetchMetaTags(host, backend, r); len(tags) > 0 {
+			tagMap, _ := input["Meta"].([]map[string]string)
+
+			for _, tag := range tags {
+				tagAttrs := make(map[string]string, len(tag.Attr))
+				for _, v := range tag.Attr {
+					tagAttrs[v.Key] = v.Val
+				}
+				tagMap = append(tagMap, tagAttrs)
+			}
+			input["Meta"] = tagMap
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -101,6 +124,22 @@ func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int
 	}
 	for k, v := range state.Options().ChallengeTemplateOverrides {
 		input[k] = v
+	}
+
+	if data.GetOptBool(challenge.RequestOptCacheMetaTags, false) {
+		backend, host := data.BackendHost()
+		if tags := state.fetchMetaTags(host, backend, r); len(tags) > 0 {
+			tagMap, _ := input["Meta"].([]map[string]string)
+
+			for _, tag := range tags {
+				tagAttrs := make(map[string]string, len(tag.Attr))
+				for _, v := range tag.Attr {
+					tagAttrs[v.Key] = v.Val
+				}
+				tagMap = append(tagMap, tagAttrs)
+			}
+			input["Meta"] = tagMap
+		}
 	}
 
 	err2 := templates["challenge-"+state.Options().ChallengeTemplate+".gohtml"].Execute(buf, input)

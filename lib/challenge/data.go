@@ -144,6 +144,11 @@ func (d *RequestData) NetworkPrefix() netip.Addr {
 	}
 }
 
+const (
+	RequestOptBackendHost   = "backend-host"
+	RequestOptCacheMetaTags = "proxy-meta-tags"
+)
+
 func (d *RequestData) SetOpt(n, v string) {
 	d.opts[n] = v
 }
@@ -154,6 +159,31 @@ func (d *RequestData) GetOpt(n, def string) string {
 		return def
 	}
 	return v
+}
+
+func (d *RequestData) GetOptBool(n string, def bool) bool {
+	v, ok := d.opts[n]
+	if !ok {
+		return def
+	}
+	switch v {
+	case "true", "t", "1", "yes", "yep", "y", "ok":
+		return true
+	case "false", "f", "0", "no", "nope", "n", "err":
+		return false
+	default:
+		return def
+	}
+}
+
+func (d *RequestData) BackendHost() (http.Handler, string) {
+	host := d.r.Host
+
+	if opt := d.GetOpt(RequestOptBackendHost, ""); opt != "" && opt != host {
+		host = d.r.Host
+	}
+
+	return d.State.GetBackend(host), host
 }
 
 func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request) {

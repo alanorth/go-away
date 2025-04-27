@@ -8,9 +8,12 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"git.gammaspectra.live/git/go-away/lib/policy"
 	"git.gammaspectra.live/git/go-away/utils"
+	"golang.org/x/net/html"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
+	"time"
 )
 
 func GetLoggerForRequest(r *http.Request) *slog.Logger {
@@ -35,6 +38,98 @@ func GetLoggerForRequest(r *http.Request) *slog.Logger {
 	return slog.With(args...)
 }
 
+func (state *State) fetchMetaTags(host string, backend http.Handler, r *http.Request) []html.Node {
+	uri := *r.URL
+	q := uri.Query()
+	for k := range q {
+		if strings.HasPrefix(k, challenge.QueryArgPrefix) {
+			q.Del(k)
+		}
+	}
+	uri.RawQuery = q.Encode()
+
+	key := fmt.Sprintf("%s:%s", host, uri.String())
+
+	if v, ok := state.tagCache.Get(key); ok {
+		return v
+	}
+
+	result := utils.FetchTags(backend, &uri, "meta")
+	if result == nil {
+		return nil
+	}
+
+	entries := make([]html.Node, 0, len(result))
+
+	safeAttributes := []string{"name", "property", "content"}
+	for _, n := range result {
+		if n.Namespace != "" {
+			continue
+		}
+
+		var name string
+		for _, attr := range n.Attr {
+			if attr.Namespace != "" {
+				continue
+			}
+			if attr.Key == "name" {
+				name = attr.Val
+				break
+			}
+			if attr.Key == "property" && name == "" {
+				name = attr.Val
+			}
+		}
+
+		// prevent unwanted keys like CSRF and other internal entries to pass through as much as possible
+
+		var keep bool
+		if strings.HasPrefix("og:", name) || strings.HasPrefix("fb:", name) || strings.HasPrefix("twitter:", name) || strings.HasPrefix("profile:", name) {
+			// social / OpenGraph tags
+			keep = true
+		} else if name == "vcs" || strings.HasPrefix("vcs:", name) {
+			// source tags
+			keep = true
+		} else if name == "forge" || strings.HasPrefix("forge:", name) {
+			// forge tags
+			keep = true
+		} else {
+			switch name {
+			// standard content tags
+			case "application-name", "author", "description", "keywords", "robots", "thumbnail":
+				keep = true
+			case "go-import", "go-source":
+				// golang tags
+				keep = true
+			case "apple-itunes-app":
+			}
+		}
+
+		// prevent other arbitrary arguments
+		if keep {
+			newNode := html.Node{
+				Type: html.ElementNode,
+				Data: n.Data,
+			}
+			for _, attr := range n.Attr {
+				if attr.Namespace != "" {
+					continue
+				}
+				if slices.Contains(safeAttributes, attr.Key) {
+					newNode.Attr = append(newNode.Attr, attr)
+				}
+			}
+			if len(newNode.Attr) == 0 {
+				continue
+			}
+			entries = append(entries, newNode)
+		}
+	}
+
+	state.tagCache.Set(key, entries, time.Hour*6)
+	return entries
+}
+
 func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 
@@ -44,6 +139,19 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 	if backend == nil {
 		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		return
+	}
+
+	getBackend := func() http.Handler {
+		if opt := data.GetOpt(challenge.RequestOptBackendHost, ""); opt != "" && opt != host {
+			b := state.GetBackend(host)
+			if b == nil {
+				http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+				// return empty backend
+				return http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+			}
+			return b
+		}
+		return backend
 	}
 
 	lg := state.Logger(r)
@@ -81,7 +189,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 	for _, rule := range state.rules {
 		next, err := rule.Evaluate(lg, w, r, func() http.Handler {
 			cleanupRequest(r, true)
-			return backend
+			return getBackend()
 		})
 		if err != nil {
 			state.ErrorPage(w, r, http.StatusInternalServerError, err, "")
@@ -103,7 +211,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		r.Header.Set("X-Away-Action", "PASS")
 
 		cleanupRequest(r, false)
-		return backend
+		return getBackend()
 	})
 }
 

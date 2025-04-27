@@ -287,6 +287,14 @@ rules:
     conditions:
       - '!(method == "HEAD" || method == "GET")'
 
+  # Enable fetching OpenGraph and other tags from backend on these paths
+  - name: enable-meta-tags
+    action: context
+    settings:
+      context-set:
+        proxy-meta-tags: "true"
+
+
   - name: plaintext-browser
     action: challenge
     settings:

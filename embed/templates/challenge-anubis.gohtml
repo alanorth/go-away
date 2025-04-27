@@ -5,15 +5,11 @@
     <link rel="stylesheet" href="{{ .Path }}/assets/static/anubis/style.css?cacheBust={{ .Random }}"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta name="referrer" content="origin"/>
-    {{ range $key, $value := .Meta }}
-        {{ if eq $key "refresh"}}
-        <meta http-equiv="{{ $key }}" content="{{ $value }}"/>
-        {{else}}
-        <meta name="{{ $key }}" content="{{ $value }}"/>
-        {{end}}
+    {{ range .Meta }}
+    <meta {{ range $key, $value := . }}{{ $key | attr }}="{{ $value }}" {{end}}/>
     {{ end }}
     {{ range .HeaderTags }}
-        {{ . }}
+    {{ . }}
     {{ end }}
 </head>
 <body id="top">

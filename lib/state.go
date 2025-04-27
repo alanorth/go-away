@@ -12,6 +12,7 @@ import (
 	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/google/cel-go/cel"
 	"github.com/yl2chen/cidranger"
+	"golang.org/x/net/html"
 	"log/slog"
 	"net"
 	"net/http"
@@ -42,6 +43,8 @@ type State struct {
 	rules []RuleState
 
 	close chan struct{}
+
+	tagCache *utils.DecayMap[string, []html.Node]
 
 	Mux *http.ServeMux
 }
@@ -230,6 +233,21 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 	if err = state.setupRoutes(); err != nil {
 		return nil, err
 	}
+
+	state.tagCache = utils.NewDecayMap[string, []html.Node]()
+
+	go func() {
+		ticker := time.NewTicker(time.Minute * 37)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				state.tagCache.Decay()
+			case <-state.close:
+				return
+			}
+		}
+	}()
 
 	return state, nil
 }

@@ -10,17 +10,17 @@ func zilch[T any]() T {
 	return zero
 }
 
-type DecayMap[K, V comparable] struct {
+type DecayMap[K comparable, V any] struct {
 	data map[K]DecayMapEntry[V]
 	lock sync.RWMutex
 }
 
-type DecayMapEntry[V comparable] struct {
+type DecayMapEntry[V any] struct {
 	Value  V
 	expiry time.Time
 }
 
-func NewDecayMap[K, V comparable]() *DecayMap[K, V] {
+func NewDecayMap[K comparable, V any]() *DecayMap[K, V] {
 	return &DecayMap[K, V]{
 		data: make(map[K]DecayMapEntry[V]),
 	}
