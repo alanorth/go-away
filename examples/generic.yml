@@ -144,15 +144,15 @@ rules:
     conditions:
       - 'userAgent.startsWith("Lynx/")'
 
-  # Comment this rule out to not challenge tool-like user agents
-  - name: standard-tools
-    action: challenge
-    settings:
-      challenges: [cookie]
-    conditions:
-      - '($is-generic-robot-ua)'
-      - '($is-tool-ua)'
-      - '!($is-generic-browser)'
+  # Uncomment this rule out to challenge tool-like user agents
+  #- name: standard-tools
+  #  action: challenge
+  #  settings:
+  #    challenges: [cookie]
+  #  conditions:
+  #    - '($is-generic-robot-ua)'
+  #    - '($is-tool-ua)'
+  #    - '!($is-generic-browser)'
 
   - name: standard-browser
     action: challenge
