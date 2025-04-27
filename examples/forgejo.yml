@@ -81,6 +81,7 @@ conditions:
     - 'path.matches("^/[^/]+$") && "tab" in query && query.tab == "activity"'
 
 
+# Rules are checked sequentially in order, from top to bottom
 rules:
   - name: allow-well-known-resources
     conditions:
@@ -293,6 +294,7 @@ rules:
     conditions:
       - 'userAgent.startsWith("Lynx/")'
 
+  # Comment this rule out to not challenge tool-like user agents
   - name: standard-tools
     action: challenge
     settings:
@@ -307,3 +309,5 @@ rules:
       challenges: [http-cookie-check, preload-link, meta-refresh, resource-load, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'
+
+# If end of rules is reached, default is PASS
