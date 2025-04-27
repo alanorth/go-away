@@ -26,6 +26,9 @@ const (
 
 	// RuleActionPROXY Proxies request to a backend, with optional path replacements
 	RuleActionPROXY RuleAction = "PROXY"
+
+	// RuleActionCONTEXT Changes Request Context information or properties
+	RuleActionCONTEXT RuleAction = "CONTEXT"
 )
 
 type Rule struct {

@@ -88,6 +88,7 @@ In addition to the common PASS / CHALLENGE / DENY rules, go-away offers more act
 
 |  Action   | Behavior                                                                | Terminating |
 |:---------:|:------------------------------------------------------------------------|:-----------:|
+|   NONE    | Do nothing, continue. Useful for specifying on checks or challenges.    |     No      |
 |   PASS    | Passes the request to the backend immediately                           |     Yes     |
 |   DENY    | Denies the request with a descriptive page                              |     Yes     |
 |   BLOCK   | Denies the request with a response code                                 |     Yes     |
@@ -95,6 +96,7 @@ In addition to the common PASS / CHALLENGE / DENY rules, go-away offers more act
 | CHALLENGE | Issues a challenge that when passed, acts like PASS                     |     Yes     |
 |   CHECK   | Issues a challenge that when passed, continues executing rules          |     No      |
 |   PROXY   | Proxies request to a different backend, with optional path replacements |     Yes     |
+|  CONTEXT  | Modify the request context and apply different options                  |     No      |
 
 
 CHECK allows the client to be challenged but continue matching rules after these, for example, chaining a list of challenges that must be passed. 

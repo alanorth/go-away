@@ -46,6 +46,8 @@ type RequestData struct {
 	fp     map[string]string
 	header traits.Mapper
 	query  traits.Mapper
+
+	opts map[string]string
 }
 
 func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *RequestData) {
@@ -84,6 +86,7 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 
 	data.query = http_cel.NewValuesMap(q)
 	data.header = http_cel.NewMIMEMap(textproto.MIMEHeader(r.Header))
+	data.opts = make(map[string]string)
 
 	sum := sha256.New()
 	sum.Write([]byte(r.Host))
@@ -124,6 +127,18 @@ func (d *RequestData) ResolveName(name string) (any, bool) {
 
 func (d *RequestData) Parent() cel.Activation {
 	return nil
+}
+
+func (d *RequestData) SetOpt(n, v string) {
+	d.opts[n] = v
+}
+
+func (d *RequestData) GetOpt(n, def string) string {
+	v, ok := d.opts[n]
+	if !ok {
+		return def
+	}
+	return v
 }
 
 func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request) {

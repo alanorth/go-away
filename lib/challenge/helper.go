@@ -19,7 +19,7 @@ func NewKeyVerifier() (verify VerifyFunc, issue func(key Key) string) {
 			if subtle.ConstantTimeCompare(key[:], expectedKey) == 1 {
 				return VerifyResultOK, nil
 			}
-			return VerifyResultFail, errors.New("invalid token")
+			return VerifyResultFail, errors.New("mismatched token")
 		}, func(key Key) string {
 			return hex.EncodeToString(key[:])
 		}
