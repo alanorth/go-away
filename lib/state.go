@@ -163,7 +163,7 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 					}
 					return nil, err
 				}
-				if useCache && networkCache != nil && len(prefixes) > 0 {
+				if useCache && networkCache != nil {
 					var l []string
 					for _, n := range prefixes {
 						l = append(l, n.String())

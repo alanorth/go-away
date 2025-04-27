@@ -53,6 +53,9 @@ func (db *RADb) query(fn func(n int, record []byte) error, queries ...string) er
 
 	scanner := bufio.NewScanner(conn)
 	scanner.Split(bufio.ScanLines)
+	// 16 MiB lines
+	const bufferSize = 1024 * 1024 * 16
+	scanner.Buffer(make([]byte, 0, bufferSize), bufferSize)
 
 	for _, q := range queries {
 
@@ -66,6 +69,7 @@ func (db *RADb) query(fn func(n int, record []byte) error, queries ...string) er
 
 		for scanner.Scan() {
 			buf := bytes.Trim(scanner.Bytes(), "\r\n")
+			fmt.Println(string(buf))
 			if bytes.HasPrefix(buf, []byte("%")) || bytes.Equal(buf, []byte("C")) {
 				// end of record
 				break
@@ -75,6 +79,10 @@ func (db *RADb) query(fn func(n int, record []byte) error, queries ...string) er
 				return err
 			}
 			n++
+		}
+
+		if scanner.Err() != nil {
+			return scanner.Err()
 		}
 	}
 
