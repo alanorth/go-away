@@ -23,6 +23,10 @@ type Backend struct {
 
 	// IpHeader HTTP header to set containing the IP header. Set - to forcefully ignore global defaults.
 	IpHeader string `yaml:"ip-header"`
+
+	// GoDNS Resolve URL using the Go DNS server
+	// Only relevant when running with CGO enabled
+	GoDNS bool `yaml:"go-dns"`
 }
 
 func (b Backend) Create() (*httputil.ReverseProxy, error) {
@@ -30,7 +34,7 @@ func (b Backend) Create() (*httputil.ReverseProxy, error) {
 		b.IpHeader = ""
 	}
 
-	proxy, err := utils.MakeReverseProxy(b.URL)
+	proxy, err := utils.MakeReverseProxy(b.URL, b.GoDNS)
 	if err != nil {
 		return nil, err
 	}

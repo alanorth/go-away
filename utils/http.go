@@ -69,7 +69,7 @@ func EnsureNoOpenRedirect(redirect string) (string, error) {
 	return uri.String(), nil
 }
 
-func MakeReverseProxy(target string) (*httputil.ReverseProxy, error) {
+func MakeReverseProxy(target string, goDns bool) (*httputil.ReverseProxy, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse target URL: %w", err)
@@ -90,6 +90,13 @@ func MakeReverseProxy(target string) (*httputil.ReverseProxy, error) {
 		}
 		// tell transport how to handle the unix url scheme
 		transport.RegisterProtocol("unix", UnixRoundTripper{Transport: transport})
+	} else if goDns {
+		dialer := &net.Dialer{
+			Resolver: &net.Resolver{
+				PreferGo: true,
+			},
+		}
+		transport.DialContext = dialer.DialContext
 	}
 
 	rp := httputil.NewSingleHostReverseProxy(u)
