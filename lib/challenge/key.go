@@ -42,13 +42,23 @@ func KeyFromString(s string) (Key, error) {
 
 func GetChallengeKeyForRequest(state StateInterface, reg *Registration, until time.Time, r *http.Request) Key {
 	data := RequestDataFromContext(r.Context())
-	address := data.RemoteAddress
+	address := data.RemoteAddress.Addr().Unmap()
+	var keyAddr [16]byte
+	if address.Is4() {
+		// Take a /24 for IPv4
+		prefix, _ := address.Prefix(24)
+		keyAddr = prefix.Addr().As16()
+	} else {
+		// Take a /64 for IPv6
+		prefix, _ := address.Prefix(64)
+		keyAddr = prefix.Addr().As16()
+	}
+
 	hasher := sha256.New()
 	hasher.Write([]byte("challenge\x00"))
 	hasher.Write([]byte(reg.Name))
 	hasher.Write([]byte{0})
-	ipBuf := address.Addr().Unmap().As16()
-	hasher.Write(ipBuf[:])
+	hasher.Write(keyAddr[:])
 	hasher.Write([]byte{0})
 
 	// specific headers
@@ -73,7 +83,7 @@ func GetChallengeKeyForRequest(state StateInterface, reg *Registration, until ti
 
 	sum[0] = 0
 
-	if address.Addr().Unmap().Is4() {
+	if address.Is4() {
 		// Is IPv4, mark
 		sum.Set(KeyFlagIsIPv4)
 	}
