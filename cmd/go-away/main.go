@@ -271,8 +271,7 @@ func main() {
 	if *check {
 		_, err := loadPolicyState()
 		if err != nil {
-			slog.Error(err.Error())
-			os.Exit(1)
+			fatal(err)
 		}
 		slog.Info("load ok")
 		os.Exit(0)
