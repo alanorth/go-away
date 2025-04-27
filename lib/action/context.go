@@ -46,5 +46,5 @@ func (a Context) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Requ
 		data.SetOpt(k, v)
 	}
 
-	return false, nil
+	return true, nil
 }
