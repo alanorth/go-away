@@ -1,7 +1,7 @@
 ### <a id=why></a>
 # go-away
 
-Self-hosted abuse detection and rule enforcement against low-effort mass AI scraping and bots. 
+Self-hosted abuse detection and rule enforcement against low-effort mass AI scraping and bots. Uses conventional non-nuclear options.
 
 [![Build Status](https://ci.gammaspectra.live/api/badges/git/go-away/status.svg)](https://ci.gammaspectra.live/git/go-away)
 [![Go Reference](https://pkg.go.dev/badge/git.gammaspectra.live/git/go-away.svg)](https://pkg.go.dev/git.gammaspectra.live/git/go-away)
@@ -250,31 +250,32 @@ See [examples/snippets/](examples/snippets/) for some defaults including indexer
 In the past few years this small git instance has been hit by waves and waves of scraping.
 This was usually fought back by random useragent blocks for bots that did not follow [robots.txt](/robots.txt), until the past half year, where low-effort mass scraping was used more prominently.
 
-Recently these networks go from using residential IP blocks to sending requests at several hundred rps.
+Recently these networks go from using residential IP blocks to sending requests at several hundred requests per second.
 
 If the server gets sluggish, more requests pile up. Even when denied they scrape for weeks later. Effectively spray and pray scraping, process later.
 
 At some point about 300Mbit/s of incoming requests (not including the responses) was hitting the server. And all of them nonsense URLs, or hitting archive/bundle downloads per commit.
 
-If AI is so smart, why not just git clone the repositories?
+**If AI is so smart, why not just git clone the repositories?**
 
+* Wikimedia has posted about [How crawlers impact the operations of the Wikimedia projects](https://diff.wikimedia.org/2025/04/01/how-crawlers-impact-the-operations-of-the-wikimedia-projects/) [01/04/2025]
 
-Xe (anubis creator) has written about similar frustrations in several blogposts:
+* Xe (Anubis creator) has written about similar frustrations in several blogposts:
+  * [Amazon's AI crawler is making my git server unstable](https://xeiaso.net/notes/2025/amazon-crawler/) [01/17/2025]
+  * [Anubis works](https://xeiaso.net/notes/2025/anubis-works/) [04/12/2025]
 
-* [Amazon's AI crawler is making my git server unstable](https://xeiaso.net/notes/2025/amazon-crawler/) [01/17/2025]
-* [Anubis works](https://xeiaso.net/notes/2025/anubis-works/) [04/12/2025]
+* Drew DeVault (sourcehut) has posted several articles and outages regarding the same issues:
+  * [Drew Blog: Please stop externalizing your costs directly into my face](https://drewdevault.com/2025/03/17/2025-03-17-Stop-externalizing-your-costs-on-me.html) [17/03/2025]
+    * (fun tidbit: I'm the one quoted as having the feedback discussion interrupted to deal with bots!)
+   * [sourcehut status: LLM crawlers continue to DDoS SourceHut](https://status.sr.ht/issues/2025-03-17-git.sr.ht-llms/) [17/03/2025]
+  * [sourcehut Blog: You cannot have our user's data](https://sourcehut.org/blog/2025-04-15-you-cannot-have-our-users-data/) [15/04/2025]
 
-Drew DeVault (sourcehut) has posted several articles regarding the same issues:
-* [Please stop externalizing your costs directly into my face](https://drewdevault.com/2025/03/17/2025-03-17-Stop-externalizing-your-costs-on-me.html) [17/03/2025]
-  * (fun tidbit: I'm the one quoted as having the feedback discussion interrupted to deal with bots!)
-* [sourcehut Blog: You cannot have our user's data](https://sourcehut.org/blog/2025-04-15-you-cannot-have-our-users-data/)
-
-Others were also suffering at the same time [[1]](https://donotsta.re/notice/AreSNZlRlJv73AW7tI) [[2]](https://community.ipfire.org/t/suricata-ruleset-to-prevent-ai-scraping/11974) [[3]](https://gabrielsimmer.com/blog/stop-scraping-git-forge) [[4]](https://gabrielsimmer.com/blog/stop-scraping-git-forge) [[5]](https://blog.nytsoi.net/2025/03/01/obliterated-by-ai).
+* Others were also suffering at the same time [[1]](https://donotsta.re/notice/AreSNZlRlJv73AW7tI) [[2]](https://community.ipfire.org/t/suricata-ruleset-to-prevent-ai-scraping/11974) [[3]](https://gabrielsimmer.com/blog/stop-scraping-git-forge) [[4]](https://gabrielsimmer.com/blog/stop-scraping-git-forge) [[5]](https://blog.nytsoi.net/2025/03/01/obliterated-by-ai).
 
 ---
 Initially I deployed Anubis, and yeah, it does work!
 
-This tool started as a way to replace [Anubis](https://anubis.techaro.lol/) as it was not found as featureful as desired.
+This tool started as a way to replace [Anubis](https://anubis.techaro.lol/) as it was not found as featureful as desired, and the impact was too high.
 
 go-away may not be as straight to configure as Anubis but this was chosen to reduce impact on legitimate users, and offers many more options to dynamically target new waves.
 
