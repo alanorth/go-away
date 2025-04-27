@@ -142,8 +142,10 @@ func (a Challenge) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Re
 
 		expiry := data.Expiration(reg.Duration)
 		key := challenge.GetChallengeKeyForRequest(data.State, reg, expiry, r)
-		data.State.ChallengeIssued(r, reg, r.URL.String(), logger)
 		result = reg.IssueChallenge(w, r, key, expiry)
+		if result != challenge.VerifyResultSkip {
+			data.State.ChallengeIssued(r, reg, r.URL.String(), logger)
+		}
 		data.ChallengeVerify[reg.Id()] = result
 		data.ChallengeState[reg.Id()] = challenge.VerifyStatePass
 		switch result {
