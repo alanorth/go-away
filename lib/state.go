@@ -4,6 +4,8 @@ import (
 	http_cel "codeberg.org/gone/http-cel"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/lib/challenge"
@@ -19,6 +21,7 @@ import (
 	"net/http/httputil"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -120,15 +123,19 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 		for i, e := range network {
 			prefixes, err := func() ([]net.IPNet, error) {
 				var useCache bool
+
+				cacheKey := fmt.Sprintf("%s-%d-", k, i)
 				if e.Url != nil {
 					slog.Debug("loading network url list", "network", k, "url", *e.Url)
 					useCache = true
+					sum := sha256.Sum256([]byte(*e.Url))
+					cacheKey += hex.EncodeToString(sum[:4])
 				} else if e.ASN != nil {
 					slog.Debug("loading ASN", "network", k, "asn", *e.ASN)
 					useCache = true
+					cacheKey += strconv.FormatInt(int64(*e.ASN), 10)
 				}
 
-				cacheKey := fmt.Sprintf("%s-%d", k, i)
 				var cached []net.IPNet
 				if useCache && networkCache != nil {
 					//TODO: add randomness
@@ -156,7 +163,7 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 					}
 					return nil, err
 				}
-				if useCache && networkCache != nil {
+				if useCache && networkCache != nil && len(prefixes) > 0 {
 					var l []string
 					for _, n := range prefixes {
 						l = append(l, n.String())
