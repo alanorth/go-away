@@ -8,7 +8,12 @@ import (
 	"git.gammaspectra.live/git/go-away/utils"
 	"net/http"
 	"net/url"
+	"strings"
 )
+
+var ErrInvalidToken = errors.New("invalid token")
+var ErrMismatchedToken = errors.New("mismatched token")
+var ErrMismatchedTokenHappyEyeballs = errors.New("mismatched token: IPv4 to IPv6 upgrade detected, retrying")
 
 func NewKeyVerifier() (verify VerifyFunc, issue func(key Key) string) {
 	return func(key Key, token []byte, r *http.Request) (VerifyResult, error) {
@@ -16,10 +21,20 @@ func NewKeyVerifier() (verify VerifyFunc, issue func(key Key) string) {
 			if err != nil {
 				return VerifyResultFail, err
 			}
+			if len(expectedKey) != KeySize {
+				return VerifyResultFail, ErrInvalidToken
+			}
 			if subtle.ConstantTimeCompare(key[:], expectedKey) == 1 {
 				return VerifyResultOK, nil
 			}
-			return VerifyResultFail, errors.New("mismatched token")
+
+			kk := Key(expectedKey)
+			// IPv4 -> IPv6 Happy Eyeballs
+			if key.Get(KeyFlagIsIPv4) == 0 && kk.Get(KeyFlagIsIPv4) > 0 {
+				return VerifyResultOK, ErrMismatchedTokenHappyEyeballs
+			}
+
+			return VerifyResultFail, ErrMismatchedToken
 		}, func(key Key) string {
 			return hex.EncodeToString(key[:])
 		}
@@ -95,7 +110,9 @@ func RedirectUrl(r *http.Request, reg *Registration) (*url.URL, error) {
 	data := RequestDataFromContext(r.Context())
 	values := uri.Query()
 	values.Set(QueryArgRequestId, data.Id.String())
-	values.Set(QueryArgReferer, r.Referer())
+	if ref := r.Referer(); ref != "" {
+		values.Set(QueryArgReferer, r.Referer())
+	}
 	values.Set(QueryArgChallenge, reg.Name)
 	uri.RawQuery = values.Encode()
 
@@ -104,6 +121,26 @@ func RedirectUrl(r *http.Request, reg *Registration) (*url.URL, error) {
 
 func VerifyHandlerChallengeResponseFunc(state StateInterface, data *RequestData, w http.ResponseWriter, r *http.Request, verifyResult VerifyResult, err error, redirect string) {
 	if err != nil {
+		// Happy Eyeballs! auto retry
+		if errors.Is(err, ErrMismatchedTokenHappyEyeballs) {
+			reqUri := *r.URL
+			q := reqUri.Query()
+
+			ref := q.Get(QueryArgReferer)
+			// delete query parameters that were set by go-away
+			for k := range q {
+				if strings.HasPrefix(k, QueryArgPrefix) {
+					q.Del(k)
+				}
+			}
+			if ref != "" {
+				q.Set(QueryArgReferer, ref)
+			}
+			reqUri.RawQuery = q.Encode()
+
+			http.Redirect(w, r, reqUri.String(), http.StatusTemporaryRedirect)
+			return
+		}
 		state.ErrorPage(w, r, http.StatusBadRequest, err, redirect)
 		return
 	} else if !verifyResult.Ok() {
