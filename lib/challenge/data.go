@@ -91,9 +91,11 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 	sum := sha256.New()
 	sum.Write([]byte(r.Host))
 	sum.Write([]byte{0})
+	sum.Write(data.NetworkPrefix().AsSlice())
+	sum.Write([]byte{0})
 	sum.Write(state.PublicKey())
 	sum.Write([]byte{0})
-	data.CookiePrefix = utils.CookiePrefix + hex.EncodeToString(sum.Sum(nil)[:4]) + "-"
+	data.CookiePrefix = utils.CookiePrefix + hex.EncodeToString(sum.Sum(nil)[:6]) + "-"
 
 	r = r.WithContext(context.WithValue(r.Context(), requestDataContextKey{}, &data))
 	r = utils.SetRemoteAddress(r, data.RemoteAddress)
@@ -127,6 +129,19 @@ func (d *RequestData) ResolveName(name string) (any, bool) {
 
 func (d *RequestData) Parent() cel.Activation {
 	return nil
+}
+
+func (d *RequestData) NetworkPrefix() netip.Addr {
+	address := d.RemoteAddress.Addr().Unmap()
+	if address.Is4() {
+		// Take a /24 for IPv4
+		prefix, _ := address.Prefix(24)
+		return prefix.Addr()
+	} else {
+		// Take a /64 for IPv6
+		prefix, _ := address.Prefix(64)
+		return prefix.Addr()
+	}
 }
 
 func (d *RequestData) SetOpt(n, v string) {
