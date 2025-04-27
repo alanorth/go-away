@@ -14,7 +14,6 @@ import (
 	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/goccy/go-yaml"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"log"
 	"log/slog"
 	"net/http"
 	"net/http/pprof"
@@ -49,6 +48,14 @@ func (v *MultiVar) String() string {
 func (v *MultiVar) Set(value string) error {
 	*v = append(*v, value)
 	return nil
+}
+
+func fatal(err error) {
+	slog.Error(err.Error())
+	_, _ = fmt.Fprintln(os.Stderr, "================================================")
+	_, _ = fmt.Fprintln(os.Stderr, "Fatal error:")
+	_, _ = fmt.Fprintln(os.Stderr, err.Error())
+	os.Exit(1)
 }
 
 func main() {
@@ -120,6 +127,8 @@ func main() {
 			},
 		})
 		slog.SetDefault(slog.New(h))
+		// set default log logger to slog logger level
+		slog.SetLogLoggerLevel(programLevel)
 	}
 
 	slog.Info("go-away", "package", internalMainName, "version", internalMainVersion, "cmd", internalCmdName)
@@ -131,11 +140,11 @@ func main() {
 	if *settingsFile != "" {
 		settingsData, err := os.ReadFile(*settingsFile)
 		if err != nil {
-			log.Fatal(fmt.Errorf("could not read settings file: %w", err))
+			fatal(fmt.Errorf("could not read settings file: %w", err))
 		}
 		err = yaml.Unmarshal(settingsData, &opt)
 		if err != nil {
-			log.Fatal(fmt.Errorf("could not parse settings file: %w", err))
+			fatal(fmt.Errorf("could not parse settings file: %w", err))
 		}
 	}
 
@@ -152,7 +161,7 @@ func main() {
 		if strings.ToLower(kValue) == "generate" {
 			_, priv, err := ed25519.GenerateKey(rand.Reader)
 			if err != nil {
-				log.Fatal(fmt.Errorf("failed to generate private key: %w", err))
+				fatal(fmt.Errorf("failed to generate private key: %w", err))
 			}
 			fmt.Printf("%x\n", priv.Seed())
 			os.Exit(0)
@@ -160,11 +169,11 @@ func main() {
 
 		seed, err = hex.DecodeString(kValue)
 		if err != nil {
-			log.Fatal(fmt.Errorf("failed to decode seed: %w", err))
+			fatal(fmt.Errorf("failed to decode seed: %w", err))
 		}
 
 		if len(seed) != ed25519.SeedSize {
-			log.Fatal(fmt.Errorf("invalid seed length: %d, expected %d", len(seed), ed25519.SeedSize))
+			fatal(fmt.Errorf("invalid seed length: %d, expected %d", len(seed), ed25519.SeedSize))
 		}
 
 	}
@@ -177,7 +186,7 @@ func main() {
 		}
 		parts := strings.Split(backend, "=")
 		if len(parts) != 2 {
-			log.Fatal(fmt.Errorf("invalid backend definition: %s, expected 2 parts, got %v", backend, parts))
+			fatal(fmt.Errorf("invalid backend definition: %s, expected 2 parts, got %v", backend, parts))
 		}
 
 		// make no-settings, default backend
@@ -195,7 +204,7 @@ func main() {
 
 		backend, err := v.Create()
 		if err != nil {
-			log.Fatal(fmt.Errorf("backend %s: failed to make reverse proxy: %w", k, err))
+			fatal(fmt.Errorf("backend %s: failed to make reverse proxy: %w", k, err))
 		}
 
 		backend.ErrorLog = slog.NewLogLogger(slog.With("backend", k).Handler(), slog.LevelError)
@@ -203,7 +212,7 @@ func main() {
 	}
 
 	if len(createdBackends) == 0 {
-		log.Fatal(fmt.Errorf("no backends defined in cmdline or settings file"))
+		fatal(fmt.Errorf("no backends defined in cmdline or settings file"))
 	}
 
 	var cache utils.Cache
@@ -211,18 +220,18 @@ func main() {
 	if *cachePath != "" {
 		err = os.MkdirAll(*cachePath, 0755)
 		if err != nil {
-			log.Fatal(fmt.Errorf("failed to create cache directory: %w", err))
+			fatal(fmt.Errorf("failed to create cache directory: %w", err))
 		}
 		for _, n := range []string{"networks", "acme"} {
 			err = os.MkdirAll(path.Join(*cachePath, n), 0755)
 			if err != nil {
-				log.Fatal(fmt.Errorf("failed to create cache sub directory %s: %w", n, err))
+				fatal(fmt.Errorf("failed to create cache sub directory %s: %w", n, err))
 			}
 		}
 
 		cache, err = utils.CacheDirectory(*cachePath)
 		if err != nil {
-			log.Fatal(fmt.Errorf("failed to open cache directory: %w", err))
+			fatal(fmt.Errorf("failed to open cache directory: %w", err))
 		}
 
 		acmeCache = path.Join(*cachePath, "acme")
@@ -277,13 +286,13 @@ func main() {
 
 	server, swap, err := opt.Bind.Server(createdBackends, acmeCache)
 	if err != nil {
-		log.Fatal(fmt.Errorf("failed to create server: %w", err))
+		fatal(fmt.Errorf("failed to create server: %w", err))
 	}
 
 	go func() {
 		handler, err := loadPolicyState()
 		if err != nil {
-			log.Fatal(fmt.Errorf("failed to load policy state: %w", err))
+			fatal(fmt.Errorf("failed to load policy state: %w", err))
 		}
 
 		swap(handler)
@@ -326,7 +335,7 @@ func main() {
 				"bind", opt.BindDebug,
 			)
 			if err = debugServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-				log.Fatal(err)
+				fatal(err)
 			}
 		}()
 	}
@@ -345,18 +354,18 @@ func main() {
 				"bind", opt.BindMetrics,
 			)
 			if err = metricsServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-				log.Fatal(err)
+				fatal(err)
 			}
 		}()
 	}
 
 	if server.TLSConfig != nil {
 		if err := server.ServeTLS(listener, "", ""); !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
+			fatal(err)
 		}
 	} else {
 		if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
+			fatal(err)
 		}
 	}
 

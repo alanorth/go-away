@@ -8,7 +8,6 @@ import (
 	"github.com/pires/go-proxyproto"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
-	"log"
 	"log/slog"
 	"net"
 	"net/http"
@@ -122,7 +121,7 @@ func setupListener(network, address, socketMode string, proxy bool) (net.Listene
 
 	listener, err := net.Listen(network, address)
 	if err != nil {
-		log.Fatal(fmt.Errorf("failed to bind to %s: %w", formattedAddress, err))
+		panic(fmt.Errorf("failed to bind to %s: %w", formattedAddress, err))
 	}
 
 	// additional permission handling for unix sockets
@@ -130,13 +129,13 @@ func setupListener(network, address, socketMode string, proxy bool) (net.Listene
 		mode, err := strconv.ParseUint(socketMode, 8, 0)
 		if err != nil {
 			listener.Close()
-			log.Fatal(fmt.Errorf("could not parse socket mode %s: %w", socketMode, err))
+			panic(fmt.Errorf("could not parse socket mode %s: %w", socketMode, err))
 		}
 
 		err = os.Chmod(address, os.FileMode(mode))
 		if err != nil {
 			listener.Close()
-			log.Fatal(fmt.Errorf("could not change socket mode: %w", err))
+			panic(fmt.Errorf("could not change socket mode: %w", err))
 		}
 	}
 
