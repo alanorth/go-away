@@ -11,16 +11,24 @@ networks:
 
   # TENCENT
   asn-132203:
-    - asn: 132203
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS132203&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
   # Huawei Cloud
   asn-136907:
-    - asn: 136907
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS136907&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
   # Alibaba US
   asn-45102:
-    - asn: 45102
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS45102&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
   # Alibaba
   asn-37963:
-    - asn: 37963
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS37963&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+  # Serverel
+  asn-50245:
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS50245&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
 
 
 challenges:
@@ -95,6 +103,7 @@ rules:
       - 'remoteAddress.network("asn-136907")'
       - 'remoteAddress.network("asn-45102")'
       - 'remoteAddress.network("asn-37963")'
+      - 'remoteAddress.network("asn-50245")'
     action: drop
 
   - name: undesired-crawlers
