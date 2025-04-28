@@ -69,7 +69,6 @@ func (db *RADb) query(fn func(n int, record []byte) error, queries ...string) er
 
 		for scanner.Scan() {
 			buf := bytes.Trim(scanner.Bytes(), "\r\n")
-			fmt.Println(string(buf))
 			if bytes.HasPrefix(buf, []byte("%")) || bytes.Equal(buf, []byte("C")) {
 				// end of record
 				break
