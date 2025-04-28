@@ -57,7 +57,7 @@ rules:
     conditions:
       - 'path == "/" || path == "/index.html"'
     settings:
-      challenges: [ preload-link, meta-refresh, resource-load, js-pow-sha256 ]
+      challenges: [ preload-link, header-refresh ]
     action: challenge
 
   # Allow PUT/DELETE/PATCH/POST requests in general
@@ -71,7 +71,11 @@ rules:
   - name: standard-browser
     action: challenge
     settings:
-      challenges: [ preload-link, meta-refresh, resource-load, js-pow-sha256 ]
+      challenges: [ preload-link, header-refresh ]
+      # Fallback on cookie challenge
+      fail: challenge
+      fail-settings:
+        challenges: [ cookie ]
     conditions:
       - '($is-generic-browser)'
 
