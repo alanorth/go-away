@@ -137,6 +137,19 @@ rules:
     conditions:
       - '!(method == "HEAD" || method == "GET")'
 
+  # Enable fetching OpenGraph and other tags from backend on these paths
+  - name: enable-meta-tags
+    action: context
+    settings:
+      context-set:
+        # Map OpenGraph or similar <meta> tags back to the reply, even if denied/challenged
+        proxy-meta-tags: "true"
+
+      # Set additional response headers
+      #response-headers:
+      # X-Clacks-Overhead:
+      #  - GNU Terry Pratchett
+
   - name: plaintext-browser
     action: challenge
     settings:

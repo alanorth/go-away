@@ -33,7 +33,8 @@ func init() {
 var ContextDefaultSettings = ContextSettings{}
 
 type ContextSettings struct {
-	Settings map[string]string `yaml:"context-set"`
+	ContextSet      map[string]string `yaml:"context-set"`
+	ResponseHeaders map[string]string `yaml:"response-headers"`
 }
 
 type Context struct {
@@ -42,8 +43,12 @@ type Context struct {
 
 func (a Context) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Request, done func() (backend http.Handler)) (next bool, err error) {
 	data := challenge.RequestDataFromContext(r.Context())
-	for k, v := range a.opts.Settings {
+	for k, v := range a.opts.ContextSet {
 		data.SetOpt(k, v)
+	}
+
+	for k, v := range a.opts.ResponseHeaders {
+		w.Header().Set(k, v)
 	}
 
 	return true, nil

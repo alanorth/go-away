@@ -174,7 +174,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		r.URL.RawQuery = q.Encode()
 
-		data.Headers(r.Header)
+		data.RequestHeaders(r.Header)
 
 		// delete cookies set by go-away to prevent user tracking that way
 		cookies := r.Cookies()

@@ -243,7 +243,7 @@ func (d *RequestData) HasValidChallenge(id Id) bool {
 	return d.ChallengeVerify[id].Ok()
 }
 
-func (d *RequestData) Headers(headers http.Header) {
+func (d *RequestData) RequestHeaders(headers http.Header) {
 	headers.Set("X-Away-Id", d.Id.String())
 
 	for id, result := range d.ChallengeVerify {
