@@ -45,6 +45,15 @@ local Build(mirror, go, alpine, os, arch) = {
             ],
         },
         {
+            name: "check-policy-spa",
+            image: "alpine:" + alpine,
+            mirror: mirror,
+            depends_on: ["build"],
+            commands: [
+                "./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80 --policy examples/spa.yml --policy-snippets examples/snippets/"
+            ],
+        },
+        {
             name: "test-wasm-success",
             image: "alpine:" + alpine,
             mirror: mirror,

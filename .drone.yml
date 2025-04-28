@@ -36,6 +36,14 @@ steps:
   mirror: https://mirror.gcr.io
   name: check-policy-generic
 - commands:
+  - ./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80
+    --policy examples/spa.yml --policy-snippets examples/snippets/
+  depends_on:
+  - build
+  image: alpine:3.21
+  mirror: https://mirror.gcr.io
+  name: check-policy-spa
+- commands:
   - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
     -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
     ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
@@ -95,6 +103,14 @@ steps:
   image: alpine:3.21
   mirror: https://mirror.gcr.io
   name: check-policy-generic
+- commands:
+  - ./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80
+    --policy examples/spa.yml --policy-snippets examples/snippets/
+  depends_on:
+  - build
+  image: alpine:3.21
+  mirror: https://mirror.gcr.io
+  name: check-policy-spa
 - commands:
   - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
     -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
@@ -408,6 +424,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: 7d15ec708707d96b5741471555875d0001b84da74a7688baf0bae6fea0dbf138
+hmac: 6eab8ae9773b048e780db2bf9d440095eb5615d0baf8da71878069ad7124e167
 
 ...

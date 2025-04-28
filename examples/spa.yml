@@ -1,0 +1,83 @@
+# Example cmdline (forward requests from upstream to port :8080)
+# $ go-away --bind :8080 --backend site.example.com=http://site:3000 --policy examples/spa.yml --policy-snippets example/snippets/ --challenge-template anubis
+
+
+
+# Define networks to be used later below
+networks:
+  # Networks will get included from snippets
+
+
+challenges:
+  # Challenges will get included from snippets
+  
+conditions:
+  # Conditions will get replaced on rules AST when found as ($condition-name)
+
+
+  is-static-asset:
+    - 'path == "/apple-touch-icon.png"'
+    - 'path == "/apple-touch-icon-precomposed.png"'
+    - 'path.matches("\\.(manifest|ttf|woff|woff2|jpg|jpeg|gif|png|webp|avif|svg|mp4|webm|css|js|mjs|wasm)$")'
+    # Add other paths where you have static assets
+    # - 'path.startsWith("/static/") || path.startsWith("/assets/")'
+
+
+# Rules are checked sequentially in order, from top to bottom
+rules:
+  - name: allow-well-known-resources
+    conditions:
+      - '($is-well-known-asset)'
+    action: pass
+
+  - name: allow-static-resources
+    conditions:
+      - '($is-static-asset)'
+    action: pass
+
+  - name: unknown-crawlers
+    conditions:
+      # No user agent set
+      - 'userAgent == ""'
+    action: deny
+
+  # Enable fetching OpenGraph and other tags from backend on index
+  - name: enable-meta-tags
+    action: context
+    conditions:
+      - 'path == "/" || path == "/index.html"'
+    settings:
+      context-set:
+        # Map OpenGraph or similar <meta> tags back to the reply, even if denied/challenged
+        proxy-meta-tags: "true"
+
+  # Challenge incoming visitors so challenge is remembered on api endpoints
+  # API requests will have this challenge stored
+  - name: index
+    conditions:
+      - 'path == "/" || path == "/index.html"'
+    settings:
+      challenges: [ preload-link, meta-refresh, resource-load, js-pow-sha256 ]
+    action: challenge
+
+  # Allow PUT/DELETE/PATCH/POST requests in general
+  - name: non-get-request
+    action: pass
+    conditions:
+      - '!(method == "HEAD" || method == "GET")'
+
+  # Challenge rest of endpoints (SPA API etc.)
+  # Above rule on index ensures clients have passed a challenge beforehand
+  - name: standard-browser
+    action: challenge
+    settings:
+      challenges: [ preload-link, meta-refresh, resource-load, js-pow-sha256 ]
+    conditions:
+      - '($is-generic-browser)'
+
+  - name: other-fetchers
+    action: challenge
+    settings:
+      challenges: [ cookie ]
+    conditions:
+      - '!($is-generic-browser)'
