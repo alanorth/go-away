@@ -1,0 +1,7 @@
+conditions:
+  # Override go-away's robot list
+  is-generic-robot-ua:
+    - 'userAgent.matches("compatible[;)]") && !userAgent.contains("Trident/")'
+    - 'userAgent.matches("\\+https?://")'
+    - 'userAgent.contains("@")'
+    - 'userAgent.matches("(?i)(bot|crawl|spider)")'
