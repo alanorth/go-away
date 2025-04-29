@@ -288,6 +288,8 @@ func main() {
 		fatal(fmt.Errorf("failed to create server: %w", err))
 	}
 
+	server.ErrorLog = slog.NewLogLogger(slog.With("server", "http").Handler(), slog.LevelError)
+
 	go func() {
 		handler, err := loadPolicyState()
 		if err != nil {
@@ -325,8 +327,9 @@ func main() {
 			mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 			mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 			debugServer := http.Server{
-				Addr:    opt.BindDebug,
-				Handler: mux,
+				Addr:     opt.BindDebug,
+				Handler:  mux,
+				ErrorLog: slog.NewLogLogger(slog.With("server", "debug").Handler(), slog.LevelError),
 			}
 
 			slog.Warn(
@@ -344,8 +347,9 @@ func main() {
 			mux := http.NewServeMux()
 			mux.Handle("/metrics", promhttp.Handler())
 			metricsServer := http.Server{
-				Addr:    opt.BindMetrics,
-				Handler: mux,
+				Addr:     opt.BindMetrics,
+				Handler:  mux,
+				ErrorLog: slog.NewLogLogger(slog.With("server", "metrics").Handler(), slog.LevelError),
 			}
 
 			slog.Warn(
