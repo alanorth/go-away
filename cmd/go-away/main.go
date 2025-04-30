@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime"
 	"runtime/debug"
 	"strings"
 	"syscall"
@@ -131,7 +132,7 @@ func main() {
 		slog.SetLogLoggerLevel(programLevel)
 	}
 
-	slog.Info("go-away", "package", internalMainName, "version", internalMainVersion, "cmd", internalCmdName)
+	slog.Info("go-away", "package", internalMainName, "version", internalMainVersion, "cmd", internalCmdName, "go", runtime.Version(), "os", runtime.GOOS, "arch", runtime.GOARCH)
 
 	// preload missing settings
 	opt.ChallengeTemplateOverrides["Theme"] = *templateTheme
