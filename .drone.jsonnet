@@ -144,8 +144,11 @@ local goVersion = "1.24";
 local mirror = "https://mirror.gcr.io";
 
 [
-    Build(mirror, goVersion, alpineVersion, "linux", "amd64"),
-    Build(mirror, goVersion, alpineVersion, "linux", "arm64"),
+    Build(mirror, goVersion, alpineVersion, "linux", "amd64") + {"trigger": {event: ["push"], branch: ["*"], }},
+    Build(mirror, goVersion, alpineVersion, "linux", "arm64") + {"trigger": {event: ["push"], branch: ["*"], }},
+
+    # Test PRs
+    Build(mirror, goVersion, alpineVersion, "linux", "amd64") + {"name": "test-pr", "trigger": {event: ["pull_request"], }},
 
     # latest
     Publish(mirror, "git.gammaspectra.live", "git.gammaspectra.live/git/go-away", "git", goVersion, alpineVersion, "linux", "amd64", {event: ["push"], branch: ["master"], }, containerArchitectures, {tags: ["latest"],}) + {name: "publish-latest-git"},

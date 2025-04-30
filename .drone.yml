@@ -65,6 +65,11 @@ steps:
   image: alpine:3.21
   mirror: https://mirror.gcr.io
   name: test-wasm-fail
+trigger:
+  branch:
+  - '*'
+  event:
+  - push
 type: docker
 ---
 environment:
@@ -133,6 +138,82 @@ steps:
   image: alpine:3.21
   mirror: https://mirror.gcr.io
   name: test-wasm-fail
+trigger:
+  branch:
+  - '*'
+  event:
+  - push
+type: docker
+---
+environment:
+  CGO_ENABLED: "0"
+  GOARCH: amd64
+  GOOS: linux
+  GOTOOLCHAIN: local
+kind: pipeline
+name: test-pr
+platform:
+  arch: amd64
+  os: linux
+steps:
+- commands:
+  - apk update
+  - apk add --no-cache git
+  - mkdir .bin
+  - go build -v -pgo=auto -v -trimpath -ldflags=-buildid= -o ./.bin/go-away ./cmd/go-away
+  - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
+  image: golang:1.24-alpine3.21
+  mirror: https://mirror.gcr.io
+  name: build
+- commands:
+  - ./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80
+    --policy examples/forgejo.yml --policy-snippets examples/snippets/
+  depends_on:
+  - build
+  image: alpine:3.21
+  mirror: https://mirror.gcr.io
+  name: check-policy-forgejo
+- commands:
+  - ./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80
+    --policy examples/generic.yml --policy-snippets examples/snippets/
+  depends_on:
+  - build
+  image: alpine:3.21
+  mirror: https://mirror.gcr.io
+  name: check-policy-generic
+- commands:
+  - ./.bin/go-away --check --slog-level DEBUG --backend example.com=http://127.0.0.1:80
+    --policy examples/spa.yml --policy-snippets examples/snippets/
+  depends_on:
+  - build
+  image: alpine:3.21
+  mirror: https://mirror.gcr.io
+  name: check-policy-spa
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge.json -verify-challenge-out
+    0
+  depends_on:
+  - build
+  image: alpine:3.21
+  mirror: https://mirror.gcr.io
+  name: test-wasm-success
+- commands:
+  - ./.bin/test-wasm-runtime -wasm ./embed/challenge/js-pow-sha256/runtime/runtime.wasm
+    -make-challenge ./embed/challenge/js-pow-sha256/test/make-challenge.json -make-challenge-out
+    ./embed/challenge/js-pow-sha256/test/make-challenge-out.json -verify-challenge
+    ./embed/challenge/js-pow-sha256/test/verify-challenge-fail.json -verify-challenge-out
+    1
+  depends_on:
+  - build
+  image: alpine:3.21
+  mirror: https://mirror.gcr.io
+  name: test-wasm-fail
+trigger:
+  event:
+  - pull_request
 type: docker
 ---
 kind: pipeline
@@ -424,6 +505,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: 6eab8ae9773b048e780db2bf9d440095eb5615d0baf8da71878069ad7124e167
+hmac: 5200d5eb519acb0f74a7b62b103399da23d6e994d63c20052b41b10a4654b37a
 
 ...
