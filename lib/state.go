@@ -13,6 +13,7 @@ import (
 	"git.gammaspectra.live/git/go-away/lib/settings"
 	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/types"
 	"github.com/yl2chen/cidranger"
 	"golang.org/x/net/html"
 	"log/slog"
@@ -208,6 +209,12 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 		ast, err := http_cel.NewAst(state.programEnv, http_cel.OperatorOr, entries...)
 		if err != nil {
 			return nil, fmt.Errorf("conditions %s: error compiling conditions: %v", k, err)
+		}
+
+		if out := ast.OutputType(); out == nil {
+			return nil, fmt.Errorf("conditions %s: error compiling conditions: no output", k)
+		} else if out != types.BoolType {
+			return nil, fmt.Errorf("conditions %s: error compiling conditions: output type is not bool", k)
 		}
 
 		cond, err := cel.AstToString(ast)
