@@ -72,6 +72,14 @@ backends:
   #  http2-enabled: true
   #  tls-skip-verify: true
 
+  # Example HTTPS transparent backend with host/SNI override, HTTP/2, and subdirectory
+  #"ssl.example.com":
+  #  url: "https://ssl.example.com/subdirectory/"
+  #  host: ssl.example.com
+  #  http2-enabled: true
+  #  ip-header: "-"
+  #  transparent: true
+
 # List of strings you can replace to alter the presentation on challenge/error templates
 # Can use other languages.
 # Note raw HTML is allowed, be careful with it.

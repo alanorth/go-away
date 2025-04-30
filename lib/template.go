@@ -59,9 +59,9 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 	input["Random"] = utils.CacheBust()
 
 	input["Path"] = state.UrlPath()
-	input["Links"] = state.Options().Links
-	input["Strings"] = state.Options().Strings
-	for k, v := range state.Options().ChallengeTemplateOverrides {
+	input["Links"] = state.opt.Links
+	input["Strings"] = state.opt.Strings
+	for k, v := range state.opt.ChallengeTemplateOverrides {
 		input[k] = v
 	}
 
@@ -72,7 +72,7 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 	maps.Copy(input, params)
 
 	if _, ok := input["Title"]; !ok {
-		input["Title"] = state.Options().Strings.Get("title_challenge")
+		input["Title"] = state.opt.Strings.Get("title_challenge")
 	}
 
 	if data.GetOptBool(challenge.RequestOptCacheMetaTags, false) {
@@ -95,7 +95,7 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 
 	buf := bytes.NewBuffer(make([]byte, 0, 8192))
 
-	err := templates["challenge-"+state.Options().ChallengeTemplate+".gohtml"].Execute(buf, input)
+	err := templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"].Execute(buf, input)
 	if err != nil {
 		state.ErrorPage(w, r, http.StatusInternalServerError, err, "")
 	} else {
@@ -116,13 +116,13 @@ func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int
 		"Error":     err.Error(),
 		"Path":      state.UrlPath(),
 		"Theme":     "",
-		"Title":     template.HTML(string(state.Options().Strings.Get("title_error")) + " " + http.StatusText(status)),
+		"Title":     template.HTML(string(state.opt.Strings.Get("title_error")) + " " + http.StatusText(status)),
 		"Challenge": "",
 		"Redirect":  redirect,
-		"Links":     state.Options().Links,
-		"Strings":   state.Options().Strings,
+		"Links":     state.opt.Links,
+		"Strings":   state.opt.Strings,
 	}
-	for k, v := range state.Options().ChallengeTemplateOverrides {
+	for k, v := range state.opt.ChallengeTemplateOverrides {
 		input[k] = v
 	}
 
@@ -142,7 +142,7 @@ func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int
 		}
 	}
 
-	err2 := templates["challenge-"+state.Options().ChallengeTemplate+".gohtml"].Execute(buf, input)
+	err2 := templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"].Execute(buf, input)
 	if err2 != nil {
 		// nested errors!
 		panic(err2)

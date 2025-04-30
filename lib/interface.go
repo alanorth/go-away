@@ -4,7 +4,6 @@ import (
 	"crypto/ed25519"
 	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"git.gammaspectra.live/git/go-away/lib/policy"
-	"git.gammaspectra.live/git/go-away/lib/settings"
 	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/google/cel-go/cel"
 	"log/slog"
@@ -99,8 +98,8 @@ func (state *State) Settings() policy.StateSettings {
 	return state.settings
 }
 
-func (state *State) Options() settings.Settings {
-	return state.opt
+func (state *State) Strings() utils.Strings {
+	return state.opt.Strings
 }
 
 func (state *State) GetBackend(host string) http.Handler {

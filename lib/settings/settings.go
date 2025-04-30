@@ -1,6 +1,9 @@
 package settings
 
-import "maps"
+import (
+	"git.gammaspectra.live/git/go-away/utils"
+	"maps"
+)
 
 type Settings struct {
 	Bind Bind `yaml:"bind"`
@@ -10,7 +13,7 @@ type Settings struct {
 	BindDebug   string `yaml:"bind-debug"`
 	BindMetrics string `yaml:"bind-metrics"`
 
-	Strings Strings `yaml:"strings"`
+	Strings utils.Strings `yaml:"strings"`
 
 	// Links to add to challenge/error pages like privacy/impressum.
 	Links []Link `yaml:"links"`

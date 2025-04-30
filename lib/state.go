@@ -99,18 +99,18 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 		}
 	}
 
-	if templates["challenge-"+state.Options().ChallengeTemplate+".gohtml"] == nil {
+	if templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"] == nil {
 
-		if data, err := os.ReadFile(state.Options().ChallengeTemplate); err == nil && len(data) > 0 {
-			name := path.Base(state.Options().ChallengeTemplate)
+		if data, err := os.ReadFile(state.opt.ChallengeTemplate); err == nil && len(data) > 0 {
+			name := path.Base(state.opt.ChallengeTemplate)
 			err := initTemplate(name, string(data))
 			if err != nil {
-				return nil, fmt.Errorf("error loading template %s: %w", state.Options().ChallengeTemplate, err)
+				return nil, fmt.Errorf("error loading template %s: %w", state.opt.ChallengeTemplate, err)
 			}
 			state.opt.ChallengeTemplate = name
 		}
 
-		return nil, fmt.Errorf("no template defined for %s", state.Options().ChallengeTemplate)
+		return nil, fmt.Errorf("no template defined for %s", state.opt.ChallengeTemplate)
 	}
 
 	state.networks = make(map[string]cidranger.Ranger)

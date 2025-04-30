@@ -3,7 +3,7 @@ package challenge
 import (
 	"crypto/ed25519"
 	"git.gammaspectra.live/git/go-away/lib/policy"
-	"git.gammaspectra.live/git/go-away/lib/settings"
+	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/google/cel-go/cel"
 	"log/slog"
 	"net/http"
@@ -114,7 +114,7 @@ type StateInterface interface {
 
 	Settings() policy.StateSettings
 
-	Options() settings.Settings
+	Strings() utils.Strings
 
 	GetBackend(host string) http.Handler
 }

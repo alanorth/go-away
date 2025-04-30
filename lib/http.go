@@ -157,7 +157,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return backend
 	}
 
-	cleanupRequest := func(r *http.Request, fromChallenge bool) {
+	cleanupRequest := func(r *http.Request, fromChallenge bool, ruleName string, ruleAction policy.RuleAction) {
 		if fromChallenge {
 			r.Header.Del("Referer")
 		}
@@ -175,7 +175,8 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		r.URL.RawQuery = q.Encode()
 
-		data.RequestHeaders(r.Header)
+		data.ExtraHeaders.Set("X-Away-Rule", ruleName)
+		data.ExtraHeaders.Set("X-Away-Action", string(ruleAction))
 
 		// delete cookies set by go-away to prevent user tracking that way
 		cookies := r.Cookies()
@@ -189,7 +190,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	for _, rule := range state.rules {
 		next, err := rule.Evaluate(lg, w, r, func() http.Handler {
-			cleanupRequest(r, true)
+			cleanupRequest(r, true, rule.Name, rule.Action)
 			return getBackend()
 		})
 		if err != nil {
@@ -208,10 +209,7 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	// default pass
 	_, _ = action.Pass{}.Handle(lg, w, r, func() http.Handler {
-		r.Header.Set("X-Away-Rule", "DEFAULT")
-		r.Header.Set("X-Away-Action", "PASS")
-
-		cleanupRequest(r, false)
+		cleanupRequest(r, false, "DEFAULT", policy.RuleActionPASS)
 		return getBackend()
 	})
 }

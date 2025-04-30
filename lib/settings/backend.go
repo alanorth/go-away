@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"git.gammaspectra.live/git/go-away/utils"
 	"net/http"
 	"net/http/httputil"
@@ -27,6 +28,10 @@ type Backend struct {
 	// GoDNS Resolve URL using the Go DNS server
 	// Only relevant when running with CGO enabled
 	GoDNS bool `yaml:"go-dns"`
+
+	// Transparent Do not add extra headers onto this backend
+	// This prevents GoAway headers from being set, or other state
+	Transparent bool `yaml:"transparent"`
 }
 
 func (b Backend) Create() (*httputil.ReverseProxy, error) {
@@ -53,16 +58,23 @@ func (b Backend) Create() (*httputil.ReverseProxy, error) {
 		transport.TLSClientConfig.ServerName = b.Host
 	}
 
-	if b.IpHeader != "" || b.Host != "" {
+	if b.IpHeader != "" || b.Host != "" || !b.Transparent {
 		director := proxy.Director
 		proxy.Director = func(req *http.Request) {
-			if b.IpHeader != "" {
+			if b.IpHeader != "" && !b.Transparent {
 				if ip := utils.GetRemoteAddress(req.Context()); ip != nil {
 					req.Header.Set(b.IpHeader, ip.Addr().Unmap().String())
 				}
 			}
 			if b.Host != "" {
 				req.Host = b.Host
+			}
+
+			if !b.Transparent {
+				data := challenge.RequestDataFromContext(req.Context())
+				if data != nil {
+					data.RequestHeaders(req.Header)
+				}
 			}
 			director(req)
 		}

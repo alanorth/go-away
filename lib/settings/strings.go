@@ -1,13 +1,10 @@
 package settings
 
 import (
-	"html/template"
-	"maps"
+	"git.gammaspectra.live/git/go-away/utils"
 )
 
-type Strings map[string]string
-
-var DefaultStrings = make(Strings).set(map[string]string{
+var DefaultStrings = utils.NewStrings(map[string]string{
 	"title_challenge": "Checking you are not a bot",
 	"title_error":     "Oh no!",
 
@@ -39,17 +36,3 @@ var DefaultStrings = make(Strings).set(map[string]string{
 	"status_challenge_done_took": "Done! Took",
 	"status_error":               "Error:",
 })
-
-func (s Strings) set(v map[string]string) Strings {
-	maps.Copy(s, v)
-	return s
-}
-
-func (s Strings) Get(value string) template.HTML {
-	v, ok := (s)[value]
-	if !ok {
-		// fallback
-		return template.HTML("string:" + value)
-	}
-	return template.HTML(v)
-}

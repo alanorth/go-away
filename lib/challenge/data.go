@@ -12,6 +12,7 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/traits"
+	"maps"
 	"net/http"
 	"net/netip"
 	"net/textproto"
@@ -41,6 +42,8 @@ type RequestData struct {
 	State           StateInterface
 	CookiePrefix    string
 
+	ExtraHeaders http.Header
+
 	r *http.Request
 
 	fp     map[string]string
@@ -61,18 +64,18 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 	data.Time = time.Now().UTC()
 	data.State = state
 
+	data.ExtraHeaders = make(http.Header)
+
 	data.fp = make(map[string]string, 2)
 
 	if fp := utils.GetTLSFingerprint(r); fp != nil {
 		if ja3nPtr := fp.JA3N(); ja3nPtr != nil {
 			ja3n := ja3nPtr.String()
 			data.fp["ja3n"] = ja3n
-			r.Header.Set("X-TLS-Fingerprint-JA3N", ja3n)
 		}
 		if ja4Ptr := fp.JA4(); ja4Ptr != nil {
 			ja4 := ja4Ptr.String()
 			data.fp["ja4"] = ja4
-			r.Header.Set("X-TLS-Fingerprint-JA4", ja4)
 		}
 	}
 
@@ -257,4 +260,14 @@ func (d *RequestData) RequestHeaders(headers http.Header) {
 			headers.Set(fmt.Sprintf("X-Away-Challenge-%s-State", c.Name), d.ChallengeState[id].String())
 		}
 	}
+
+	if ja4, ok := d.fp["fp4"]; ok {
+		headers.Set("X-TLS-Fingerprint-JA4", ja4)
+	}
+
+	if ja3n, ok := d.fp["ja3n"]; ok {
+		headers.Set("X-TLS-Fingerprint-JA3N", ja3n)
+	}
+
+	maps.Copy(headers, d.ExtraHeaders)
 }
