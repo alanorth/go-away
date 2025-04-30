@@ -431,6 +431,8 @@ services:
       GOAWAY_CHALLENGE_TEMPLATE_THEME: forgejo-dark
       
       # Backend to match. Can be subdomain or full wildcards, "*.example.com" or "*"
+      # Note: if you access git.example.com:8080, you will need to set the following
+      #       GOAWAY_BACKEND: "git.example.com:8080=http://forgejo:3000"
       GOAWAY_BACKEND: "git.example.com=http://forgejo:3000"
       
     # additional backends can be specified via more command arguments  

@@ -58,6 +58,12 @@ backends:
   #  url: "http://forgejo:3000"
   #  ip-header: "X-Client-Ip"
 
+  # Example HTTP backend matching a non-standard port in Host
+  # Standard ports are 80 and 443. Others will be sent in Host by browsers
+  #"git.example.com:8080":
+  #  url: "http://forgejo:3000"
+  #  ip-header: "X-Client-Ip"
+
 
   # Example HTTPS backend with host/SNI override, HTTP/2 and no certificate verification
   #"ssl.example.com":
