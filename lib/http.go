@@ -135,8 +135,11 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	data := challenge.RequestDataFromContext(r.Context())
 
+	lg := state.Logger(r)
+
 	backend := state.GetBackend(host)
 	if backend == nil {
+		lg.Debug("no backend for host", "host", host)
 		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		return
 	}
@@ -153,8 +156,6 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		return backend
 	}
-
-	lg := state.Logger(r)
 
 	cleanupRequest := func(r *http.Request, fromChallenge bool) {
 		if fromChallenge {

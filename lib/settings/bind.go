@@ -92,6 +92,7 @@ func (b *Bind) Server(backends map[string]http.Handler, acmeCachePath string) (*
 		swap(http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			backend := utils.SelectHTTPHandler(backends, r.Host)
 			if backend == nil {
+				slog.Debug("no backend for host", "host", r.Host)
 				http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 			} else {
 				backend.ServeHTTP(w, r)
