@@ -132,7 +132,7 @@ func (state *State) RegisterCondition(operator string, conditions ...string) (ce
 			// deprecated
 			case "inNetwork":
 				args := call.Args()
-				if call.IsMemberFunction() && len(args) == 2 {
+				if !call.IsMemberFunction() && len(args) == 2 {
 					// we have a network select function
 					switch args[1].Kind() {
 					case ast.LiteralKind:
