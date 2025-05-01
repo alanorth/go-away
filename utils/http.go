@@ -13,6 +13,7 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+	"time"
 )
 
 func NewServer(handler http.Handler, tlsConfig *tls.Config) *http.Server {
@@ -69,7 +70,7 @@ func EnsureNoOpenRedirect(redirect string) (string, error) {
 	return uri.String(), nil
 }
 
-func MakeReverseProxy(target string, goDns bool) (*httputil.ReverseProxy, error) {
+func MakeReverseProxy(target string, goDns bool, dialTimeout time.Duration) (*httputil.ReverseProxy, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse target URL: %w", err)
@@ -85,7 +86,9 @@ func MakeReverseProxy(target string, goDns bool) (*httputil.ReverseProxy, error)
 		u.Path = ""
 		// tell transport how to dial unix sockets
 		transport.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
-			dialer := net.Dialer{}
+			dialer := net.Dialer{
+				Timeout: dialTimeout,
+			}
 			return dialer.DialContext(ctx, "unix", addr)
 		}
 		// tell transport how to handle the unix url scheme
@@ -95,6 +98,12 @@ func MakeReverseProxy(target string, goDns bool) (*httputil.ReverseProxy, error)
 			Resolver: &net.Resolver{
 				PreferGo: true,
 			},
+			Timeout: dialTimeout,
+		}
+		transport.DialContext = dialer.DialContext
+	} else {
+		dialer := &net.Dialer{
+			Timeout: dialTimeout,
 		}
 		transport.DialContext = dialer.DialContext
 	}

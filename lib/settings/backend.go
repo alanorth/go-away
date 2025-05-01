@@ -5,6 +5,7 @@ import (
 	"git.gammaspectra.live/git/go-away/utils"
 	"net/http"
 	"net/http/httputil"
+	"time"
 )
 
 type Backend struct {
@@ -32,6 +33,44 @@ type Backend struct {
 	// Transparent Do not add extra headers onto this backend
 	// This prevents GoAway headers from being set, or other state
 	Transparent bool `yaml:"transparent"`
+
+	// DialTimeout is the maximum amount of time a dial will wait for
+	// a connect to complete.
+	//
+	// The default is no timeout.
+	//
+	// When using TCP and dialing a host name with multiple IP
+	// addresses, the timeout may be divided between them.
+	//
+	// With or without a timeout, the operating system may impose
+	// its own earlier timeout. For instance, TCP timeouts are
+	// often around 3 minutes.
+	DialTimeout time.Duration `yaml:"dial-timeout"`
+
+	// TLSHandshakeTimeout specifies the maximum amount of time to
+	// wait for a TLS handshake. Zero means no timeout.
+	TLSHandshakeTimeout time.Duration `yaml:"tls-handshake-timeout"`
+
+	// IdleConnTimeout is the maximum amount of time an idle
+	// (keep-alive) connection will remain idle before closing
+	// itself.
+	// Zero means no limit.
+	IdleConnTimeout time.Duration `yaml:"idle-conn-timeout"`
+
+	// ResponseHeaderTimeout, if non-zero, specifies the amount of
+	// time to wait for a server's response headers after fully
+	// writing the request (including its body, if any). This
+	// time does not include the time to read the response body.
+	ResponseHeaderTimeout time.Duration `yaml:"response-header-timeout"`
+
+	// ExpectContinueTimeout, if non-zero, specifies the amount of
+	// time to wait for a server's first response headers after fully
+	// writing the request headers if the request has an
+	// "Expect: 100-continue" header. Zero means no timeout and
+	// causes the body to be sent immediately, without
+	// waiting for the server to approve.
+	// This time does not include the time to send the request header.
+	ExpectContinueTimeout time.Duration `yaml:"expect-continue-timeout"`
 }
 
 func (b Backend) Create() (*httputil.ReverseProxy, error) {
@@ -39,12 +78,18 @@ func (b Backend) Create() (*httputil.ReverseProxy, error) {
 		b.IpHeader = ""
 	}
 
-	proxy, err := utils.MakeReverseProxy(b.URL, b.GoDNS)
+	proxy, err := utils.MakeReverseProxy(b.URL, b.GoDNS, b.DialTimeout)
 	if err != nil {
 		return nil, err
 	}
 
 	transport := proxy.Transport.(*http.Transport)
+
+	// set transport timeouts
+	transport.TLSHandshakeTimeout = b.TLSHandshakeTimeout
+	transport.IdleConnTimeout = b.IdleConnTimeout
+	transport.ResponseHeaderTimeout = b.ResponseHeaderTimeout
+	transport.ExpectContinueTimeout = b.ExpectContinueTimeout
 
 	if b.HTTP2Enabled {
 		transport.ForceAttemptHTTP2 = true
