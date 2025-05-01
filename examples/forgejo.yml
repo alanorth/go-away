@@ -276,13 +276,6 @@ rules:
       fail-settings:
         challenges: [js-pow-sha256, http-cookie-check]
 
-  - name: suspicious-fetchers
-    action: check
-    settings:
-      challenges: [js-pow-sha256]
-    conditions:
-      - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
-
   # Allow PUT/DELETE/PATCH/POST requests in general
   - name: non-get-request
     action: pass
@@ -292,6 +285,10 @@ rules:
   # Enable fetching OpenGraph and other tags from backend on these paths
   - name: enable-meta-tags
     action: context
+    conditions:
+      - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("Facebot/") || userAgent.contains("Twitterbot/")'
+      - '($is-generic-robot-ua)'
+      - '!($is-generic-browser)'
     settings:
       context-set:
         # Map OpenGraph or similar <meta> tags back to the reply, even if denied/challenged
