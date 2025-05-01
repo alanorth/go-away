@@ -54,9 +54,8 @@ type State struct {
 	Mux *http.ServeMux
 }
 
-func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSettings) (handler http.Handler, err error) {
-
-	state := new(State)
+func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSettings) (state *State, err error) {
+	state = new(State)
 	state.close = make(chan struct{})
 	state.settings = settings
 	state.opt = opt
@@ -272,4 +271,22 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 	}()
 
 	return state, nil
+}
+
+func (state *State) Close() error {
+	select {
+	case <-state.close:
+	default:
+		close(state.close)
+		for _, c := range state.challenges {
+			if c.Object != nil {
+				err := c.Object.Close()
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }

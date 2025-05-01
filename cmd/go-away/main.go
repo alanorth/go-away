@@ -238,7 +238,7 @@ func main() {
 		acmeCache = path.Join(*cachePath, "acme")
 	}
 
-	loadPolicyState := func() (http.Handler, error) {
+	loadPolicyState := func() (*lib.State, error) {
 		policyData, err := os.ReadFile(*policyFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read policy file: %w", err)
@@ -309,6 +309,7 @@ func main() {
 			if sig != syscall.SIGHUP {
 				continue
 			}
+			oldHandler := handler
 			handler, err = loadPolicyState()
 			if err != nil {
 				slog.Error("handler configuration reload error", "err", err)
@@ -317,6 +318,9 @@ func main() {
 
 			swap(handler)
 			slog.Warn("handler configuration reloaded")
+			if oldHandler != nil {
+				_ = oldHandler.Close()
+			}
 		}
 	}()
 
