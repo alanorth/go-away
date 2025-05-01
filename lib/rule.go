@@ -66,20 +66,9 @@ func NewRuleState(state challenge.StateInterface, r policy.Rule, replacer *strin
 			conditions = append(conditions, cond)
 		}
 
-		ast, err := http_cel.NewAst(state.ProgramEnv(), http_cel.OperatorOr, conditions...)
+		program, err := state.RegisterCondition(http_cel.OperatorOr, conditions...)
 		if err != nil {
-			return RuleState{}, fmt.Errorf("error compiling conditions: %w", err)
-		}
-
-		if out := ast.OutputType(); out == nil {
-			return RuleState{}, fmt.Errorf("error compiling conditions: no output")
-		} else if out != types.BoolType {
-			return RuleState{}, fmt.Errorf("error compiling conditions: output type is not bool")
-		}
-
-		program, err := http_cel.ProgramAst(state.ProgramEnv(), ast)
-		if err != nil {
-			return RuleState{}, fmt.Errorf("error compiling program: %w", err)
+			return RuleState{}, fmt.Errorf("error compiling condition: %w", err)
 		}
 		rule.Condition = program
 	}

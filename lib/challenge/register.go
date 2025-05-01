@@ -11,7 +11,6 @@ import (
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/goccy/go-yaml/ast"
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/common/types"
 	"io"
 	"math/rand/v2"
 	"net/http"
@@ -68,20 +67,10 @@ func (r Register) Create(state StateInterface, name string, pol policy.Challenge
 	}
 
 	if len(conditions) > 0 {
-		ast, err := http_cel.NewAst(state.ProgramEnv(), http_cel.OperatorOr, conditions...)
+		var err error
+		reg.Condition, err = state.RegisterCondition(http_cel.OperatorOr, conditions...)
 		if err != nil {
-			return nil, 0, fmt.Errorf("error compiling conditions: %v", err)
-		}
-
-		if out := ast.OutputType(); out == nil {
-			return nil, 0, fmt.Errorf("error compiling conditions: no output")
-		} else if out != types.BoolType {
-			return nil, 0, fmt.Errorf("error compiling conditions: output type is not bool")
-		}
-
-		reg.Condition, err = http_cel.ProgramAst(state.ProgramEnv(), ast)
-		if err != nil {
-			return nil, 0, fmt.Errorf("error compiling program: %v", err)
+			return nil, 0, fmt.Errorf("error compiling condition: %w", err)
 		}
 	}
 

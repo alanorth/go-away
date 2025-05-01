@@ -24,6 +24,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -40,7 +41,7 @@ type State struct {
 	opt      settings.Settings
 	settings policy.StateSettings
 
-	networks map[string]cidranger.Ranger
+	networks map[string]func() cidranger.Ranger
 
 	challenges challenge.Register
 
@@ -54,6 +55,7 @@ type State struct {
 }
 
 func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSettings) (handler http.Handler, err error) {
+
 	state := new(State)
 	state.close = make(chan struct{})
 	state.settings = settings
@@ -114,89 +116,89 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 		return nil, fmt.Errorf("no template defined for %s", state.opt.ChallengeTemplate)
 	}
 
-	state.networks = make(map[string]cidranger.Ranger)
+	state.networks = make(map[string]func() cidranger.Ranger)
 
 	networkCache := utils.CachePrefix(state.Settings().Cache, "networks/")
 
 	for k, network := range p.Networks {
+		state.networks[k] = sync.OnceValue[cidranger.Ranger](func() cidranger.Ranger {
+			ranger := cidranger.NewPCTrieRanger()
+			for i, e := range network {
+				prefixes, err := func() ([]net.IPNet, error) {
+					var useCache bool
 
-		ranger := cidranger.NewPCTrieRanger()
-		for i, e := range network {
-			prefixes, err := func() ([]net.IPNet, error) {
-				var useCache bool
+					cacheKey := fmt.Sprintf("%s-%d-", k, i)
+					if e.Url != nil {
+						slog.Debug("loading network url list", "network", k, "url", *e.Url)
+						useCache = true
+						sum := sha256.Sum256([]byte(*e.Url))
+						cacheKey += hex.EncodeToString(sum[:4])
+					} else if e.ASN != nil {
+						slog.Debug("loading ASN", "network", k, "asn", *e.ASN)
+						useCache = true
+						cacheKey += strconv.FormatInt(int64(*e.ASN), 10)
+					}
 
-				cacheKey := fmt.Sprintf("%s-%d-", k, i)
-				if e.Url != nil {
-					slog.Debug("loading network url list", "network", k, "url", *e.Url)
-					useCache = true
-					sum := sha256.Sum256([]byte(*e.Url))
-					cacheKey += hex.EncodeToString(sum[:4])
-				} else if e.ASN != nil {
-					slog.Debug("loading ASN", "network", k, "asn", *e.ASN)
-					useCache = true
-					cacheKey += strconv.FormatInt(int64(*e.ASN), 10)
-				}
-
-				var cached []net.IPNet
-				if useCache && networkCache != nil {
-					//TODO: add randomness
-					cachedData, err := networkCache.Get(cacheKey, time.Hour*24)
-					var l []string
-					_ = json.Unmarshal(cachedData, &l)
-					for _, n := range l {
-						_, ipNet, err := net.ParseCIDR(n)
+					var cached []net.IPNet
+					if useCache && networkCache != nil {
+						//TODO: add randomness
+						cachedData, err := networkCache.Get(cacheKey, time.Hour*24)
+						var l []string
+						_ = json.Unmarshal(cachedData, &l)
+						for _, n := range l {
+							_, ipNet, err := net.ParseCIDR(n)
+							if err == nil {
+								cached = append(cached, *ipNet)
+							}
+						}
 						if err == nil {
-							cached = append(cached, *ipNet)
+							// use
+							return cached, nil
+
 						}
 					}
-					if err == nil {
-						// use
-						return cached, nil
 
+					prefixes, err := e.FetchPrefixes(state.client, state.radb)
+					if err != nil {
+						if len(cached) > 0 {
+							// use cached meanwhile
+							return cached, err
+						}
+						return nil, err
 					}
-				}
-
-				prefixes, err := e.FetchPrefixes(state.client, state.radb)
+					if useCache && networkCache != nil {
+						var l []string
+						for _, n := range prefixes {
+							l = append(l, n.String())
+						}
+						cachedData, err := json.Marshal(l)
+						if err == nil {
+							_ = networkCache.Set(cacheKey, cachedData)
+						}
+					}
+					return prefixes, nil
+				}()
 				if err != nil {
-					if len(cached) > 0 {
-						// use cached meanwhile
-						return cached, err
+					if e.Url != nil {
+						slog.Error("error loading network list", "network", k, "url", *e.Url, "error", err)
+					} else if e.ASN != nil {
+						slog.Error("error loading ASN", "network", k, "asn", *e.ASN, "error", err)
+					} else {
+						slog.Error("error loading list", "network", k, "error", err)
 					}
-					return nil, err
+					continue
 				}
-				if useCache && networkCache != nil {
-					var l []string
-					for _, n := range prefixes {
-						l = append(l, n.String())
+				for _, prefix := range prefixes {
+					err = ranger.Insert(cidranger.NewBasicRangerEntry(prefix))
+					if err != nil {
+						slog.Error("error inserting prefix", "network", k, "prefix", prefix.String(), "error", err)
 					}
-					cachedData, err := json.Marshal(l)
-					if err == nil {
-						_ = networkCache.Set(cacheKey, cachedData)
-					}
-				}
-				return prefixes, nil
-			}()
-			if err != nil {
-				if e.Url != nil {
-					slog.Error("error loading network list", "network", k, "url", *e.Url, "error", err)
-				} else if e.ASN != nil {
-					slog.Error("error loading ASN", "network", k, "asn", *e.ASN, "error", err)
-				} else {
-					slog.Error("error loading list", "network", k, "error", err)
-				}
-				continue
-			}
-			for _, prefix := range prefixes {
-				err = ranger.Insert(cidranger.NewBasicRangerEntry(prefix))
-				if err != nil {
-					return nil, fmt.Errorf("networks %s: error inserting prefix %s: %v", k, prefix.String(), err)
 				}
 			}
-		}
 
-		slog.Warn("loaded network prefixes", "network", k, "count", ranger.Len())
-
-		state.networks[k] = ranger
+			slog.Warn("loaded network prefixes", "network", k, "count", ranger.Len())
+			return ranger
+		})
 	}
 
 	err = state.initConditions()

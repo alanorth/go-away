@@ -4,6 +4,7 @@ import (
 	http_cel "codeberg.org/gone/http-cel"
 	"fmt"
 	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/ast"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"log/slog"
@@ -55,7 +56,7 @@ func (state *State) initConditions() (err error) {
 						}
 						return types.Bool(ipNet.Contains(ip))
 					} else {
-						ok, err := network.Contains(ip)
+						ok, err := network().Contains(ip)
 						if err != nil {
 							panic(err)
 						}
@@ -96,7 +97,7 @@ func (state *State) initConditions() (err error) {
 						}
 						return types.Bool(ipNet.Contains(ip))
 					} else {
-						ok, err := network.Contains(ip)
+						ok, err := network().Contains(ip)
 						if err != nil {
 							panic(err)
 						}
@@ -110,4 +111,114 @@ func (state *State) initConditions() (err error) {
 		return err
 	}
 	return nil
+}
+
+func (state *State) RegisterCondition(operator string, conditions ...string) (cel.Program, error) {
+	compiledAst, err := http_cel.NewAst(state.ProgramEnv(), operator, conditions...)
+	if err != nil {
+		return nil, err
+	}
+
+	if out := compiledAst.OutputType(); out == nil {
+		return nil, fmt.Errorf("no output")
+	} else if out != types.BoolType {
+		return nil, fmt.Errorf("output type is not bool")
+	}
+
+	walkExpr(compiledAst.NativeRep().Expr(), func(e ast.Expr) {
+		if e.Kind() == ast.CallKind {
+			call := e.AsCall()
+			switch call.FunctionName() {
+			// deprecated
+			case "inNetwork":
+				args := call.Args()
+				if call.IsMemberFunction() && len(args) == 2 {
+					// we have a network select function
+					switch args[1].Kind() {
+					case ast.LiteralKind:
+						lit := args[1].AsLiteral()
+						if lit.Type() == types.StringType {
+							if fn, ok := state.networks[lit.Value().(string)]; ok {
+								// preload
+								fn()
+							}
+						}
+					}
+
+				}
+			case "network":
+				args := call.Args()
+				if call.IsMemberFunction() && len(args) == 1 {
+					// we have a network select function
+					switch args[0].Kind() {
+					case ast.LiteralKind:
+						lit := args[0].AsLiteral()
+						if lit.Type() == types.StringType {
+							if fn, ok := state.networks[lit.Value().(string)]; ok {
+								// preload
+								fn()
+							}
+						}
+					}
+
+				}
+			}
+		}
+	})
+
+	return http_cel.ProgramAst(state.ProgramEnv(), compiledAst)
+}
+
+func walkExpr(e ast.Expr, fn func(ast.Expr)) {
+	fn(e)
+
+	switch e.Kind() {
+	case ast.CallKind:
+		ee := e.AsCall()
+		walkExpr(ee.Target(), fn)
+		for _, arg := range ee.Args() {
+			walkExpr(arg, fn)
+		}
+	case ast.ComprehensionKind:
+		ee := e.AsComprehension()
+		walkExpr(ee.Result(), fn)
+		walkExpr(ee.IterRange(), fn)
+		walkExpr(ee.AccuInit(), fn)
+		walkExpr(ee.LoopCondition(), fn)
+		walkExpr(ee.LoopStep(), fn)
+	case ast.ListKind:
+		ee := e.AsList()
+		for _, element := range ee.Elements() {
+			walkExpr(element, fn)
+		}
+	case ast.MapKind:
+		ee := e.AsMap()
+		for _, entry := range ee.Entries() {
+			switch entry.Kind() {
+			case ast.MapEntryKind:
+				eee := entry.AsMapEntry()
+				walkExpr(eee.Key(), fn)
+				walkExpr(eee.Value(), fn)
+			case ast.StructFieldKind:
+				eee := entry.AsStructField()
+				walkExpr(eee.Value(), fn)
+			}
+		}
+	case ast.SelectKind:
+		ee := e.AsSelect()
+		walkExpr(ee.Operand(), fn)
+	case ast.StructKind:
+		ee := e.AsStruct()
+		for _, field := range ee.Fields() {
+			switch field.Kind() {
+			case ast.MapEntryKind:
+				eee := field.AsMapEntry()
+				walkExpr(eee.Key(), fn)
+				walkExpr(eee.Value(), fn)
+			case ast.StructFieldKind:
+				eee := field.AsStructField()
+				walkExpr(eee.Value(), fn)
+			}
+		}
+	}
 }

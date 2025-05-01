@@ -86,7 +86,7 @@ func (r VerifyResult) String() string {
 }
 
 type StateInterface interface {
-	ProgramEnv() *cel.Env
+	RegisterCondition(operator string, conditions ...string) (cel.Program, error)
 
 	Client() *http.Client
 	PrivateKey() ed25519.PrivateKey
