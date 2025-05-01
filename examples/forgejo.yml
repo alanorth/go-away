@@ -75,6 +75,7 @@ conditions:
     - 'path.matches("^/[^/]+/[^/]+/search/")'
     - 'path.matches("^/[^/]+/[^/]+/find/")'
     - 'path.matches("^/[^/]+/[^/]+/activity")'
+    - 'path.matches("^/[^/]+/[^/]+/graph$")'
     # any search with a custom query
     - '"q" in query && query.q != ""'
     # user activity tab
