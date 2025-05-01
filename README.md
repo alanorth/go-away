@@ -16,7 +16,9 @@ The tool is designed highly flexible so the operator can minimize impact to legi
 
 See _[Why do this?](#why-do-this)_ section for the challenges and reasoning behind this tool. 
 
-This documentation and go-away are in active development. See [What's left?](#what-s-left) section for a breakdown.
+**This documentation and go-away are in active development.** See [What's left?](#what-s-left) section for a breakdown.
+
+Check this README for a general introduction. A more [in-depth Wiki](https://git.gammaspectra.live/git/go-away/wiki/) is being written.
 
 ## Support
 
