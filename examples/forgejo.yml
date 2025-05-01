@@ -177,6 +177,7 @@ rules:
   - name: allow-git-operations
     conditions:
       - '($is-git-path)'
+      # Includes repository and wiki git endpoints
       - 'path.matches("^/[^/]+/[^/]+\\.git")'
       - 'path.matches("^/[^/]+/[^/]+/") && ($is-git-ua)'
     action: pass
@@ -213,7 +214,7 @@ rules:
   - name: preview-fetchers
     conditions:
       # These summary cards are included in most previews at the end of the url
-      - 'path.endsWith("/-/summary-card")'
+      - 'path.endsWith("/-/summary-card") || path.matches("^/[^/]+/[^/]+/releases/summary-card/[^/]+$")'
       #- 'userAgent.contains("facebookexternalhit/")'
       #- 'userAgent.contains("Twitterbot/")'
     action: pass
