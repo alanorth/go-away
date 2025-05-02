@@ -152,6 +152,7 @@ rules:
         settings:
           challenges: [header-refresh]
 
+  # DSpace 7+ sitemap
   - name: sitemap
     conditions:
       - 'path.matches("^/sitemap([0-9]+|_index)\\.xml$")'
