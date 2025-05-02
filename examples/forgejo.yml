@@ -50,7 +50,7 @@ conditions:
 
   is-suspicious-crawler:
     # TLS Fingerprint for specific agent without ALPN
-    - '(userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")) && ("ja4" in fp && fp.ja4.matches("^t[0-9a-z]+00_"))'
+    - '(userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")) && ("ja4" in fp && fp.ja4.matches("^t[0-9a-z]+00_")) && !(userAgent.contains("facebookexternalhit/") || userAgent.contains("Twitterbot/"))'
     # Old engines
     - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
     # Old IE browsers
