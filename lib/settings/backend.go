@@ -116,8 +116,7 @@ func (b Backend) Create() (*httputil.ReverseProxy, error) {
 			}
 
 			if !b.Transparent {
-				data := challenge.RequestDataFromContext(req.Context())
-				if data != nil {
+				if data := challenge.RequestDataFromContext(req.Context()); data != nil {
 					data.RequestHeaders(req.Header)
 				}
 			}

@@ -24,7 +24,11 @@ type requestDataContextKey struct {
 }
 
 func RequestDataFromContext(ctx context.Context) *RequestData {
-	return ctx.Value(requestDataContextKey{}).(*RequestData)
+	val := ctx.Value(requestDataContextKey{})
+	if val == nil {
+		return nil
+	}
+	return val.(*RequestData)
 }
 
 type RequestId [16]byte
