@@ -19,3 +19,8 @@ networks:
   asn-50245:
     - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS50245&sourceapp=asn2ip.py
       jq-path: '.data .prefixes[] .prefix'
+
+  # See: https://platform.openai.com/docs/bots
+  gptbot:
+    - url: https://openai.com/gptbot.json
+      jq-path: '.prefixes[] .ipv4Prefix'

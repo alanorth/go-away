@@ -80,6 +80,7 @@ rules:
       - 'remoteAddress.network("asn-45102")'
       - 'remoteAddress.network("asn-37963")'
       - 'remoteAddress.network("asn-50245")'
+      - 'remoteAddress.network("gptbot")'
     action: drop
 
   - name: undesired-crawlers
