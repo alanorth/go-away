@@ -9,28 +9,6 @@
 networks:
   # Networks will get included from snippets
 
-  # TENCENT
-  asn-132203:
-    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS132203&sourceapp=asn2ip.py
-      jq-path: '.data .prefixes[] .prefix'
-  # Huawei Cloud
-  asn-136907:
-    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS136907&sourceapp=asn2ip.py
-      jq-path: '.data .prefixes[] .prefix'
-  # Alibaba US
-  asn-45102:
-    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS45102&sourceapp=asn2ip.py
-      jq-path: '.data .prefixes[] .prefix'
-  # Alibaba
-  asn-37963:
-    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS37963&sourceapp=asn2ip.py
-      jq-path: '.data .prefixes[] .prefix'
-  # Serverel
-  asn-50245:
-    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS50245&sourceapp=asn2ip.py
-      jq-path: '.data .prefixes[] .prefix'
-
-
 challenges:
   # Challenges will get included from snippets
 
