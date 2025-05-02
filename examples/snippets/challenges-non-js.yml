@@ -9,7 +9,7 @@ challenges:
     condition: '"Sec-Fetch-Mode" in headers && headers["Sec-Fetch-Mode"] == "navigate"'
     runtime: "preload-link"
     parameters:
-      preload-early-hint-deadline: 3s
+      preload-early-hint-deadline: 2s
 
   # Challenges with a redirect via Refresh header (non-JS, requires HTTP parsing and logic)
   header-refresh:

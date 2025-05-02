@@ -22,7 +22,7 @@ type Parameters struct {
 }
 
 var DefaultParameters = Parameters{
-	Deadline: time.Second * 3,
+	Deadline: time.Second * 2,
 }
 
 func FillRegistration(state challenge.StateInterface, reg *challenge.Registration, parameters ast.Node) error {
