@@ -449,53 +449,19 @@ services:
 
 ## Other Similar Projects
 
-|                                    Project                                    |                                                                                                                                                      Source Code                                                                                                                                                      | Description                                                                                             | Method                                       |
-|:-----------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------|:---------------------------------------------|
-|                     [Anubis](https://anubis.techaro.lol/)                     |                                       [![GitHub](https://img.shields.io/badge/GitHub-TecharoHQ/anubis-blue?style=flat&logo=github&labelColor=fff&logoColor=24292f)](https://github.com/TecharoHQ/anubis)<br/>Go / [MIT](https://github.com/TecharoHQ/anubis/blob/main/LICENSE)                                        | Proxy that uses JavaScript proof of work to weight request based on simple match rules                  | JavaScript PoW (SHA-256)                     |
-|       [powxy](https://forge.lindenii.runxiyu.org/powxy/-/repos/powxy/)        |                  [![lindenii.runxiyu.org](https://img.shields.io/badge/lindenii-powxy-blue?style=flat&logo=git&labelColor=fff&logoColor=000)](https://forge.lindenii.runxiyu.org/powxy/-/repos/powxy/)<br/> Go / [BSD 2-Clause](https://forge.lindenii.runxiyu.org/powxy/-/repos/powxy/tree/LICENSE)                  | Powxy is a reverse proxy that protects your upstream service by challenging clients with proof-of-work. | JavaScript PoW (SHA-256) with manual program |
-| [PoW! Bot Deterrent](https://git.sequentialread.com/forest/pow-bot-deterrent) | [![SequentialRead](https://img.shields.io/badge/SequentialRead-forest/pow--bot--deterrent-blue?style=flat&logo=gitea&labelColor=fff&logoColor=000)](https://git.sequentialread.com/forest/pow-bot-deterrent)<br/> Go / [GPL v3.0](https://git.sequentialread.com/forest/pow-bot-deterrent/src/branch/main/LICENSE.md) | A proof-of-work based bot deterrent. Lightweight, self-hosted and copyleft licensed.                    | JavaScript PoW (WASM scrypt)                 |
-|                  [CSSWAF](https://github.com/yzqzss/csswaf)                   |                                            [![GitHub](https://img.shields.io/badge/GitHub-yzqzss/csswaf-blue?style=flat&logo=github&labelColor=fff&logoColor=24292f)](https://github.com/yzqzss/csswaf)<br/>Go / [MIT](https://github.com/yzqzss/csswaf/blob/main/LICENSE)                                            | A CSS-based NoJS Anti-BOT WAF (Proof of Concept)                                                        | Non-JS CSS Subresource loading order         |
-|            [anticrawl](https://flak.tedunangst.com/post/anticrawl)            |                                                        [![humungus.tedunangst.com](https://img.shields.io/badge/tedunangst-anticrawl-blue?style=flat&logo=mercurial&labelColor=fff&logoColor=000)](https://humungus.tedunangst.com/r/anticrawl)<br/>Go / None                                                         | Go http handler / proxy for regex based rules                                                           | Non-JS manual Challenge/Response             |
-
+|                                         Project                                          |                                                                                                                                                      Source Code                                                                                                                                                      | Description                                                                                                                | Method                                       |
+|:----------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------|:---------------------------------------------|
+|                          [Anubis](https://anubis.techaro.lol/)                           |                                       [![GitHub](https://img.shields.io/badge/GitHub-TecharoHQ/anubis-blue?style=flat&logo=github&labelColor=fff&logoColor=24292f)](https://github.com/TecharoHQ/anubis)<br/>Go / [MIT](https://github.com/TecharoHQ/anubis/blob/main/LICENSE)                                        | Proxy that uses JavaScript proof of work to weight request based on simple match rules                                     | JavaScript PoW (SHA-256)                     |
+|             [powxy](https://forge.lindenii.runxiyu.org/powxy/-/repos/powxy/)             |                  [![lindenii.runxiyu.org](https://img.shields.io/badge/lindenii-powxy-blue?style=flat&logo=git&labelColor=fff&logoColor=000)](https://forge.lindenii.runxiyu.org/powxy/-/repos/powxy/)<br/> Go / [BSD 2-Clause](https://forge.lindenii.runxiyu.org/powxy/-/repos/powxy/tree/LICENSE)                  | Powxy is a reverse proxy that protects your upstream service by challenging clients with proof-of-work.                    | JavaScript PoW (SHA-256) with manual program |
+|      [PoW! Bot Deterrent](https://git.sequentialread.com/forest/pow-bot-deterrent)       | [![SequentialRead](https://img.shields.io/badge/SequentialRead-forest/pow--bot--deterrent-blue?style=flat&logo=gitea&labelColor=fff&logoColor=000)](https://git.sequentialread.com/forest/pow-bot-deterrent)<br/> Go / [GPL v3.0](https://git.sequentialread.com/forest/pow-bot-deterrent/src/branch/main/LICENSE.md) | A proof-of-work based bot deterrent. Lightweight, self-hosted and copyleft licensed.                                       | JavaScript PoW (WASM scrypt)                 |
+|                        [CSSWAF](https://github.com/yzqzss/csswaf)                        |                                            [![GitHub](https://img.shields.io/badge/GitHub-yzqzss/csswaf-blue?style=flat&logo=github&labelColor=fff&logoColor=24292f)](https://github.com/yzqzss/csswaf)<br/>Go / [MIT](https://github.com/yzqzss/csswaf/blob/main/LICENSE)                                            | A CSS-based NoJS Anti-BOT WAF (Proof of Concept)                                                                           | Non-JS CSS Subresource loading order         |
+|                 [anticrawl](https://flak.tedunangst.com/post/anticrawl)                  |                                                        [![humungus.tedunangst.com](https://img.shields.io/badge/tedunangst-anticrawl-blue?style=flat&logo=mercurial&labelColor=fff&logoColor=000)](https://humungus.tedunangst.com/r/anticrawl)<br/>Go / None                                                         | Go http handler / proxy for regex based rules                                                                              | Non-JS manual Challenge/Response             |
+| [ngx_http_js_challenge_module](https://github.com/simon987/ngx_http_js_challenge_module) |     [![GitHub](https://img.shields.io/badge/GitHub-simon987/ngx_http_js_challenge_module-blue?style=flat&logo=github&labelColor=fff&logoColor=24292f)](https://github.com/simon987/ngx_http_js_challenge_module)<br/>C / [GPL v3.0](https://github.com/simon987/ngx_http_js_challenge_module/blob/master/LICENSE)     | Simple javascript proof-of-work based access for Nginx with virtually no overhead.                                         | JavaScript Challenge                         |
+|           [haproxy-protection](https://gitgud.io/fatchan/haproxy-protection/)            |                  [![GitGud](https://img.shields.io/badge/GitGud-fatchan/haproxy--protection-blue?style=flat&logo=gitlab&labelColor=fff&logoColor=000)](https://gitgud.io/fatchan/haproxy-protection/)<br/> Lua / [GPL v3.0](https://gitgud.io/fatchan/haproxy-protection/-/blob/master/LICENSE.txt)                   | HAProxy configuration and lua scripts allowing a challenge-response page where users solve a captcha and/or proof-of-work. | JavaScript Challenge / Captcha               |
 
 ## Development
 
 This Go package can be used as a command on `git.gammaspectra.live/git/go-away/cmd/go-away` or a library under `git.gammaspectra.live/git/go-away/lib`
-
-### Compiling WASM runtime challenge modules
-
-Custom WASM runtime modules follow the WASI `wasip1` preview syscall API.
-
-It is recommended using TinyGo to compile / refresh modules, and some function helpers are provided.
-
-If you want to use a different language or compiler, enable `wasip1` and the following interface must be exported:
-
-```
-// Allocation is a combination of pointer location in WASM memory and size of it
-type Allocation uint64
-
-func (p Allocation) Pointer() uint32 {
-	return uint32(p >> 32)
-}
-func (p Allocation) Size() uint32 {
-	return uint32(p)
-}
-
-
-// MakeChallenge MakeChallengeInput / MakeChallengeOutput are valid JSON.
-// See lib/challenge/wasm/interface/interface.go for a definition
-func MakeChallenge(in Allocation[MakeChallengeInput]) Allocation[MakeChallengeOutput]
-
-// VerifyChallenge VerifyChallengeInput is valid JSON.
-// See lib/challenge/wasm/interface/interface.go for a definition
-func VerifyChallenge(in Allocation[VerifyChallengeInput]) VerifyChallengeOutput
-
-func malloc(size uint32) uintptr
-func free(size uintptr)
-
-```
-
-Modules will be recreated for each call, so there is no state leftover.
 
 
 
