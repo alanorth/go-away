@@ -223,7 +223,6 @@ rules:
     settings:
       challenges: [cookie]
     conditions:
-      - '($is-generic-robot-ua)'
       - '($is-tool-ua)'
       - '!($is-generic-browser)'
 
