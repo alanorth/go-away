@@ -8,17 +8,17 @@ Self-hosted abuse detection and rule enforcement against low-effort mass AI scra
 
 go-away sits in between your site and the Internet / upstream proxy.
 
-Incoming requests can be selected by [rules](#rich-rule-matching) to be [actioned](#extended-rule-actions) or [challenged](CHALLENGES.md#challenges) to filter suspicious requests.
+Incoming requests can be selected by [rules](#rich-rule-matching) to be [actioned](https://git.gammaspectra.live/git/go-away/wiki/Rule-Actions) or [challenged](https://git.gammaspectra.live/git/go-away/wiki/Challenges) to filter suspicious requests.
 
 The tool is designed highly flexible so the operator can minimize impact to legit users, while surgically targeting heavy endpoints or scrapers.
 
-[Challenges](CHALLENGES.md#challenges) can be transparent (not shown to user, depends on backend or other logic), [non-JavaScript](#non-javascript-challenges) (challenges common browser properties), or [custom JavaScript](#custom-javascript-wasm-challenges) (from Proof of Work to fingerprinting or Captcha is supported)
+[Challenges](https://git.gammaspectra.live/git/go-away/wiki/Challenges) can be transparent (not shown to user, depends on backend or other logic), [non-JavaScript](#non-javascript-challenges) (challenges common browser properties), or [custom JavaScript](#custom-javascript-wasm-challenges) (from Proof of Work to fingerprinting or Captcha is supported)
 
 See _[Why do this?](#why-do-this)_ section for the challenges and reasoning behind this tool. 
 
 **This documentation and go-away are in active development.** See [What's left?](#what-s-left) section for a breakdown.
 
-Check this README for a general introduction. A more [in-depth Wiki](https://git.gammaspectra.live/git/go-away/wiki/) is being written.
+Check this README for a general introduction. An [in-depth Wiki](https://git.gammaspectra.live/git/go-away/wiki/) is available and being improved.
 
 ## Support
 
@@ -41,6 +41,13 @@ Source code is automatically pushed to the following mirrors. Packages are also 
 [![sourcehut](https://img.shields.io/badge/sourcehut-mirror-blue?style=flat&logo=sourcehut&labelColor=fff&logoColor=000)](https://git.sr.ht/~datahoarder/go-away)
 
 Note that issues or pull requests should be issued on the [main Forge](https://git.gammaspectra.live/git/go-away).
+
+## Installation and Setup
+
+See the [Installation page](https://git.gammaspectra.live/git/go-away/wiki/Installation) on the Wiki for all the details.
+
+go-away can be directly run from command line, via pre-built containers, or your own built containers.
+
 
 ## Features
 
@@ -71,7 +78,17 @@ Only available when TLS is enabled
    fp.ja4 (string) JA4 TLS Fingerprint
 ```
 
-### Template support
+
+
+### Package path
+
+You can modify the path where challenges are served and package name, if you don't want its presence to be easily discoverable.
+
+No source code editing or forking necessary!
+
+Simply pass a new absolute path via the cmdline _path_ argument, like so: `--path "/.goaway_example"`
+
+### Page template and customization support
 
 Internal or external templates can be loaded to customize the look of the challenge or error page. Additionally, themes can be configured to change the look of these quickly.
 
@@ -82,29 +99,15 @@ These templates are included by default:
 
 External templates for your site can be loaded specifying a full path to the `.gohtml` file. See [embed/templates/](embed/templates/) for examples to follow.
 
-You can alter the language and strings in the templates directly from the [config.yml](#config) file if specified.
+You can alter the language and strings in the templates directly from the [config.yml](#config) file if specified, or add footer links directly.
 
-### Extended rule actions
+**Feel free to make any changes to existing templates or bring your own, alter any logos or styling, it's yours to adapt!**
 
-In addition to the common PASS / CHALLENGE / DENY rules, go-away offers more actions that can be extended via code.
+### Advanced actions
 
-|  Action   | Behavior                                                                | Terminating |
-|:---------:|:------------------------------------------------------------------------|:-----------:|
-|   NONE    | Do nothing, continue. Useful for specifying on checks or challenges.    |     No      |
-|   PASS    | Passes the request to the backend immediately                           |     Yes     |
-|   DENY    | Denies the request with a descriptive page                              |     Yes     |
-|   BLOCK   | Denies the request with a response code                                 |     Yes     |
-|   DROP    | Drops the connection without sending a reply                            |     Yes     |
-| CHALLENGE | Issues a challenge that when passed, acts like PASS                     |     Yes     |
-|   CHECK   | Issues a challenge that when passed, continues executing rules          |     No      |
-|   PROXY   | Proxies request to a different backend, with optional path replacements |     Yes     |
-|  CONTEXT  | Modify the request context and apply different options                  |     No      |
+In addition to the common PASS / CHALLENGE / DENY rules, go-away offers more actions, plus any more extensible via code.
 
-
-CHECK allows the client to be challenged but continue matching rules after these, for example, chaining a list of challenges that must be passed. 
-For example, you could use this to implement browser in checks without explicitly allowing all requests, and later deferring to a secondary check/challenge.
-
-PROXY allows the operator to send matching requests to a different backend, for example, a poison generator or a scraping maze.
+See the [Rule Actions page](https://git.gammaspectra.live/git/go-away/wiki/Rule-Actions) on the Wiki.
 
 ### Multiple challenge matching
 
@@ -132,15 +135,15 @@ Several challenges that do not require JavaScript are offered, some targeting th
 
 These can be used for light checking of requests that eliminate most of the low effort scraping.
 
-See [Challenges](CHALLENGES.md#challenges) for a list of them.
+See [Transparent challenges](https://git.gammaspectra.live/git/go-away/wiki/Challenges#transparent) and [Non-JavaScript challenges](https://git.gammaspectra.live/git/go-away/wiki/Challenges#non-javascript) on the Wiki for more information.
 
 ### Custom JavaScript / WASM challenges
 
 A WASM interface for server-side proof generation and checking is offered. We provide `js-pow-sha256` as an example of one.
 
-An internal test has shown you can implement Captchas or other browser fingerprinting tests within this interface.
+You can implement Captchas or other browser fingerprinting tests within this interface.
 
-If you are interested in creating your own, see the [Development](#development) section below.
+See [Custom JavaScript challenges](https://git.gammaspectra.live/git/go-away/wiki/Challenges#custom-javascript) on the Wiki for more information.
 
 ### Upstream PROXY support
 
@@ -155,7 +158,6 @@ Supported by HAProxy, [Caddy](https://caddyserver.com/docs/caddyfile/directives/
 You can enable automatic certificate generation and TLS for the site via any ACME directory, which enables HTTP/2.
 
 Without TLS, HTTP/2 cleartext is supported, but you will need to configure the upstream proxy to send this protocol (`h2c://` on Caddy for example).
-
 
 ### TLS Fingerprinting
 
@@ -190,14 +192,6 @@ Example for _regex_:
 ```
 
 
-### Sharing of signing seed across instances
-
-You can share the signing secret across multiple of your instances if you'd like to deploy multiple across the world.
-
-That way signed secrets will be verifiable across all the instances.
-
-By default, a random temporary key is generated every run.
-
 ### Multiple backend support
 
 Multiple backends are supported, and rules specific on backend can be defined, and conditions and rules can match this as well.
@@ -205,12 +199,6 @@ Multiple backends are supported, and rules specific on backend can be defined, a
 Subdomain wildcards like `*.example.com`, or full fallback wildcard `*` are supported.
 
 This allows one instance to run multiple domains or subdomains.
-
-### Package path
-
-You can modify the path where challenges are served and package name, if you don't want its presence to be easily discoverable.
-
-No source code editing or forking necessary!
 
 ### IPv6 Happy Eyeballs challenge retry
 
@@ -313,137 +301,6 @@ However, a few points are left before go-away can be called v1.0.0:
 * [x] More defined way of picking HTTP/HTTP(s) listeners and certificates.
 * [x] Expose metrics for challenge solve rates and acting on them.
   * [ ] Metrics for common network ranges / AS / useragent
-
-## Setup
-
-go-away can take plaintext HTTP/1 and _HTTP/2_ / _h2c_ connections if desired over the same port. When doing this, it is recommended to have another reverse proxy above (for example [Caddy](https://caddyserver.com/), nginx, HAProxy) to handle HTTPs or similar.
-
-We also support the `autocert` parameter to configure HTTP(s). This will also allow TLS Fingerprinting to be done on incoming clients. This doesn't require any upstream proxies, and we recommend it's exposed directly or via SNI / Layer 4 proxying.
-
-### Config
-
-While most basic configuration can be passed via the command line, we support passing a [config.yml](examples/config.yml) with more advanced setup, including string replacement or custom backends configuration.
-
-### Binary / Go
-
-Requires Go 1.24+. Builds statically without CGo usage.
-
-We have Go 1.22+ support on the [go1.22 branch](https://git.gammaspectra.live/git/go-away/src/branch/go1.22).
-It will be regularly rebased to keep current with recent releases, at least until v1.0.0.
-Some features, such as TLS Fingerprinting, are not available on Go 1.22.
-
-```shell
-git clone https://git.gammaspectra.live/git/go-away.git && cd go-away
-
-CGO_ENABLED=0 go build -pgo=auto -v -trimpath -o ./go-away ./cmd/go-away
-
-# Run on port 8080, forwarding matching requests on git.example.com to http://forgejo:3000
-./go-away --bind :8080 \
---backend git.example.com=http://forgejo:3000 \
---policy examples/forgejo.yml \
---challenge-template forgejo --challenge-template-theme forgejo-dark
-
-```
-
-### Dockerfile
-
-Available under [Dockerfile](Dockerfile). See the _docker compose_ below for the environment variables.
-
-### docker compose
-
-Example follows a hypothetical Forgejo server running on `http://forgejo:3000` serving `git.example.com`
-
-Container images are published under `git.gammaspectra.live/git/go-away`, `codeberg.org/gone/go-away` and `ghcr.io/weebdatahoarder/go-away`
-
-```yaml
-networks:
-  forgejo:
-    external: false
-    
-volumes:
-  goaway_cache:
-    
-services:
-  go-away:
-    # image: codeberg.org/gone/go-away:latest
-    # image: ghcr.io/weebdatahoarder/go-away:latest
-    image: git.gammaspectra.live/git/go-away:latest
-    restart: always
-    ports:
-      - "3000:8080"
-    networks:
-      - forgejo
-    depends_on:
-      - forgejo
-    volumes:
-      - "goaway_cache:/cache"
-      - "./examples/forgejo.yml:/policy.yml:ro"
-      #- "./your/snippets/:/policy/snippets/:ro"
-    environment:
-      #GOAWAY_BIND: ":8080"
-      # Supported tcp, unix, and proxy (for enabling PROXY module for request unwrapping)
-      #GOAWAY_BIND_NETWORK: "tcp"
-      #GOAWAY_SOCKET_MODE: "0770"
-
-      # Enable Prometheus metrics under /metrics on this bind
-      #GOAWAY_METRICS_BIND: ":9090"
-      # Enable Go debug profiles under this bind
-      #GOAWAY_DEBUG_BIND: ":6060"
-      
-      # set to letsencrypt or other directory URL to enable HTTPS. Above ports will be TLS only.
-      # enables request JA3N / JA4 client TLS fingerprinting
-      # TLS fingerprints are served on X-TLS-Fingerprint-JA3N and X-TLS-Fingerprint-JA4 headers
-      # TLS fingerprints can be matched against on CEL conditions
-      #GOAWAY_ACME_AUTOCERT: ""
-      
-      # Cache path for several services like certificates and caching network ranges
-      # Can be semi-ephemeral, recommended to be mapped to a permanent volume
-      #GOAWAY_CACHE="/cache"
-      
-      # default is WARN, set to INFO to also see challenge successes and others
-      #GOAWAY_SLOG_LEVEL: "INFO"
-      
-      # this value is used to sign cookies and challenges. by default a new one is generated each time
-      # set to generate to create one, then set the same value across all your instances
-      #GOAWAY_JWT_PRIVATE_KEY_SEED: ""
-      
-      # HTTP header that the client ip will be fetched from
-      # Defaults to the connection ip itself, if set here make sure your upstream proxy sets this properly
-      # Usually X-Forwarded-For is a good pick
-      # Not necessary with GOAWAY_BIND_NETWORK: proxy
-      GOAWAY_CLIENT_IP_HEADER: "X-Real-Ip"
-      
-      # HTTP header that go-away will set the obtained ip will be set to
-      # If left empty, the header on GOAWAY_CLIENT_IP_HEADER will be left as-is
-      #GOAWAY_BACKEND_IP_HEADER: ""
-      
-      # Alternate way of specifying parameters or more advanced settings
-      # Pass path to YAML file
-      #GOAWAY_CONFIG: ""
-      
-      GOAWAY_POLICY: "/policy.yml"
-
-      # Include extra snippets to load from this path.
-      # Note that the default snippets from example/snippets/ are included by default
-      #GOAWAY_POLICY_SNIPPETS: "/policy/snippets"
-      
-      # Template, and theme for the template to pick. defaults to an anubis-like one
-      # An file path can be specified. See embed/templates for a few examples
-      GOAWAY_CHALLENGE_TEMPLATE: forgejo
-      GOAWAY_CHALLENGE_TEMPLATE_THEME: forgejo-dark
-      
-      # Backend to match. Can be subdomain or full wildcards, "*.example.com" or "*"
-      # Note: if you access git.example.com:8080, you will need to set the following
-      #       GOAWAY_BACKEND: "git.example.com:8080=http://forgejo:3000"
-      GOAWAY_BACKEND: "git.example.com=http://forgejo:3000"
-      
-    # additional backends can be specified via more command arguments  
-    # command: ["--backend", "ci.example.com=http://ci:3000"]
-
-  forgejo:
-    # etc.
-
-```
 
 
 
