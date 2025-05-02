@@ -41,10 +41,8 @@ conditions:
 
 
   is-static-asset:
-    - 'path == "/favicon.ico"'
-    - 'path == "/favicon.svg"'
+    - 'path.startsWith("/favicon")'
     - 'path == "/apple-touch-icon.png"'
-    - 'path == "/apple-touch-icon-precomposed.png"'
     - 'path.startsWith("/assets/")'
     - 'path.matches("\\.(avif|css|gif|js|json|jpeg|jpg|manifest|mjs|mp4|png|svg|ttf|wasm|webm|webp|woff|woff2)$")'
 
