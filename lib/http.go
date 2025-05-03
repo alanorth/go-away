@@ -157,15 +157,34 @@ func (state *State) fetchTags(host string, backend http.Handler, r *http.Request
 			} else if name == "forge" || strings.HasPrefix("forge:", name) {
 				// forge tags
 				keep = true
+			} else if strings.HasPrefix("citation_", name) {
+				// citations for Google Scholar
+				keep = true
 			} else {
 				switch name {
-				// standard content tags
-				case "application-name", "author", "description", "keywords", "robots", "thumbnail":
+				case "theme-color", "color-scheme", "origin-trials":
+					// modifies page presentation
+					keep = true
+				case "application-name", "origin", "author", "creator", "contact", "title", "description", "thumbnail", "rating":
+					// standard content tags
+					keep = true
+				case "license", "license:uri", "rights", "rights-standard":
+					// licensing standards
 					keep = true
 				case "go-import", "go-source":
 					// golang tags
 					keep = true
-				case "apple-itunes-app":
+				case "apple-itunes-app", "appstore:bundle_id", "appstore:developer_url", "appstore:store_id", "google-play-app":
+					// application linking
+					keep = true
+
+				case "verify-v1", "google-site-verification", "p:domain_verify", "yandex-verification", "alexaverifyid":
+					// site verification
+					keep = true
+
+				case "keywords", "robots", "google", "googlebot", "bingbot", "pinterest", "Slurp":
+					// scraper and search content directives
+					keep = true
 				}
 			}
 

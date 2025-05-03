@@ -1,8 +1,19 @@
 conditions:
   is-well-known-asset:
-    - 'path == "/robots.txt"'
+    # general txt files or scraper
+    - 'path == "/robots.txt" || path == "/security.txt"'
+
+    # ads txt files
+    - 'path == "/app-ads.txt" || path == "/ads.txt"'
+
+    # generally requested by browsers
     - 'path == "/favicon.ico"'
-    - 'path.startsWith("/.well-known")'
+
+    # used by some applications
+    - 'path == "/crossdomain.xml"'
+
+    # well-known paths
+    - 'path.startsWith("/.well-known/")'
 
   is-git-ua:
     - 'userAgent.startsWith("git/") || userAgent.contains("libgit")'
