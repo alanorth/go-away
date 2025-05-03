@@ -350,7 +350,7 @@ func (d *RequestData) RequestHeaders(headers http.Header) {
 		if d.State.Settings().ClientIpHeader != "" {
 			headers.Del(d.State.Settings().ClientIpHeader)
 		}
-		headers.Set(d.State.Settings().BackendIpHeader, d.RemoteAddress.String())
+		headers.Set(d.State.Settings().BackendIpHeader, d.RemoteAddress.Addr().Unmap().String())
 	}
 
 	for id, result := range d.ChallengeVerify {

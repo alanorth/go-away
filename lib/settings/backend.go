@@ -106,6 +106,12 @@ func (b Backend) Create() (*httputil.ReverseProxy, error) {
 	if b.IpHeader != "" || b.Host != "" || !b.Transparent {
 		director := proxy.Director
 		proxy.Director = func(req *http.Request) {
+			if !b.Transparent {
+				if data := challenge.RequestDataFromContext(req.Context()); data != nil {
+					data.RequestHeaders(req.Header)
+				}
+			}
+
 			if b.IpHeader != "" && !b.Transparent {
 				if ip := utils.GetRemoteAddress(req.Context()); ip != nil {
 					req.Header.Set(b.IpHeader, ip.Addr().Unmap().String())
@@ -113,12 +119,6 @@ func (b Backend) Create() (*httputil.ReverseProxy, error) {
 			}
 			if b.Host != "" {
 				req.Host = b.Host
-			}
-
-			if !b.Transparent {
-				if data := challenge.RequestDataFromContext(req.Context()); data != nil {
-					data.RequestHeaders(req.Header)
-				}
 			}
 			director(req)
 		}
