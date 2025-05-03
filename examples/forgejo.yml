@@ -147,7 +147,7 @@ rules:
       - name: 0
         action: check
         settings:
-          challenges: [js-pow-sha256, http-cookie-check]
+          challenges: [js-refresh, http-cookie-check]
       - name: 1
         action: check
         settings:
@@ -173,7 +173,7 @@ rules:
       - 'path.matches("^/[^/]+/[^/]+/archive/.*\\.(bundle|zip|tar\\.gz)") && ($is-generic-browser)'
     action: challenge
     settings:
-      challenges: [ js-pow-sha256 ]
+      challenges: [ js-refresh ]
 
   - name: allow-git-operations
     conditions:
@@ -242,11 +242,11 @@ rules:
       - name: 0
         action: check
         settings:
-          challenges: [preload-link, header-refresh, js-pow-sha256, http-cookie-check]
+          challenges: [preload-link, header-refresh, js-refresh, http-cookie-check]
       - name: 1
         action: check
         settings:
-          challenges: [ resource-load, js-pow-sha256, http-cookie-check ]
+          challenges: [ resource-load, js-refresh, http-cookie-check ]
 
   - name: standard-bots
     action: check
@@ -274,7 +274,7 @@ rules:
       # if DNSBL fails, check additional challenges
       fail: check
       fail-settings:
-        challenges: [js-pow-sha256, http-cookie-check]
+        challenges: [js-refresh, http-cookie-check]
 
   # Allow PUT/DELETE/PATCH/POST requests in general
   - name: non-get-request
@@ -321,7 +321,7 @@ rules:
   - name: standard-browser
     action: challenge
     settings:
-      challenges: [http-cookie-check, preload-link, meta-refresh, resource-load, js-pow-sha256]
+      challenges: [http-cookie-check, preload-link, meta-refresh, resource-load, js-refresh, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'
 

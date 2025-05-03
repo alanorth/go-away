@@ -98,7 +98,7 @@ rules:
       - name: 0
         action: check
         settings:
-          challenges: [js-pow-sha256]
+          challenges: [js-refresh]
       - name: 1
         action: check
         settings:
@@ -122,12 +122,12 @@ rules:
       # if DNSBL fails, check additional challenges
       fail: check
       fail-settings:
-        challenges: [js-pow-sha256]
+        challenges: [js-refresh]
 
   - name: suspicious-fetchers
     action: check
     settings:
-      challenges: [js-pow-sha256]
+      challenges: [js-refresh]
     conditions:
       - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
 
@@ -170,7 +170,7 @@ rules:
   - name: standard-browser
     action: challenge
     settings:
-      challenges: [preload-link, meta-refresh, resource-load, js-pow-sha256]
+      challenges: [preload-link, meta-refresh, resource-load, js-refresh]
     conditions:
       - '($is-generic-browser)'
 

@@ -1,9 +1,12 @@
 package refresh
 
 import (
+	"encoding/json"
+	"fmt"
 	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
+	"html/template"
 	"net/http"
 	"time"
 )
@@ -45,7 +48,17 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 			return challenge.VerifyResultFail
 		}
 
-		if params.Mode == "meta" {
+		if params.Mode == "javascript" {
+			data, err := json.Marshal(uri.String())
+			if err != nil {
+				return challenge.VerifyResultFail
+			}
+			state.ChallengePage(w, r, state.Settings().ChallengeResponseCode, reg, map[string]any{
+				"EndTags": []template.HTML{
+					template.HTML(fmt.Sprintf("<script type=\"text/javascript\">window.location = %s;</script>", string(data))),
+				},
+			})
+		} else if params.Mode == "meta" {
 			state.ChallengePage(w, r, state.Settings().ChallengeResponseCode, reg, map[string]any{
 				"MetaTags": []map[string]string{
 					{

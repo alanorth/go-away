@@ -1,0 +1,6 @@
+challenges:
+  js-refresh:
+    # Challenges with a redirect via window.location (requires HTML parsing and JavaScript logic)
+    runtime: "refresh"
+    parameters:
+      refresh-via: "javascript"
