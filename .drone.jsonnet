@@ -144,8 +144,8 @@ local goVersion = "1.24";
 local mirror = "https://mirror.gcr.io";
 
 [
-    Build(mirror, goVersion, alpineVersion, "linux", "amd64") + {"trigger": {event: ["push"], }},
-    Build(mirror, goVersion, alpineVersion, "linux", "arm64") + {"trigger": {event: ["push"], }},
+    Build(mirror, goVersion, alpineVersion, "linux", "amd64") + {"trigger": {event: ["push", "tag"], }},
+    Build(mirror, goVersion, alpineVersion, "linux", "arm64") + {"trigger": {event: ["push", "tag"], }},
 
     # Test PRs
     Build(mirror, goVersion, alpineVersion, "linux", "amd64") + {"name": "test-pr", "trigger": {event: ["pull_request"], }},

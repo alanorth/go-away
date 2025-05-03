@@ -68,6 +68,7 @@ steps:
 trigger:
   event:
   - push
+  - tag
 type: docker
 ---
 environment:
@@ -139,6 +140,7 @@ steps:
 trigger:
   event:
   - push
+  - tag
 type: docker
 ---
 environment:
@@ -501,6 +503,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: 6d700c50c4148f85a136094965ed5191007167bbbe1e6428dfb06d2441582efb
+hmac: df53e4ea6f1c47df4d2a3f89b931b8513e83daa9c6c15baba2662d8112a721c8
 
 ...
