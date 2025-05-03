@@ -29,6 +29,7 @@ func (a Block) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Connection", "close")
+	data.ResponseHeaders(w)
 	w.WriteHeader(a.Code)
 	_, _ = w.Write([]byte(fmt.Errorf("access blocked: blocked by administrative rule %s/%s", data.Id.String(), a.RuleHash).Error()))
 

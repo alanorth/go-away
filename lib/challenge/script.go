@@ -23,7 +23,7 @@ func ServeChallengeScript(w http.ResponseWriter, r *http.Request, reg *Registrat
 		//TODO: log
 		panic(err)
 	}
-
+	data.ResponseHeaders(w)
 	w.WriteHeader(http.StatusOK)
 
 	err = scriptTemplate.Execute(w, map[string]any{

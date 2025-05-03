@@ -89,6 +89,7 @@ type StateInterface interface {
 	RegisterCondition(operator string, conditions ...string) (cel.Program, error)
 
 	Client() *http.Client
+	PrivateKeyFingerprint() []byte
 	PrivateKey() ed25519.PrivateKey
 	PublicKey() ed25519.PublicKey
 

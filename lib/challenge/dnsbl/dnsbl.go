@@ -125,18 +125,10 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 		}
 
 		if result.Bad() {
-			token, err := reg.IssueChallengeToken(state.PrivateKey(), key, nil, expiry, false)
-			if err != nil {
-				return challenge.VerifyResultFail
-			}
-			utils.SetCookie(data.CookiePrefix+reg.Name, token, expiry, w, r)
+			data.IssueChallengeToken(reg, key, nil, expiry, false)
 			return challenge.VerifyResultNotOK
 		} else {
-			token, err := reg.IssueChallengeToken(state.PrivateKey(), key, nil, expiry, true)
-			if err != nil {
-				return challenge.VerifyResultFail
-			}
-			utils.SetCookie(data.CookiePrefix+reg.Name, token, expiry, w, r)
+			data.IssueChallengeToken(reg, key, nil, expiry, true)
 			return challenge.VerifyResultOK
 		}
 	}

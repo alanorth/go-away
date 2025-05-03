@@ -1,18 +1,12 @@
 package challenge
 
 import (
-	"bytes"
 	http_cel "codeberg.org/gone/http-cel"
-	"crypto/ed25519"
-	"errors"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/lib/policy"
-	"github.com/go-jose/go-jose/v4"
-	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/goccy/go-yaml/ast"
 	"github.com/google/cel-go/cel"
 	"io"
-	"math/rand/v2"
 	"net/http"
 	"path"
 	"strings"
@@ -145,102 +139,8 @@ type Registration struct {
 
 type VerifyFunc func(key Key, token []byte, r *http.Request) (VerifyResult, error)
 
-type Token struct {
-	Name   string `json:"name"`
-	Key    []byte `json:"key"`
-	Result []byte `json:"result,omitempty"`
-	Ok     bool   `json:"ok"`
-
-	Expiry    jwt.NumericDate `json:"exp,omitempty"`
-	NotBefore jwt.NumericDate `json:"nbf,omitempty"`
-	IssuedAt  jwt.NumericDate `json:"iat,omitempty"`
-}
-
 func (reg Registration) Id() Id {
 	return reg.id
-}
-
-func (reg Registration) IssueChallengeToken(privateKey ed25519.PrivateKey, key Key, result []byte, until time.Time, ok bool) (token string, err error) {
-	signer, err := jose.NewSigner(jose.SigningKey{
-		Algorithm: jose.EdDSA,
-		Key:       privateKey,
-	}, nil)
-	if err != nil {
-		return "", err
-	}
-
-	token, err = jwt.Signed(signer).Claims(Token{
-		Name:      reg.Name,
-		Key:       key[:],
-		Result:    result,
-		Ok:        ok,
-		Expiry:    jwt.NumericDate(until.Unix()),
-		NotBefore: jwt.NumericDate(time.Now().UTC().AddDate(0, 0, -1).Unix()),
-		IssuedAt:  jwt.NumericDate(time.Now().UTC().Unix()),
-	}).Serialize()
-	if err != nil {
-		return "", err
-	}
-	return token, nil
-}
-
-var ErrVerifyKeyMismatch = errors.New("verify: key mismatch")
-var ErrVerifyVerifyMismatch = errors.New("verify: verification mismatch")
-var ErrTokenExpired = errors.New("token: expired")
-
-func (reg Registration) VerifyChallengeToken(publicKey ed25519.PublicKey, expectedKey Key, r *http.Request) (VerifyResult, VerifyState, error) {
-	cookie, err := r.Cookie(RequestDataFromContext(r.Context()).CookiePrefix + reg.Name)
-	if err != nil {
-		return VerifyResultNone, VerifyStateNone, err
-	}
-	if cookie == nil {
-		return VerifyResultNone, VerifyStateNone, http.ErrNoCookie
-	}
-
-	token, err := jwt.ParseSigned(cookie.Value, []jose.SignatureAlgorithm{jose.EdDSA})
-	if err != nil {
-		return VerifyResultFail, VerifyStateNone, err
-	}
-
-	var i Token
-	err = token.Claims(publicKey, &i)
-	if err != nil {
-		return VerifyResultFail, VerifyStateNone, err
-	}
-
-	if i.Name != reg.Name {
-		return VerifyResultFail, VerifyStateNone, errors.New("token invalid name")
-	}
-	if i.Expiry.Time().Compare(time.Now()) < 0 {
-		return VerifyResultFail, VerifyStateNone, ErrTokenExpired
-	}
-	if i.NotBefore.Time().Compare(time.Now()) > 0 {
-		return VerifyResultFail, VerifyStateNone, errors.New("token not valid yet")
-	}
-
-	if bytes.Compare(expectedKey[:], i.Key) != 0 {
-		return VerifyResultFail, VerifyStateNone, ErrVerifyKeyMismatch
-	}
-
-	if reg.Verify != nil {
-		if rand.Float64() < reg.VerifyProbability {
-			// random spot check
-			if ok, err := reg.Verify(expectedKey, i.Result, r); err != nil {
-				return VerifyResultFail, VerifyStateFull, err
-			} else if ok == VerifyResultNotOK {
-				return VerifyResultNotOK, VerifyStateFull, nil
-			} else if !ok.Ok() {
-				return ok, VerifyStateFull, ErrVerifyVerifyMismatch
-			} else {
-				return ok, VerifyStateFull, nil
-			}
-		}
-	}
-
-	if !i.Ok {
-		return VerifyResultNotOK, VerifyStateBrief, nil
-	}
-	return VerifyResultOK, VerifyStateBrief, nil
 }
 
 type FillRegistration func(state StateInterface, reg *Registration, parameters ast.Node) error

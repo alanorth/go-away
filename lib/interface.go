@@ -26,6 +26,10 @@ func (state *State) PrivateKey() ed25519.PrivateKey {
 	return state.privateKey
 }
 
+func (state *State) PrivateKeyFingerprint() []byte {
+	return state.privateKeyFingerprint
+}
+
 func (state *State) PublicKey() ed25519.PublicKey {
 	return state.publicKey
 }

@@ -5,7 +5,6 @@ import (
 	"crypto/subtle"
 	"errors"
 	"git.gammaspectra.live/git/go-away/lib/challenge"
-	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
 	"io"
@@ -140,18 +139,10 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 		data := challenge.RequestDataFromContext(r.Context())
 
 		if response.StatusCode != params.HttpCode {
-			token, err := reg.IssueChallengeToken(state.PrivateKey(), key, sum, expiry, false)
-			if err != nil {
-				return challenge.VerifyResultFail
-			}
-			utils.SetCookie(data.CookiePrefix+reg.Name, token, expiry, w, r)
+			data.IssueChallengeToken(reg, key, sum, expiry, false)
 			return challenge.VerifyResultNotOK
 		} else {
-			token, err := reg.IssueChallengeToken(state.PrivateKey(), key, sum, expiry, true)
-			if err != nil {
-				return challenge.VerifyResultFail
-			}
-			utils.SetCookie(data.CookiePrefix+reg.Name, token, expiry, w, r)
+			data.IssueChallengeToken(reg, key, sum, expiry, true)
 			return challenge.VerifyResultOK
 		}
 	}

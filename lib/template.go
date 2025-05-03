@@ -107,6 +107,7 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 	if err != nil {
 		state.ErrorPage(w, r, http.StatusInternalServerError, err, "")
 	} else {
+		data.ResponseHeaders(w)
 		w.WriteHeader(status)
 		_, _ = w.Write(buf.Bytes())
 	}
@@ -141,6 +142,7 @@ func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int
 		// nested errors!
 		panic(err2)
 	} else {
+		data.ResponseHeaders(w)
 		w.WriteHeader(status)
 		_, _ = w.Write(buf.Bytes())
 	}

@@ -267,10 +267,13 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		cookies := r.Cookies()
 		r.Header.Del("Cookie")
 		for _, c := range cookies {
-			if !strings.HasPrefix(c.Name, utils.CookiePrefix) {
+			if !strings.HasPrefix(c.Name, utils.DefaultCookiePrefix) {
 				r.AddCookie(c)
 			}
 		}
+
+		// set response headers
+		data.ResponseHeaders(w)
 	}
 
 	for _, rule := range state.rules {
@@ -322,8 +325,6 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r, data := challenge.CreateRequestData(r, state)
 
 	data.EvaluateChallenges(w, r)
-
-	data.ResponseHeaders(w.Header())
 
 	state.Mux.ServeHTTP(w, r)
 }

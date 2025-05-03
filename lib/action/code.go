@@ -42,6 +42,8 @@ type CodeSettings struct {
 type Code int
 
 func (a Code) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Request, done func() (backend http.Handler)) (next bool, err error) {
+	challenge.RequestDataFromContext(r.Context()).ResponseHeaders(w)
+
 	w.WriteHeader(int(a))
 	return false, nil
 }

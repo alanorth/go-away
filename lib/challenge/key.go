@@ -66,7 +66,7 @@ func GetChallengeKeyForRequest(state StateInterface, reg *Registration, until ti
 	hasher.Write([]byte{0})
 	_ = binary.Write(hasher, binary.LittleEndian, until.UTC().Unix())
 	hasher.Write([]byte{0})
-	hasher.Write(state.PublicKey())
+	hasher.Write(state.PrivateKeyFingerprint())
 	hasher.Write([]byte{0})
 
 	sum := Key(hasher.Sum(nil))

@@ -35,8 +35,9 @@ type State struct {
 
 	programEnv *cel.Env
 
-	publicKey  ed25519.PublicKey
-	privateKey ed25519.PrivateKey
+	publicKey             ed25519.PublicKey
+	privateKey            ed25519.PrivateKey
+	privateKeyFingerprint []byte
 
 	opt      settings.Settings
 	settings policy.StateSettings
@@ -100,6 +101,9 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 			return nil, err
 		}
 	}
+
+	fp := sha256.Sum256(state.privateKey)
+	state.privateKeyFingerprint = fp[:]
 
 	if templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"] == nil {
 

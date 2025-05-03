@@ -110,6 +110,9 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 		}
 
 		verifyResult, _ := verifier(key, []byte(token), r)
+
+		data.ResponseHeaders(w)
+
 		if !verifyResult.Ok() {
 			w.WriteHeader(http.StatusUnauthorized)
 		} else {

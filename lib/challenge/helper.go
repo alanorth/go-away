@@ -138,6 +138,8 @@ func VerifyHandlerChallengeResponseFunc(state StateInterface, data *RequestData,
 			}
 			reqUri.RawQuery = q.Encode()
 
+			data.ResponseHeaders(w)
+
 			http.Redirect(w, r, reqUri.String(), http.StatusTemporaryRedirect)
 			return
 		}
@@ -147,6 +149,7 @@ func VerifyHandlerChallengeResponseFunc(state StateInterface, data *RequestData,
 		state.ErrorPage(w, r, http.StatusForbidden, fmt.Errorf("access denied: failed challenge"), redirect)
 		return
 	}
+	data.ResponseHeaders(w)
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
@@ -175,18 +178,12 @@ func VerifyHandlerFunc(state StateInterface, reg *Registration, verify VerifyFun
 			if err != nil {
 				return err
 			} else if !verifyResult.Ok() {
-				utils.ClearCookie(data.CookiePrefix+reg.Name, w, r)
 				state.ChallengeFailed(r, reg, nil, redirect, nil)
 				responseFunc(state, data, w, r, verifyResult, nil, redirect)
 				return nil
 			}
 
-			challengeToken, err := reg.IssueChallengeToken(state.PrivateKey(), key, []byte(token), expiration, true)
-			if err != nil {
-				utils.ClearCookie(data.CookiePrefix+reg.Name, w, r)
-			} else {
-				utils.SetCookie(data.CookiePrefix+reg.Name, challengeToken, expiration, w, r)
-			}
+			data.IssueChallengeToken(reg, key, []byte(token), expiration, true)
 			data.ChallengeVerify[reg.id] = verifyResult
 			state.ChallengePassed(r, reg, redirect, nil)
 
@@ -194,7 +191,6 @@ func VerifyHandlerFunc(state StateInterface, reg *Registration, verify VerifyFun
 			return nil
 		}()
 		if err != nil {
-			utils.ClearCookie(data.CookiePrefix+reg.Name, w, r)
 			state.ChallengeFailed(r, reg, err, redirect, nil)
 			responseFunc(state, data, w, r, VerifyResultFail, fmt.Errorf("access denied: error in challenge %s: %w", reg.Name, err), redirect)
 			return

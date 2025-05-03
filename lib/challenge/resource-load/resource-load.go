@@ -45,6 +45,9 @@ func FillRegistrationHeader(state challenge.StateInterface, reg *challenge.Regis
 		//TODO: add other types inside css that need to be loaded!
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		w.Header().Set("Content-Length", "0")
+
+		data.ResponseHeaders(w)
+
 		if !verifyResult.Ok() {
 			w.WriteHeader(http.StatusForbidden)
 		} else {

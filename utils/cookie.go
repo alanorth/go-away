@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var CookiePrefix = ".go-away-"
+var DefaultCookiePrefix = ".go-away-"
 
 // getValidHost Gets a valid host for an http.Cookie Domain field
 // TODO: bug: does not work with IPv6, see https://github.com/golang/go/issues/65521

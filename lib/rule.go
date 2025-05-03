@@ -29,7 +29,6 @@ type RuleState struct {
 }
 
 func NewRuleState(state challenge.StateInterface, r policy.Rule, replacer *strings.Replacer, parent *RuleState) (RuleState, error) {
-	fp := sha256.Sum256(state.PrivateKey())
 	hasher := sha256.New()
 	if parent != nil {
 		hasher.Write([]byte(parent.Name))
@@ -38,7 +37,7 @@ func NewRuleState(state challenge.StateInterface, r policy.Rule, replacer *strin
 	}
 	hasher.Write([]byte(r.Name))
 	hasher.Write([]byte{0})
-	hasher.Write(fp[:])
+	hasher.Write(state.PrivateKeyFingerprint())
 	sum := hasher.Sum(nil)
 
 	rule := RuleState{

@@ -2,7 +2,6 @@ package cookie
 
 import (
 	"git.gammaspectra.live/git/go-away/lib/challenge"
-	"git.gammaspectra.live/git/go-away/utils"
 	"github.com/goccy/go-yaml/ast"
 	"net/http"
 	"time"
@@ -18,18 +17,15 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 	reg.Class = challenge.ClassBlocking
 
 	reg.IssueChallenge = func(w http.ResponseWriter, r *http.Request, key challenge.Key, expiry time.Time) challenge.VerifyResult {
-		token, err := reg.IssueChallengeToken(state.PrivateKey(), key, nil, expiry, true)
-		if err != nil {
-			return challenge.VerifyResultFail
-		}
-
-		utils.SetCookie(challenge.RequestDataFromContext(r.Context()).CookiePrefix+reg.Name, token, expiry, w, r)
+		data := challenge.RequestDataFromContext(r.Context())
+		data.IssueChallengeToken(reg, key, nil, expiry, true)
 
 		uri, err := challenge.RedirectUrl(r, reg)
 		if err != nil {
 			return challenge.VerifyResultFail
 		}
 
+		data.ResponseHeaders(w)
 		http.Redirect(w, r, uri.String(), http.StatusTemporaryRedirect)
 		return challenge.VerifyResultNone
 	}

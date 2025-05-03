@@ -1,6 +1,7 @@
 package challenge
 
 import (
+	"bytes"
 	http_cel "codeberg.org/gone/http-cel"
 	"context"
 	"crypto/rand"
@@ -9,10 +10,13 @@ import (
 	"errors"
 	"fmt"
 	"git.gammaspectra.live/git/go-away/utils"
+	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/traits"
 	"maps"
+	unsaferand "math/rand/v2"
 	"net/http"
 	"net/netip"
 	"net/textproto"
@@ -38,13 +42,17 @@ func (id RequestId) String() string {
 }
 
 type RequestData struct {
-	Id              RequestId
-	Time            time.Time
-	ChallengeVerify map[Id]VerifyResult
-	ChallengeState  map[Id]VerifyState
+	Id                   RequestId
+	Time                 time.Time
+	ChallengeVerify      map[Id]VerifyResult
+	ChallengeState       map[Id]VerifyState
+	ChallengeMap         TokenChallengeMap
+	challengeMapModified bool
+
 	RemoteAddress   netip.AddrPort
 	State           StateInterface
-	CookiePrefix    string
+	cookieName      string
+	issuedChallenge string
 
 	ExtraHeaders http.Header
 
@@ -84,6 +92,11 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 	}
 
 	q := r.URL.Query()
+
+	if q.Has(QueryArgChallenge) {
+		data.issuedChallenge = q.Get(QueryArgChallenge)
+	}
+
 	// delete query parameters that were set by go-away
 	for k := range q {
 		if strings.HasPrefix(k, QueryArgPrefix) {
@@ -95,18 +108,11 @@ func CreateRequestData(r *http.Request, state StateInterface) (*http.Request, *R
 	data.header = http_cel.NewMIMEMap(textproto.MIMEHeader(r.Header))
 	data.opts = make(map[string]string)
 
-	sum := sha256.New()
-	sum.Write([]byte(r.Host))
-	sum.Write([]byte{0})
-	sum.Write(data.NetworkPrefix().AsSlice())
-	sum.Write([]byte{0})
-	sum.Write(state.PublicKey())
-	sum.Write([]byte{0})
-	data.CookiePrefix = utils.CookiePrefix + hex.EncodeToString(sum.Sum(nil)[:6]) + "-"
-
 	r = r.WithContext(context.WithValue(r.Context(), requestDataContextKey{}, &data))
 	r = utils.SetRemoteAddress(r, data.RemoteAddress)
 	data.r = r
+
+	data.cookieName = utils.DefaultCookiePrefix + hex.EncodeToString(data.cookieHostKey()) + "-state"
 
 	return r, &data
 }
@@ -194,18 +200,70 @@ func (d *RequestData) BackendHost() (http.Handler, string) {
 	return d.State.GetBackend(host), host
 }
 
-func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	var issuedChallenge string
-	if q.Has(QueryArgChallenge) {
-		issuedChallenge = q.Get(QueryArgChallenge)
+func (d *RequestData) ClearChallengeToken(reg *Registration) {
+	delete(d.ChallengeMap, reg.Name)
+	d.challengeMapModified = true
+}
+
+func (d *RequestData) IssueChallengeToken(reg *Registration, key Key, result []byte, until time.Time, ok bool) {
+	d.ChallengeMap[reg.Name] = TokenChallenge{
+		Key:      key[:],
+		Result:   result,
+		Ok:       ok,
+		Expiry:   jwt.NumericDate(until.Unix()),
+		IssuedAt: jwt.NumericDate(time.Now().UTC().Unix()),
 	}
-	for _, reg := range d.State.GetChallenges() {
-		key := GetChallengeKeyForRequest(d.State, reg, d.Expiration(reg.Duration), r)
-		verifyResult, verifyState, err := reg.VerifyChallengeToken(d.State.PublicKey(), key, r)
+	d.challengeMapModified = true
+}
+
+var ErrVerifyKeyMismatch = errors.New("verify: key mismatch")
+var ErrVerifyVerifyMismatch = errors.New("verify: verification mismatch")
+var ErrTokenExpired = errors.New("token: expired")
+
+func (d *RequestData) VerifyChallengeToken(reg *Registration, token TokenChallenge, expectedKey Key) (VerifyResult, VerifyState, error) {
+	if token.Expiry.Time().Compare(time.Now()) < 0 {
+		return VerifyResultFail, VerifyStateNone, ErrTokenExpired
+	}
+	if token.NotBefore.Time().Compare(time.Now()) > 0 {
+		return VerifyResultFail, VerifyStateNone, errors.New("token not valid yet")
+	}
+
+	if bytes.Compare(expectedKey[:], token.Key) != 0 {
+		return VerifyResultFail, VerifyStateNone, ErrVerifyKeyMismatch
+	}
+
+	if reg.Verify != nil {
+		if unsaferand.Float64() < reg.VerifyProbability {
+			// random spot check
+			if ok, err := reg.Verify(expectedKey, token.Result, d.r); err != nil {
+				return VerifyResultFail, VerifyStateFull, err
+			} else if ok == VerifyResultNotOK {
+				return VerifyResultNotOK, VerifyStateFull, nil
+			} else if !ok.Ok() {
+				return ok, VerifyStateFull, ErrVerifyVerifyMismatch
+			} else {
+				return ok, VerifyStateFull, nil
+			}
+		}
+	}
+
+	if !token.Ok {
+		return VerifyResultNotOK, VerifyStateBrief, nil
+	}
+	return VerifyResultOK, VerifyStateBrief, nil
+}
+
+func (d *RequestData) verifyChallenge(reg *Registration, key Key) (verifyResult VerifyResult, verifyState VerifyState, err error) {
+
+	token, ok := d.ChallengeMap[reg.Name]
+	if !ok {
+		verifyResult = VerifyResultFail
+		verifyState = VerifyStateNone
+	} else {
+		verifyResult, verifyState, err = d.VerifyChallengeToken(reg, token, key)
 		if err != nil && !errors.Is(err, http.ErrNoCookie) {
-			// clear invalid cookie
-			utils.ClearCookie(d.CookiePrefix+reg.Name, w, r)
+			// clear invalid state
+			d.ClearChallengeToken(reg)
 		}
 
 		// prevent evaluating the challenge if not solved
@@ -213,20 +271,46 @@ func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request)
 			out, _, err := reg.Condition.Eval(d)
 			// verify eligibility
 			if err != nil {
-				d.State.Logger(r).Error(err.Error(), "challenge", reg.Name)
+				d.State.Logger(d.r).Error(err.Error(), "challenge", reg.Name)
 			} else if out != nil && out.Type() == types.BoolType {
 				if out.Equal(types.True) != types.True {
 					// skip challenge match due to precondition!
 					verifyResult = VerifyResultSkip
-					continue
+					return verifyResult, verifyState, err
 				}
 			}
 		}
+	}
 
-		if !verifyResult.Ok() && issuedChallenge == reg.Name {
-			// we issued the challenge, must skip to prevent loops
-			verifyResult = VerifyResultSkip
+	if !verifyResult.Ok() && d.issuedChallenge == reg.Name {
+		// we issued the challenge, must skip to prevent loops
+		verifyResult = VerifyResultSkip
+	}
+
+	return verifyResult, verifyState, err
+}
+
+func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request) {
+
+	challengeMap, err := d.verifyChallengeState()
+	if err != nil {
+		if !errors.Is(err, http.ErrNoCookie) {
+			//clear invalid cookie and continue
+			utils.ClearCookie(d.cookieName, w, r)
 		}
+		challengeMap = make(TokenChallengeMap)
+	}
+	d.ChallengeMap = challengeMap
+
+	for _, reg := range d.State.GetChallenges() {
+
+		key := GetChallengeKeyForRequest(d.State, reg, d.Expiration(reg.Duration), r)
+		verifyResult, verifyState, err := d.verifyChallenge(reg, key)
+		if err != nil {
+			// clear invalid state
+			d.ClearChallengeToken(reg)
+		}
+
 		d.ChallengeVerify[reg.Id()] = verifyResult
 		d.ChallengeState[reg.Id()] = verifyState
 	}
@@ -240,13 +324,22 @@ func (d *RequestData) HasValidChallenge(id Id) bool {
 	return d.ChallengeVerify[id].Ok()
 }
 
-func (d *RequestData) ResponseHeaders(headers http.Header) {
+func (d *RequestData) ResponseHeaders(w http.ResponseWriter) {
 	// send these to client so we consistently get the headers
 	//w.Header().Set("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
 	//w.Header().Set("Critical-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
 
 	if d.State.Settings().MainName != "" {
-		headers.Add("Via", fmt.Sprintf("%s %s@%s", d.r.Proto, d.State.Settings().MainName, d.State.Settings().MainVersion))
+		w.Header().Add("Via", fmt.Sprintf("%s %s@%s", d.r.Proto, d.State.Settings().MainName, d.State.Settings().MainVersion))
+	}
+
+	if d.challengeMapModified {
+		expiration := d.Expiration(DefaultDuration)
+		if token, err := d.issueChallengeState(expiration); err == nil {
+			utils.SetCookie(d.cookieName, token, expiration, w, d.r)
+		} else {
+			d.State.Logger(d.r).Error("error while issuing cookie", "error", err)
+		}
 	}
 }
 
@@ -281,4 +374,112 @@ func (d *RequestData) RequestHeaders(headers http.Header) {
 	}
 
 	maps.Copy(headers, d.ExtraHeaders)
+}
+
+type Token struct {
+	State TokenChallengeMap `json:"state"`
+
+	Expiry    jwt.NumericDate `json:"exp,omitempty"`
+	NotBefore jwt.NumericDate `json:"nbf,omitempty"`
+	IssuedAt  jwt.NumericDate `json:"iat,omitempty"`
+}
+
+type TokenChallengeMap map[string]TokenChallenge
+
+type TokenChallenge struct {
+	Key    []byte `json:"key"`
+	Result []byte `json:"result,omitempty"`
+	Ok     bool   `json:"ok"`
+
+	Expiry    jwt.NumericDate `json:"exp,omitempty"`
+	NotBefore jwt.NumericDate `json:"nbf,omitempty"`
+	IssuedAt  jwt.NumericDate `json:"iat,omitempty"`
+}
+
+func (d *RequestData) verifyChallengeState() (TokenChallengeMap, error) {
+	cookie, err := d.r.Cookie(d.cookieName)
+	if err != nil {
+		return nil, err
+	}
+	if cookie == nil {
+		return nil, http.ErrNoCookie
+	}
+	encryptedToken, err := jwt.ParseSignedAndEncrypted(cookie.Value,
+		[]jose.KeyAlgorithm{jose.DIRECT},
+		[]jose.ContentEncryption{jose.A256GCM},
+		[]jose.SignatureAlgorithm{jose.EdDSA},
+	)
+	if err != nil {
+		return nil, err
+	}
+	signedToken, err := encryptedToken.Decrypt(d.cookieKey())
+	if err != nil {
+		return nil, err
+	}
+	var i Token
+	err = signedToken.Claims(d.State.PublicKey(), &i)
+	if err != nil {
+		return nil, err
+	}
+
+	if i.Expiry.Time().Compare(time.Now()) < 0 {
+		return nil, ErrTokenExpired
+	}
+	if i.NotBefore.Time().Compare(time.Now()) > 0 {
+		return nil, errors.New("token not valid yet")
+	}
+
+	return i.State, nil
+}
+
+func (d *RequestData) issueChallengeState(until time.Time) (string, error) {
+	signer, err := jose.NewSigner(jose.SigningKey{
+		Algorithm: jose.EdDSA,
+		Key:       d.State.PrivateKey(),
+	}, nil)
+	if err != nil {
+		return "", err
+	}
+
+	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{
+		Algorithm: jose.DIRECT,
+		Key:       d.cookieKey(),
+	}, (&jose.EncrypterOptions{
+		Compression: jose.DEFLATE,
+	}).WithContentType("JWT"))
+	if err != nil {
+		return "", err
+	}
+
+	return jwt.SignedAndEncrypted(signer, encrypter).Claims(Token{
+		State:     d.ChallengeMap,
+		Expiry:    jwt.NumericDate(until.Unix()),
+		NotBefore: jwt.NumericDate(time.Now().UTC().AddDate(0, 0, -1).Unix()),
+		IssuedAt:  jwt.NumericDate(time.Now().UTC().Unix()),
+	}).Serialize()
+}
+
+func (d *RequestData) cookieKey() []byte {
+	sum := sha256.New()
+	sum.Write([]byte(d.r.Host))
+	sum.Write([]byte{0})
+	sum.Write(d.NetworkPrefix().AsSlice())
+	sum.Write([]byte{0})
+	sum.Write(d.State.PrivateKey())
+	sum.Write([]byte{0})
+	// version/compressor
+	sum.Write([]byte("1.0/DEFLATE"))
+	sum.Write([]byte{0})
+
+	return sum.Sum(nil)
+}
+
+func (d *RequestData) cookieHostKey() []byte {
+	sum := sha256.New()
+	sum.Write([]byte(d.r.Host))
+	sum.Write([]byte{0})
+	sum.Write(d.NetworkPrefix().AsSlice())
+	sum.Write([]byte{0})
+
+	return sum.Sum(nil)[:6]
 }
