@@ -6,8 +6,11 @@
 
     <title>{{ .Title }}</title>
     <meta name="referrer" content="origin">
-    {{ range .Meta }}
+    {{ range .MetaTags }}
     <meta {{ range $key, $value := . }}{{ $key | attr }}="{{ $value }}" {{end}}/>
+    {{ end }}
+    {{ range .LinkTags }}
+    <link {{ range $key, $value := . }}{{ $key | attr }}="{{ $value }}" {{end}}/>
     {{ end }}
     {{ range .HeaderTags }}
     {{ . }}

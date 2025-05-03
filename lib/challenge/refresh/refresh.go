@@ -47,7 +47,7 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 
 		if params.Mode == "meta" {
 			state.ChallengePage(w, r, state.Settings().ChallengeResponseCode, reg, map[string]any{
-				"Meta": []map[string]string{
+				"MetaTags": []map[string]string{
 					{
 						"http-equiv": "refresh",
 						"content":    "0; url=" + uri.String(),

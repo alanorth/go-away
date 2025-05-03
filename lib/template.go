@@ -52,6 +52,28 @@ func initTemplate(name, data string) error {
 	return nil
 }
 
+func (state *State) addCachedTags(data *challenge.RequestData, r *http.Request, input map[string]any) {
+	proxyMetaTags := data.GetOptBool(challenge.RequestOptProxyMetaTags, false)
+	proxySafeLinkTags := data.GetOptBool(challenge.RequestOptProxySafeLinkTags, false)
+	if proxyMetaTags || proxySafeLinkTags {
+		backend, host := data.BackendHost()
+		if tags := state.fetchTags(host, backend, r, proxyMetaTags, proxySafeLinkTags); len(tags) > 0 {
+			metaTagMap, _ := input["MetaTags"].([]map[string]string)
+			linkTagMap, _ := input["LinkTags"].([]map[string]string)
+
+			for _, tag := range tags {
+				tagAttrs := make(map[string]string, len(tag.Attr))
+				for _, v := range tag.Attr {
+					tagAttrs[v.Key] = v.Val
+				}
+				metaTagMap = append(metaTagMap, tagAttrs)
+			}
+			input["MetaTags"] = metaTagMap
+			input["LinkTags"] = linkTagMap
+		}
+	}
+}
+
 func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status int, reg *challenge.Registration, params map[string]any) {
 	data := challenge.RequestDataFromContext(r.Context())
 	input := make(map[string]any)
@@ -75,21 +97,7 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 		input["Title"] = state.opt.Strings.Get("title_challenge")
 	}
 
-	if data.GetOptBool(challenge.RequestOptCacheMetaTags, false) {
-		backend, host := data.BackendHost()
-		if tags := state.fetchMetaTags(host, backend, r); len(tags) > 0 {
-			tagMap, _ := input["Meta"].([]map[string]string)
-
-			for _, tag := range tags {
-				tagAttrs := make(map[string]string, len(tag.Attr))
-				for _, v := range tag.Attr {
-					tagAttrs[v.Key] = v.Val
-				}
-				tagMap = append(tagMap, tagAttrs)
-			}
-			input["Meta"] = tagMap
-		}
-	}
+	state.addCachedTags(data, r, input)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -126,21 +134,7 @@ func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int
 		input[k] = v
 	}
 
-	if data.GetOptBool(challenge.RequestOptCacheMetaTags, false) {
-		backend, host := data.BackendHost()
-		if tags := state.fetchMetaTags(host, backend, r); len(tags) > 0 {
-			tagMap, _ := input["Meta"].([]map[string]string)
-
-			for _, tag := range tags {
-				tagAttrs := make(map[string]string, len(tag.Attr))
-				for _, v := range tag.Attr {
-					tagAttrs[v.Key] = v.Val
-				}
-				tagMap = append(tagMap, tagAttrs)
-			}
-			input["Meta"] = tagMap
-		}
-	}
+	state.addCachedTags(data, r, input)
 
 	err2 := templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"].Execute(buf, input)
 	if err2 != nil {

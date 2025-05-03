@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 )
 
-func FetchTags(backend http.Handler, uri *url.URL, kind string) (result []html.Node) {
+func FetchTags(backend http.Handler, uri *url.URL, kinds ...string) (result []html.Node) {
 	writer := httptest.NewRecorder()
 	backend.ServeHTTP(writer, &http.Request{
 		Method: http.MethodGet,
@@ -39,7 +40,7 @@ func FetchTags(backend http.Handler, uri *url.URL, kind string) (result []html.N
 	}
 
 	for n := range node.Descendants() {
-		if n.Type == html.ElementNode && n.Data == kind {
+		if n.Type == html.ElementNode && slices.Contains(kinds, n.Data) {
 			result = append(result, html.Node{
 				Type:      n.Type,
 				DataAtom:  n.DataAtom,

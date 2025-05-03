@@ -1,10 +1,8 @@
 package resource_load
 
 import (
-	"fmt"
 	"git.gammaspectra.live/git/go-away/lib/challenge"
 	"github.com/goccy/go-yaml/ast"
-	"html/template"
 	"net/http"
 	"time"
 )
@@ -30,8 +28,12 @@ func FillRegistrationHeader(state challenge.StateInterface, reg *challenge.Regis
 		w.Header().Set("Refresh", "2; url="+r.URL.String())
 
 		state.ChallengePage(w, r, state.Settings().ChallengeResponseCode, reg, map[string]any{
-			"HeaderTags": []template.HTML{
-				template.HTML(fmt.Sprintf("<link href=\"%s\" rel=\"stylesheet\" crossorigin=\"use-credentials\">", uri.String())),
+			"LinkTags": []map[string]string{
+				{
+					"href":        uri.String(),
+					"rel":         "stylesheet",
+					"crossorigin": "use-credentials",
+				},
 			},
 		})
 		return challenge.VerifyResultNone

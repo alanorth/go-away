@@ -38,7 +38,7 @@ func GetLoggerForRequest(r *http.Request) *slog.Logger {
 	return slog.With(args...)
 }
 
-func (state *State) fetchMetaTags(host string, backend http.Handler, r *http.Request) []html.Node {
+func (state *State) fetchTags(host string, backend http.Handler, r *http.Request, meta, link bool) []html.Node {
 	uri := *r.URL
 	q := uri.Query()
 	for k := range q {
@@ -54,76 +54,142 @@ func (state *State) fetchMetaTags(host string, backend http.Handler, r *http.Req
 		return v
 	}
 
-	result := utils.FetchTags(backend, &uri, "meta")
+	result := utils.FetchTags(backend, &uri, func() (r []string) {
+		if meta {
+			r = append(r, "meta")
+		} else if link {
+			r = append(r, "link")
+		}
+		return r
+	}()...)
 	if result == nil {
 		return nil
 	}
 
 	entries := make([]html.Node, 0, len(result))
-
-	safeAttributes := []string{"name", "property", "content"}
 	for _, n := range result {
 		if n.Namespace != "" {
 			continue
 		}
 
-		var name string
-		for _, attr := range n.Attr {
-			if attr.Namespace != "" {
-				continue
-			}
-			if attr.Key == "name" {
-				name = attr.Val
-				break
-			}
-			if attr.Key == "property" && name == "" {
-				name = attr.Val
-			}
-		}
+		switch n.Data {
+		case "link":
+			safeAttributes := []string{"rel", "href", "hreflang", "media", "title", "type"}
 
-		// prevent unwanted keys like CSRF and other internal entries to pass through as much as possible
-
-		var keep bool
-		if strings.HasPrefix("og:", name) || strings.HasPrefix("fb:", name) || strings.HasPrefix("twitter:", name) || strings.HasPrefix("profile:", name) {
-			// social / OpenGraph tags
-			keep = true
-		} else if name == "vcs" || strings.HasPrefix("vcs:", name) {
-			// source tags
-			keep = true
-		} else if name == "forge" || strings.HasPrefix("forge:", name) {
-			// forge tags
-			keep = true
-		} else {
-			switch name {
-			// standard content tags
-			case "application-name", "author", "description", "keywords", "robots", "thumbnail":
-				keep = true
-			case "go-import", "go-source":
-				// golang tags
-				keep = true
-			case "apple-itunes-app":
-			}
-		}
-
-		// prevent other arbitrary arguments
-		if keep {
-			newNode := html.Node{
-				Type: html.ElementNode,
-				Data: n.Data,
-			}
+			var name string
 			for _, attr := range n.Attr {
 				if attr.Namespace != "" {
 					continue
 				}
-				if slices.Contains(safeAttributes, attr.Key) {
-					newNode.Attr = append(newNode.Attr, attr)
+				if attr.Key == "rel" {
+					name = attr.Val
+					break
 				}
 			}
-			if len(newNode.Attr) == 0 {
+
+			if name == "" {
 				continue
 			}
-			entries = append(entries, newNode)
+
+			var keep bool
+			if name == "icon" || name == "alternate icon" {
+				keep = true
+			} else if name == "alternate" || name == "canonical" || name == "search" {
+				// urls to versions of document
+				keep = true
+			} else if name == "author" || name == "privacy-policy" || name == "license" || name == "copyright" || name == "terms-of-service" {
+				keep = true
+			} else if name == "manifest" {
+				// web app manifest
+				keep = true
+			}
+
+			// prevent other arbitrary arguments
+			if keep {
+				newNode := html.Node{
+					Type: html.ElementNode,
+					Data: n.Data,
+				}
+				for _, attr := range n.Attr {
+					if attr.Namespace != "" {
+						continue
+					}
+					if slices.Contains(safeAttributes, attr.Key) {
+						newNode.Attr = append(newNode.Attr, attr)
+					}
+				}
+				if len(newNode.Attr) == 0 {
+					continue
+				}
+				entries = append(entries, newNode)
+			}
+
+		case "meta":
+
+			safeAttributes := []string{"name", "property", "content"}
+			var name string
+			for _, attr := range n.Attr {
+				if attr.Namespace != "" {
+					continue
+				}
+				if attr.Key == "name" {
+					name = attr.Val
+					break
+				}
+				if attr.Key == "property" && name == "" {
+					name = attr.Val
+				}
+			}
+
+			if name == "" {
+				continue
+			}
+
+			// prevent unwanted keys like CSRF and other internal entries to pass through as much as possible
+
+			var keep bool
+			if strings.HasPrefix("og:", name) || strings.HasPrefix("fb:", name) || strings.HasPrefix("twitter:", name) || strings.HasPrefix("profile:", name) {
+				// social / OpenGraph tags
+				keep = true
+			} else if name == "vcs" || strings.HasPrefix("vcs:", name) {
+				// source tags
+				keep = true
+			} else if name == "forge" || strings.HasPrefix("forge:", name) {
+				// forge tags
+				keep = true
+			} else {
+				switch name {
+				// standard content tags
+				case "application-name", "author", "description", "keywords", "robots", "thumbnail":
+					keep = true
+				case "go-import", "go-source":
+					// golang tags
+					keep = true
+				case "apple-itunes-app":
+				}
+			}
+
+			// prevent other arbitrary arguments
+			if keep {
+				newNode := html.Node{
+					Type: html.ElementNode,
+					Data: n.Data,
+				}
+				for _, attr := range n.Attr {
+					if attr.Namespace != "" {
+						continue
+					}
+					if slices.Contains(safeAttributes, attr.Key) {
+						newNode.Attr = append(newNode.Attr, attr)
+					}
+				}
+				if len(newNode.Attr) == 0 {
+					continue
+				}
+				entries = append(entries, newNode)
+			}
 		}
+
 	}
 
 	state.tagCache.Set(key, entries, time.Hour*6)

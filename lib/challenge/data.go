@@ -152,8 +152,9 @@ func (d *RequestData) NetworkPrefix() netip.Addr {
 }
 
 const (
-	RequestOptBackendHost   = "backend-host"
-	RequestOptCacheMetaTags = "proxy-meta-tags"
+	RequestOptBackendHost       = "backend-host"
+	RequestOptProxyMetaTags     = "proxy-meta-tags"
+	RequestOptProxySafeLinkTags = "proxy-safe-link-tags"
 )
 
 func (d *RequestData) SetOpt(n, v string) {
