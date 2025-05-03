@@ -99,7 +99,11 @@ These templates are included by default:
 
 External templates for your site can be loaded specifying a full path to the `.gohtml` file. See [embed/templates/](embed/templates/) for examples to follow.
 
-You can alter the language and strings in the templates directly from the [config.yml](#config) file if specified, or add footer links directly.
+You can alter the language and strings in the templates directly from the [config.yml](examples/config.yml) file if specified, or add footer links directly.
+
+Some templates support themes. Specify that either via the [config.yml](examples/config.yml) file, or via `challenge-template-theme` cmdline argument.
+
+Most templates support overriding the logo. Specify that either via the [config.yml](examples/config.yml) file, or via `challenge-template-logo` cmdline argument.
 
 **Feel free to make any changes to existing templates or bring your own, alter any logos or styling, it's yours to adapt!**
 

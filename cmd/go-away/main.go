@@ -86,7 +86,8 @@ func main() {
 
 	flag.StringVar(&opt.ChallengeTemplate, "challenge-template", opt.ChallengeTemplate, "name or path of the challenge template to use (anubis, forgejo)")
 
-	templateTheme := flag.String("challenge-template-theme", opt.ChallengeTemplateOverrides["Theme"], "name of the challenge template theme to use (forgejo => [forgejo-auto, forgejo-dark, forgejo-light, gitea...])")
+	templateTheme := flag.String("challenge-template-theme", opt.ChallengeTemplateOverrides["Theme"], "override template theme to use (forgejo => [forgejo-auto, forgejo-dark, forgejo-light, gitea...])")
+	templateLogo := flag.String("challenge-template-logo", opt.ChallengeTemplateOverrides["Logo"], "override template logo to use")
 
 	basePath := flag.String("path", "/.well-known/."+internalCmdName, "base path where to expose go-away package onto, challenges will be served from here")
 
@@ -136,6 +137,7 @@ func main() {
 
 	// preload missing settings
 	opt.ChallengeTemplateOverrides["Theme"] = *templateTheme
+	opt.ChallengeTemplateOverrides["Logo"] = *templateLogo
 
 	// load overrides
 	if *settingsFile != "" {

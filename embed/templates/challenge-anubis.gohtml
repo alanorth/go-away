@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{{$logo := print .Path "/assets/static/logo.png?cacheBust=" .Random }}{{ if .Logo }}{{$logo = .Logo}}{{ end }}
 <html>
 <head>
     <title>{{ .Title }}</title>
@@ -25,7 +26,7 @@
         <img
                 id="image"
                 style="width:100%;max-width:256px;"
-                src="{{ .Path }}/assets/static/logo.png?cacheBust={{ .Random }}"
+                src="{{ $logo }}"
         />
         {{if .Challenge }}
         <p id="status">{{ .Strings.Get "status_loading_challenge" }} <em>{{ .Challenge }}</em>...</p>

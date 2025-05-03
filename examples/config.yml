@@ -40,8 +40,8 @@ links:
 # HTML Template to use for challenge or error pages
 # External templates can be included by providing a disk path
 # Bundled templates:
-#  anubis: An Anubis-like template with no configuration parameters
-#  forgejo: Looks like native Forgejo. Includes logos and resources from your instance. Supports Theme.
+#  anubis: An Anubis-like template with no configuration parameters. Supports Logo.
+#  forgejo: Looks like native Forgejo. Includes logos and resources from your instance. Supports Theme, Logo.
 #
 #challenge-template: "anubis"
 
@@ -49,6 +49,8 @@ links:
 challenge-template-overrides:
   # Set template theme if supported
   #Theme: "forgejo-auto"
+  # Set logo on template if supported
+  #Logo: "/my/custom/logo/path.png"
 
 # Advanced backend configuration
 # Backends setup via cmdline will be added here
