@@ -396,7 +396,7 @@ type TokenChallenge struct {
 	IssuedAt  jwt.NumericDate `json:"iat,omitempty"`
 }
 
-func (d *RequestData) verifyChallengeState() (TokenChallengeMap, error) {
+func (d *RequestData) verifyChallengeStateCookie(cookie *http.Cookie) (TokenChallengeMap, error) {
 	cookie, err := d.r.Cookie(d.cookieName)
 	if err != nil {
 		return nil, err
@@ -430,6 +430,16 @@ func (d *RequestData) verifyChallengeState() (TokenChallengeMap, error) {
 	}
 
 	return i.State, nil
+}
+
+func (d *RequestData) verifyChallengeState() (state TokenChallengeMap, err error) {
+	for _, cookie := range d.r.CookiesNamed(d.cookieName) {
+		state, err = d.verifyChallengeStateCookie(cookie)
+		if err == nil {
+			return state, nil
+		}
+	}
+	return state, err
 }
 
 func (d *RequestData) issueChallengeState(until time.Time) (string, error) {
