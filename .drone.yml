@@ -66,8 +66,6 @@ steps:
   mirror: https://mirror.gcr.io
   name: test-wasm-fail
 trigger:
-  branch:
-  - '*'
   event:
   - push
 type: docker
@@ -139,8 +137,6 @@ steps:
   mirror: https://mirror.gcr.io
   name: test-wasm-fail
 trigger:
-  branch:
-  - '*'
   event:
   - push
 type: docker
@@ -505,6 +501,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: 5200d5eb519acb0f74a7b62b103399da23d6e994d63c20052b41b10a4654b37a
+hmac: 6d700c50c4148f85a136094965ed5191007167bbbe1e6428dfb06d2441582efb
 
 ...
