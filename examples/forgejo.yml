@@ -248,13 +248,6 @@ rules:
         settings:
           challenges: [ resource-load, js-refresh, http-cookie-check ]
 
-  - name: standard-bots
-    action: check
-    settings:
-      challenges: [meta-refresh, resource-load]
-    conditions:
-      - '($is-generic-robot-ua)'
-
   # Allow all source downloads not caught in browser above
   # todo: limit this as needed?
   - name: source-download
