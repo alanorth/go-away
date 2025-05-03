@@ -9,7 +9,9 @@ if [ $# -eq 0 ] || [ "${1#-}" != "$1" ]; then
                 --policy "${GOAWAY_POLICY}" --policy-snippets "/snippets" --policy-snippets "${GOAWAY_POLICY_SNIPPETS}" \
                 --client-ip-header "${GOAWAY_CLIENT_IP_HEADER}" --backend-ip-header "${GOAWAY_BACKEND_IP_HEADER}" \
                 --cache "${GOAWAY_CACHE}" \
-                --challenge-template "${GOAWAY_CHALLENGE_TEMPLATE}" --challenge-template-theme "${GOAWAY_CHALLENGE_TEMPLATE_THEME}" \
+                --challenge-template "${GOAWAY_CHALLENGE_TEMPLATE}" \
+                --challenge-template-logo "${GOAWAY_CHALLENGE_TEMPLATE_LOGO}" \
+                --challenge-template-theme "${GOAWAY_CHALLENGE_TEMPLATE_THEME}" \
                 --slog-level "${GOAWAY_SLOG_LEVEL}" \
                 --acme-autocert "${GOAWAY_ACME_AUTOCERT}" \
                 --backend "${GOAWAY_BACKEND}" \
