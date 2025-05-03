@@ -230,17 +230,6 @@ func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request)
 		d.ChallengeVerify[reg.Id()] = verifyResult
 		d.ChallengeState[reg.Id()] = verifyState
 	}
-
-	if d.State.Settings().BackendIpHeader != "" {
-		if d.State.Settings().ClientIpHeader != "" {
-			r.Header.Del(d.State.Settings().ClientIpHeader)
-		}
-		r.Header.Set(d.State.Settings().BackendIpHeader, d.RemoteAddress.String())
-	}
-
-	// send these to client so we consistently get the headers
-	//w.Header().Set("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
-	//w.Header().Set("Critical-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
 }
 
 func (d *RequestData) Expiration(duration time.Duration) time.Time {
@@ -251,8 +240,25 @@ func (d *RequestData) HasValidChallenge(id Id) bool {
 	return d.ChallengeVerify[id].Ok()
 }
 
+func (d *RequestData) ResponseHeaders(headers http.Header) {
+	// send these to client so we consistently get the headers
+	//w.Header().Set("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
+	//w.Header().Set("Critical-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
+
+	if d.State.Settings().MainName != "" {
+		headers.Add("Via", fmt.Sprintf("%s %s@%s", d.r.Proto, d.State.Settings().MainName, d.State.Settings().MainVersion))
+	}
+}
+
 func (d *RequestData) RequestHeaders(headers http.Header) {
 	headers.Set("X-Away-Id", d.Id.String())
+
+	if d.State.Settings().BackendIpHeader != "" {
+		if d.State.Settings().ClientIpHeader != "" {
+			headers.Del(d.State.Settings().ClientIpHeader)
+		}
+		headers.Set(d.State.Settings().BackendIpHeader, d.RemoteAddress.String())
+	}
 
 	for id, result := range d.ChallengeVerify {
 		if result.Ok() {

@@ -7,6 +7,7 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"log/slog"
 	"net/http"
+	"net/textproto"
 )
 
 func init() {
@@ -33,8 +34,9 @@ func init() {
 var ContextDefaultSettings = ContextSettings{}
 
 type ContextSettings struct {
-	ContextSet      map[string]string `yaml:"context-set"`
-	ResponseHeaders map[string]string `yaml:"response-headers"`
+	ContextSet      map[string]string   `yaml:"context-set"`
+	ResponseHeaders map[string][]string `yaml:"response-headers"`
+	RequestHeaders  map[string][]string `yaml:"request-headers"`
 }
 
 type Context struct {
@@ -48,7 +50,19 @@ func (a Context) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Requ
 	}
 
 	for k, v := range a.opts.ResponseHeaders {
-		w.Header().Set(k, v)
+		// do this to allow unsetting values that are sent automatically
+		w.Header()[textproto.CanonicalMIMEHeaderKey(k)] = nil
+		for _, val := range v {
+			w.Header().Add(k, val)
+		}
+	}
+
+	for k, v := range a.opts.RequestHeaders {
+		// do this to allow unsetting values that are sent automatically
+		r.Header[textproto.CanonicalMIMEHeaderKey(k)] = nil
+		for _, val := range v {
+			r.Header.Add(k, val)
+		}
 	}
 
 	return true, nil

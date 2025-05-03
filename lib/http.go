@@ -323,9 +323,7 @@ func (state *State) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	data.EvaluateChallenges(w, r)
 
-	if state.Settings().MainName != "" {
-		w.Header().Add("Via", fmt.Sprintf("%s %s@%s", r.Proto, state.Settings().MainName, state.Settings().MainVersion))
-	}
+	data.ResponseHeaders(w.Header())
 
 	state.Mux.ServeHTTP(w, r)
 }
