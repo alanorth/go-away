@@ -108,12 +108,14 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 			}
 		}
 
+		data := challenge.RequestDataFromContext(r.Context())
+
 		request, err := http.NewRequest(params.HttpMethod, params.Url, nil)
 		if err != nil {
 			return challenge.VerifyResultFail
 		}
 
-		var excludeHeaders = []string{"Host", "Content-Length"}
+		var excludeHeaders = []string{"Host", "Content-Length", "Upgrade", "Accept-Encoding", "Range"}
 		for k, v := range r.Header {
 			if slices.Contains(excludeHeaders, k) {
 				// skip these parameters
@@ -121,10 +123,12 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 			}
 			request.Header[k] = v
 		}
-		// set id
-		request.Header.Set("X-Away-Id", challenge.RequestDataFromContext(r.Context()).Id.String())
+
+		// set id, ip, and other headers
+		data.RequestHeaders(request.Header)
 
 		// set request info in X headers
+		request.Header.Set("X-Away-Method", r.Method)
 		request.Header.Set("X-Away-Host", r.Host)
 		request.Header.Set("X-Away-Path", r.URL.Path)
 		request.Header.Set("X-Away-Query", r.URL.RawQuery)
@@ -135,8 +139,6 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 		}
 		defer response.Body.Close()
 		defer io.Copy(io.Discard, response.Body)
-
-		data := challenge.RequestDataFromContext(r.Context())
 
 		if response.StatusCode != params.HttpCode {
 			data.IssueChallengeToken(reg, key, sum, expiry, false)
