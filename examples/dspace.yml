@@ -17,7 +17,6 @@ conditions:
 
   # Conditions will get included from snippets
 
-
   is-static-asset:
     - 'path.startsWith("/favicon")'
     - 'path == "/apple-touch-icon.png"'
@@ -121,7 +120,7 @@ rules:
       - name: 0
         action: check
         settings:
-          challenges: [js-pow-sha256]
+          challenges: [js-refresh]
       - name: 1
         action: check
         settings:
@@ -145,18 +144,11 @@ rules:
       - name: 0
         action: check
         settings:
-          challenges: [preload-link, header-refresh, js-pow-sha256]
+          challenges: [preload-link, header-refresh, js-refresh]
       - name: 1
         action: check
         settings:
-          challenges: [ resource-load, js-pow-sha256 ]
-
-  - name: standard-bots
-    action: check
-    settings:
-      challenges: [meta-refresh, resource-load]
-    conditions:
-      - '($is-generic-robot-ua)'
+          challenges: [ resource-load, js-refresh ]
 
   # Allow loading of core pages without challenges
   - name: homesite
@@ -174,12 +166,12 @@ rules:
       # if DNSBL fails, check additional challenges
       fail: check
       fail-settings:
-        challenges: [js-pow-sha256]
+        challenges: [js-refresh]
 
   - name: suspicious-fetchers
     action: check
     settings:
-      challenges: [js-pow-sha256]
+      challenges: [js-refresh]
     conditions:
       - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
 
@@ -221,7 +213,7 @@ rules:
   - name: standard-browser
     action: challenge
     settings:
-      challenges: [preload-link, meta-refresh, resource-load, js-pow-sha256]
+      challenges: [preload-link, meta-refresh, resource-load, js-refresh, js-pow-sha256]
     conditions:
       - '($is-generic-browser)'
 
