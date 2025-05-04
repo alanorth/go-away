@@ -35,6 +35,24 @@ var idCounter Id
 // DefaultDuration TODO: adjust
 const DefaultDuration = time.Hour * 24 * 7
 
+var DefaultKeyHeaders = []string{
+	// General browser information
+	"User-Agent",
+	// Accept headers
+	"Accept-Language",
+	"Accept-Encoding",
+
+	// NOTE: not sent in preload
+	"Sec-Ch-Ua",
+	"Sec-Ch-Ua-Platform",
+}
+
+var MinimalKeyHeaders = []string{
+	"Accept-Language",
+	// General browser information
+	"User-Agent",
+}
+
 func (r Register) Create(state StateInterface, name string, pol policy.Challenge, replacer *strings.Replacer) (*Registration, Id, error) {
 	runtime, ok := Runtimes[pol.Runtime]
 	if !ok {
@@ -42,9 +60,10 @@ func (r Register) Create(state StateInterface, name string, pol policy.Challenge
 	}
 
 	reg := &Registration{
-		Name:     name,
-		Path:     path.Join(state.UrlPath(), "challenge", name),
-		Duration: pol.Duration,
+		Name:       name,
+		Path:       path.Join(state.UrlPath(), "challenge", name),
+		Duration:   pol.Duration,
+		KeyHeaders: DefaultKeyHeaders,
 	}
 
 	if reg.Duration == 0 {
@@ -125,6 +144,9 @@ type Registration struct {
 	// Verify Verify an issued token
 	Verify            VerifyFunc
 	VerifyProbability float64
+
+	// KeyHeaders The client headers used in key generation, in this order
+	KeyHeaders []string
 
 	// IssueChallenge Issues a challenge to a request.
 	// If Class is ClassTransparent and VerifyResult is !VerifyResult.Ok(), continue with other challenges

@@ -44,6 +44,9 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 
 	reg.Class = challenge.ClassTransparent
 
+	// some of regular headers are not sent in default headers
+	reg.KeyHeaders = challenge.MinimalKeyHeaders
+
 	ob := challenge.NewAwaiter[string]()
 
 	reg.Object = ob

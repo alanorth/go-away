@@ -52,15 +52,13 @@ func GetChallengeKeyForRequest(state StateInterface, reg *Registration, until ti
 	hasher.Write([]byte{0})
 
 	// specific headers
-	for _, k := range []string{
-		"Accept-Language",
-		// General browser information
-		"User-Agent",
-		// TODO: not sent in preload
-		//"Sec-Ch-Ua",
-		//"Sec-Ch-Ua-Platform",
-	} {
-		hasher.Write([]byte(r.Header.Get(k)))
+	for _, k := range reg.KeyHeaders {
+		hasher.Write([]byte(k))
+		hasher.Write([]byte{0})
+		for _, v := range r.Header.Values(k) {
+			hasher.Write([]byte(v))
+			hasher.Write([]byte{1})
+		}
 		hasher.Write([]byte{0})
 	}
 	hasher.Write([]byte{0})

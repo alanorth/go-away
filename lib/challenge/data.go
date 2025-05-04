@@ -329,6 +329,9 @@ func (d *RequestData) ResponseHeaders(w http.ResponseWriter) {
 	//w.Header().Set("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
 	//w.Header().Set("Critical-CH", "Sec-CH-UA, Sec-CH-UA-Platform")
 
+	// send Vary header to mark that response may vary based on Cookie values and other client headers
+	w.Header().Set("Vary", "Cookie, Accept, Accept-Encoding, Accept-Language, User-Agent")
+
 	if d.State.Settings().MainName != "" {
 		w.Header().Add("Via", fmt.Sprintf("%s %s@%s", d.r.Proto, d.State.Settings().MainName, d.State.Settings().MainVersion))
 	}
