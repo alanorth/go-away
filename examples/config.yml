@@ -24,7 +24,7 @@ bind:
 #bind-debug: ":6060"
 
 # Bind the Prometheus metrics onto /metrics path on this port
-#bind-metrics ":9090"
+#bind-metrics: ":9090"
 
 # These links will be shown on the presented challenge or error pages
 links:
