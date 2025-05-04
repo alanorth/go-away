@@ -3,6 +3,7 @@
 
 Self-hosted abuse detection and rule enforcement against low-effort mass AI scraping and bots. Uses conventional non-nuclear options.
 
+[![Latest Release](https://img.shields.io/gitea/v/release/git/go-away?gitea_url=https%3A%2F%2Fgit.gammaspectra.live)](https://git.gammaspectra.live/git/go-away/releases)
 [![Build Status](https://ci.gammaspectra.live/api/badges/git/go-away/status.svg)](https://ci.gammaspectra.live/git/go-away)
 [![Go Reference](https://pkg.go.dev/badge/git.gammaspectra.live/git/go-away.svg)](https://pkg.go.dev/git.gammaspectra.live/git/go-away)
 
