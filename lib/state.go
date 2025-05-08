@@ -114,9 +114,9 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 				return nil, fmt.Errorf("error loading template %s: %w", state.opt.ChallengeTemplate, err)
 			}
 			state.opt.ChallengeTemplate = name
+		} else {
+			return nil, fmt.Errorf("no template defined for %s", state.opt.ChallengeTemplate)
 		}
-
-		return nil, fmt.Errorf("no template defined for %s", state.opt.ChallengeTemplate)
 	}
 
 	state.networks = make(map[string]func() cidranger.Ranger)
