@@ -4,4 +4,4 @@ conditions:
     - 'userAgent.matches("compatible[;)]") && !userAgent.contains("Trident/")'
     - 'userAgent.matches("\\+https?://")'
     - 'userAgent.contains("@")'
-    - 'userAgent.matches("(?i)(bot|crawl|spider)")'
+    - 'userAgent.matches("(?i)(bot|crawl|scrape|spider)")'
