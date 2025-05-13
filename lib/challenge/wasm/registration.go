@@ -97,7 +97,7 @@ func FillJavaScriptRegistration(state challenge.StateInterface, reg *challenge.R
 	reg.IssueChallenge = func(w http.ResponseWriter, r *http.Request, key challenge.Key, expiry time.Time) challenge.VerifyResult {
 		state.ChallengePage(w, r, state.Settings().ChallengeResponseCode, reg, map[string]any{
 			"EndTags": []template.HTML{
-				template.HTML(fmt.Sprintf("<script async type=\"module\" src=\"%s?cacheBust=%s\"></script>", reg.Path+"/script.mjs", utils.CacheBust())),
+				template.HTML(fmt.Sprintf("<script async type=\"module\" src=\"%s?cacheBust=%s\"></script>", reg.Path+"/script.mjs", utils.StaticCacheBust())),
 			},
 		})
 		return challenge.VerifyResultNone
@@ -164,6 +164,8 @@ func FillJavaScriptRegistration(state challenge.StateInterface, reg *challenge.R
 				w.Header()[k] = v
 			}
 			w.Header().Set("Content-Length", fmt.Sprintf("%d", len(out.Data)))
+
+			data.ResponseHeaders(w)
 			w.WriteHeader(out.Code)
 			_, _ = w.Write(out.Data)
 			return nil

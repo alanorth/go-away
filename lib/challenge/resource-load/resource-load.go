@@ -23,9 +23,13 @@ func FillRegistrationHeader(state challenge.StateInterface, reg *challenge.Regis
 			return challenge.VerifyResultFail
 		}
 
+		redirectUri, err := challenge.RedirectUrl(r, reg)
+		if err != nil {
+			return challenge.VerifyResultFail
+		}
 		// self redirect!
 		//TODO: adjust deadline
-		w.Header().Set("Refresh", "2; url="+r.URL.String())
+		w.Header().Set("Refresh", "2; url="+redirectUri.String())
 
 		state.ChallengePage(w, r, state.Settings().ChallengeResponseCode, reg, map[string]any{
 			"LinkTags": []map[string]string{

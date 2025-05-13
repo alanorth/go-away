@@ -23,6 +23,7 @@ func ServeChallengeScript(w http.ResponseWriter, r *http.Request, reg *Registrat
 		//TODO: log
 		panic(err)
 	}
+
 	data.ResponseHeaders(w)
 	w.WriteHeader(http.StatusOK)
 
@@ -30,7 +31,7 @@ func ServeChallengeScript(w http.ResponseWriter, r *http.Request, reg *Registrat
 		"Id":              data.Id.String(),
 		"Path":            reg.Path,
 		"Parameters":      paramData,
-		"Random":          utils.CacheBust(),
+		"Random":          utils.StaticCacheBust(),
 		"Challenge":       reg.Name,
 		"ChallengeScript": script,
 		"Strings":         data.State.Strings(),

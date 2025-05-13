@@ -8,7 +8,9 @@ import (
 	"git.gammaspectra.live/git/go-away/utils"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 )
 
 var ErrInvalidToken = errors.New("invalid token")
@@ -47,6 +49,7 @@ const (
 	QueryArgRequestId = QueryArgPrefix + "_id"
 	QueryArgChallenge = QueryArgPrefix + "_challenge"
 	QueryArgToken     = QueryArgPrefix + "_token"
+	QueryArgBust      = QueryArgPrefix + "_bust"
 )
 
 const MakeChallengeUrlSuffix = "/make-challenge"
@@ -96,6 +99,7 @@ func VerifyUrl(r *http.Request, reg *Registration, token string) (*url.URL, erro
 	values.Set(QueryArgRedirect, redirectUrl.String())
 	values.Set(QueryArgToken, token)
 	values.Set(QueryArgChallenge, reg.Name)
+	values.Set(QueryArgBust, strconv.FormatInt(time.Now().UTC().UnixMilli(), 10))
 	uri.RawQuery = values.Encode()
 
 	return uri, nil

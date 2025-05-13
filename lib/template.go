@@ -78,7 +78,7 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 	data := challenge.RequestDataFromContext(r.Context())
 	input := make(map[string]any)
 	input["Id"] = data.Id.String()
-	input["Random"] = utils.CacheBust()
+	input["Random"] = utils.StaticCacheBust()
 
 	input["Path"] = state.UrlPath()
 	input["Links"] = state.opt.Links
@@ -121,7 +121,7 @@ func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int
 
 	input := map[string]any{
 		"Id":        data.Id.String(),
-		"Random":    utils.CacheBust(),
+		"Random":    utils.StaticCacheBust(),
 		"Error":     err.Error(),
 		"Path":      state.UrlPath(),
 		"Theme":     "",

@@ -167,15 +167,14 @@ func GetRemoteAddress(ctx context.Context) *netip.AddrPort {
 	return &ip
 }
 
-func CacheBust() string {
-	return cacheBust
+func RandomCacheBust(n int) string {
+	buf := make([]byte, n)
+	_, _ = rand.Read(buf)
+	return base64.RawURLEncoding.EncodeToString(buf)
 }
 
-var cacheBust string
+var staticCacheBust = RandomCacheBust(16)
 
-func init() {
-
-	buf := make([]byte, 16)
-	_, _ = rand.Read(buf)
-	cacheBust = base64.RawURLEncoding.EncodeToString(buf)
+func StaticCacheBust() string {
+	return staticCacheBust
 }
