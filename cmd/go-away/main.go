@@ -302,6 +302,7 @@ func main() {
 		swap(handler)
 		slog.Warn(
 			"handler configuration loaded",
+			"key_fingerprint", hex.EncodeToString(handler.PrivateKeyFingerprint()),
 		)
 
 		// allow reloading from now on
