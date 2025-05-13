@@ -295,8 +295,8 @@ func (d *RequestData) EvaluateChallenges(w http.ResponseWriter, r *http.Request)
 	challengeMap, err := d.verifyChallengeState()
 	if err != nil {
 		if !errors.Is(err, http.ErrNoCookie) {
-			//clear invalid cookie and continue
-			utils.ClearCookie(d.cookieName, w, r)
+			//queue resend invalid cookie and continue
+			d.challengeMapModified = true
 		}
 		challengeMap = make(TokenChallengeMap)
 	}
