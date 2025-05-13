@@ -33,6 +33,8 @@ func (a Drop) Handle(logger *slog.Logger, w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Content-Length", "0")
 	w.Header().Set("Connection", "close")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+
 	w.WriteHeader(http.StatusForbidden)
 
 	return false, nil

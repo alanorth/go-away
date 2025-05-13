@@ -48,6 +48,7 @@ func FillRegistrationHeader(state challenge.StateInterface, reg *challenge.Regis
 	mux.HandleFunc("GET "+reg.Path+challenge.VerifyChallengeUrlSuffix, challenge.VerifyHandlerFunc(state, reg, nil, func(state challenge.StateInterface, data *challenge.RequestData, w http.ResponseWriter, r *http.Request, verifyResult challenge.VerifyResult, err error, redirect string) {
 		//TODO: add other types inside css that need to be loaded!
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Content-Length", "0")
 
 		data.ResponseHeaders(w)

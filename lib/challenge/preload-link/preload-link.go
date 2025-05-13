@@ -101,6 +101,7 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 
 	mux.HandleFunc("GET "+reg.Path+challenge.VerifyChallengeUrlSuffix, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Content-Length", "0")
 
 		data := challenge.RequestDataFromContext(r.Context())

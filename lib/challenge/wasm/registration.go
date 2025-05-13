@@ -164,6 +164,7 @@ func FillJavaScriptRegistration(state challenge.StateInterface, reg *challenge.R
 				w.Header()[k] = v
 			}
 			w.Header().Set("Content-Length", fmt.Sprintf("%d", len(out.Data)))
+			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
 			data.ResponseHeaders(w)
 			w.WriteHeader(out.Code)

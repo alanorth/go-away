@@ -100,6 +100,7 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 	state.addCachedTags(data, r, input)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
 	buf := bytes.NewBuffer(make([]byte, 0, 8192))
 
@@ -116,6 +117,7 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int, err error, redirect string) {
 	data := challenge.RequestDataFromContext(r.Context())
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
 	buf := bytes.NewBuffer(make([]byte, 0, 8192))
 
