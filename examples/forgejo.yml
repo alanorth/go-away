@@ -104,6 +104,15 @@ rules:
       - *is-bot-yandexbot
     action: pass
 
+  # Matches private networks and localhost.
+  # Uncomment this if you want to let your own tools this way
+  #  - name: allow-private-networks
+  #    conditions:
+  #      # Allows localhost and private networks CIDR
+  #      - *is-network-localhost
+  #      - *is-network-private
+  #    action: pass
+
   - name: undesired-networks
     conditions:
       - 'remoteAddress.network("huawei-cloud") || remoteAddress.network("alibaba-cloud") || remoteAddress.network("zenlayer-inc")'
