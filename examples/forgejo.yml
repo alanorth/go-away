@@ -296,7 +296,7 @@ rules:
         # Map OpenGraph or similar <meta> tags back to the reply, even if denied/challenged
         proxy-meta-tags: "true"
         # proxy-safe-link-tags: "true"
-        
+
       # Set additional response headers
       #response-headers:
       # X-Clacks-Overhead:

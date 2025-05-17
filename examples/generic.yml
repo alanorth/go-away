@@ -10,7 +10,7 @@ networks:
 
 challenges:
   # Challenges will get included from snippets
-  
+
 conditions:
   # Conditions will get replaced on rules AST when found as ($condition-name)
 
