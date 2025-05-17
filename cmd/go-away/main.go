@@ -210,7 +210,7 @@ func main() {
 			fatal(fmt.Errorf("backend %s: failed to make reverse proxy: %w", k, err))
 		}
 
-		backend.ErrorLog = slog.NewLogLogger(slog.With("backend", k).Handler(), slog.LevelError)
+		backend.ErrorLog = slog.NewLogLogger(slog.With("backend", k).Handler(), slog.LevelDebug)
 		createdBackends[k] = backend
 	}
 
@@ -291,7 +291,7 @@ func main() {
 		fatal(fmt.Errorf("failed to create server: %w", err))
 	}
 
-	server.ErrorLog = slog.NewLogLogger(slog.With("server", "http").Handler(), slog.LevelError)
+	server.ErrorLog = slog.NewLogLogger(slog.With("server", "http").Handler(), slog.LevelDebug)
 
 	go func() {
 		handler, err := loadPolicyState()
@@ -337,7 +337,7 @@ func main() {
 			debugServer := http.Server{
 				Addr:     opt.BindDebug,
 				Handler:  mux,
-				ErrorLog: slog.NewLogLogger(slog.With("server", "debug").Handler(), slog.LevelError),
+				ErrorLog: slog.NewLogLogger(slog.With("server", "debug").Handler(), slog.LevelDebug),
 			}
 
 			slog.Warn(
@@ -357,7 +357,7 @@ func main() {
 			metricsServer := http.Server{
 				Addr:     opt.BindMetrics,
 				Handler:  mux,
-				ErrorLog: slog.NewLogLogger(slog.With("server", "metrics").Handler(), slog.LevelError),
+				ErrorLog: slog.NewLogLogger(slog.With("server", "metrics").Handler(), slog.LevelDebug),
 			}
 
 			slog.Warn(
