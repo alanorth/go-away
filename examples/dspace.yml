@@ -28,7 +28,7 @@ conditions:
     # Old IE browsers
     - 'userAgent.matches("MSIE ([2-9]|10|11)\\.")'
     # Old Linux browsers
-    - 'userAgent.contains("Linux i[63]86") || userAgent.contains("FreeBSD i[63]86")'
+    - 'userAgent.matches("Linux i[63]86") || userAgent.matches("FreeBSD i[63]86")'
     # Old Windows browsers
     - 'userAgent.matches("Windows (3|95|98|CE)") || userAgent.matches("Windows NT [1-5]\\.")'
     # Old mobile browsers
