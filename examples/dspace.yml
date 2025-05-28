@@ -47,11 +47,9 @@ conditions:
     # DSpace 8+ community/collection browse: https://demo.dspace.org/collections/6a259fbf-b49b-47c3-9122-748930752229/browse/dateissued
     - 'path.contains("/browse/")'
     # DSpace 7+ top-level search: https://demo.dspace.org/search?query=simmons
-    - 'path.startsWith("/search")'
-    # DSpace 7+ top-level search filters: https://demo.dspace.org/search?f.author=Simmons%2C%20Cameron%2Cequals
-    # DSpace 8+ community/collection search filters: https://demo.dspace.org/communities/830a00fb-62a8-4bf2-8170-d4e63ee06e35?f.author=Autor%20desconocido%2Cequals
-    # Note: this checks if there are ANY query parameters for example filters (not just `query`)
-    - 'size(query) > 0'
+    # DSpace 9+ community/collection search: https://demo.dspace.org/communities/0958c910-2037-42a9-81c7-dca80e3892b4/search?f.author=Simmons%2C%20Cameron%2Cequals&spc.page=1
+    # Path must contain search AND have some query parameters (could be query or filters)
+    - 'path.contains("/search") && size(query) > 0'
 
 # Rules are checked sequentially in order, from top to bottom
 rules:
