@@ -37,6 +37,10 @@ conditions:
     - 'userAgent.startsWith("Opera/")'
     #- 'userAgent.matches("Gecko/(201[0-9]|200[0-9])")'
     - 'userAgent.matches("^Mozilla/[1-4]")'
+    # Old Chrome (versions x, xx, and 10x/11x/12x). Version 129 was released in 2024-09
+    - 'userAgent.matches("Chrome/\\d{1,2}\\.") || userAgent.matches("Chrome/1[012]\\d\\.")'
+    # Old Firefox (versions x, xx, and 10x/11x/12x), except version 128 ESR
+    - '(userAgent.matches("Firefox/\\d{1,2}\\.") || userAgent.matches("Firefox/1[012]\\d\\.")) && !userAgent.matches("Firefox/128\\.")'
 
   is-heavy-resource:
     # DSpace 7+ top-level browse: https://demo.dspace.org/browse/dateissued
