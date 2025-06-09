@@ -94,13 +94,13 @@ func VerifyUrl(r *http.Request, reg *Registration, token string) (*url.URL, erro
 	uri.Path = reg.Path + VerifyChallengeUrlSuffix
 
 	data := RequestDataFromContext(r.Context())
-	values := uri.Query()
-	values.Set(QueryArgRequestId, data.Id.String())
-	values.Set(QueryArgRedirect, redirectUrl.String())
-	values.Set(QueryArgToken, token)
-	values.Set(QueryArgChallenge, reg.Name)
-	values.Set(QueryArgBust, strconv.FormatInt(time.Now().UTC().UnixMilli(), 10))
-	uri.RawQuery = values.Encode()
+	values, _ := utils.ParseRawQuery(r.URL.RawQuery)
+	values.Set(QueryArgRequestId, url.QueryEscape(data.Id.String()))
+	values.Set(QueryArgRedirect, url.QueryEscape(redirectUrl.String()))
+	values.Set(QueryArgToken, url.QueryEscape(token))
+	values.Set(QueryArgChallenge, url.QueryEscape(reg.Name))
+	values.Set(QueryArgBust, url.QueryEscape(strconv.FormatInt(time.Now().UTC().UnixMilli(), 10)))
+	uri.RawQuery = utils.EncodeRawQuery(values)
 
 	return uri, nil
 }
@@ -112,13 +112,13 @@ func RedirectUrl(r *http.Request, reg *Registration) (*url.URL, error) {
 	}
 
 	data := RequestDataFromContext(r.Context())
-	values := uri.Query()
-	values.Set(QueryArgRequestId, data.Id.String())
+	values, _ := utils.ParseRawQuery(r.URL.RawQuery)
+	values.Set(QueryArgRequestId, url.QueryEscape(data.Id.String()))
 	if ref := r.Referer(); ref != "" {
-		values.Set(QueryArgReferer, r.Referer())
+		values.Set(QueryArgReferer, url.QueryEscape(r.Referer()))
 	}
-	values.Set(QueryArgChallenge, reg.Name)
-	uri.RawQuery = values.Encode()
+	values.Set(QueryArgChallenge, url.QueryEscape(reg.Name))
+	uri.RawQuery = utils.EncodeRawQuery(values)
 
 	return uri, nil
 }

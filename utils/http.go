@@ -7,11 +7,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/netip"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 )
@@ -177,4 +179,41 @@ var staticCacheBust = RandomCacheBust(16)
 
 func StaticCacheBust() string {
 	return staticCacheBust
+}
+
+func ParseRawQuery(rawQuery string) (m url.Values, err error) {
+	m = make(url.Values)
+	for rawQuery != "" {
+		var key string
+		key, rawQuery, _ = strings.Cut(rawQuery, "&")
+		if strings.Contains(key, ";") {
+			err = fmt.Errorf("invalid semicolon separator in query")
+			continue
+		}
+		if key == "" {
+			continue
+		}
+		key, value, _ := strings.Cut(key, "=")
+		m[key] = append(m[key], value)
+	}
+	return m, err
+}
+
+func EncodeRawQuery(v url.Values) string {
+	if len(v) == 0 {
+		return ""
+	}
+	var buf strings.Builder
+	for _, k := range slices.Sorted(maps.Keys(v)) {
+		vs := v[k]
+		for _, v := range vs {
+			if buf.Len() > 0 {
+				buf.WriteByte('&')
+			}
+			buf.WriteString(k)
+			buf.WriteByte('=')
+			buf.WriteString(v)
+		}
+	}
+	return buf.String()
 }

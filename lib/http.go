@@ -246,19 +246,20 @@ func (state *State) handleRequest(w http.ResponseWriter, r *http.Request) {
 		if fromChallenge {
 			r.Header.Del("Referer")
 		}
-		q := r.URL.Query()
 
+		q := r.URL.Query()
 		if ref := q.Get(challenge.QueryArgReferer); ref != "" {
 			r.Header.Set("Referer", ref)
 		}
 
+		rawQ, _ := utils.ParseRawQuery(r.URL.RawQuery)
 		// delete query parameters that were set by go-away
-		for k := range q {
+		for k := range rawQ {
 			if strings.HasPrefix(k, challenge.QueryArgPrefix) {
-				q.Del(k)
+				rawQ.Del(k)
 			}
 		}
-		r.URL.RawQuery = q.Encode()
+		r.URL.RawQuery = utils.EncodeRawQuery(rawQ)
 
 		data.ExtraHeaders.Set("X-Away-Rule", ruleName)
 		data.ExtraHeaders.Set("X-Away-Action", string(ruleAction))

@@ -69,9 +69,9 @@ func FillRegistration(state challenge.StateInterface, reg *challenge.Registratio
 		}
 
 		// remove redirect args
-		values := uri.Query()
+		values, _ := utils.ParseRawQuery(uri.RawQuery)
 		values.Del(challenge.QueryArgRedirect)
-		uri.RawQuery = values.Encode()
+		uri.RawQuery = utils.EncodeRawQuery(values)
 
 		// Redirect URI must be absolute to work
 		uri.Scheme = utils.GetRequestScheme(r)
