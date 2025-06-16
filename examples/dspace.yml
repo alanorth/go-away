@@ -138,6 +138,7 @@ rules:
     action: pass
 
   # check a sequence of challenges
+  # A pass in child 0 goes to child 1
   - name: heavy-operations
     conditions: ['($is-heavy-resource)']
     action: none
