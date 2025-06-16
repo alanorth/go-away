@@ -24,7 +24,7 @@ conditions:
     - 'path.matches("\\.(avif|css|gif|js|json|jpeg|jpg|manifest|mjs|mp4|png|svg|ttf|wasm|webm|webp|woff|woff2)$")'
 
   is-suspicious-crawler:
-    - 'userAgent.contains("Presto/") || userAgent.contains("Trident/")'
+    - 'userAgent.contains("Trident/")'
     # Old IE browsers
     - 'userAgent.matches("MSIE ([2-9]|10|11)\\.")'
     # Old Linux browsers
@@ -33,8 +33,6 @@ conditions:
     - 'userAgent.matches("Windows (3|95|98|CE)") || userAgent.matches("Windows NT [1-5]\\.")'
     # Old mobile browsers
     - 'userAgent.matches("Android [1-5]\\.") || userAgent.matches("(iPad|iPhone) OS [1-9]_")'
-    # Old generic browsers
-    - 'userAgent.startsWith("Opera/")'
     #- 'userAgent.matches("Gecko/(201[0-9]|200[0-9])")'
     - 'userAgent.matches("^Mozilla/[1-4]")'
     # Old Chrome (versions x, xx, and 10x/11x/12x). Version 129 was released in 2024-09
@@ -72,6 +70,7 @@ rules:
       - *is-bot-qwantbot
       - *is-bot-yandexbot
       - *is-bot-uptimerobot
+      - *is-bot-opera-mini
     action: pass
 
   - name: undesired-networks

@@ -1,0 +1,11 @@
+# 2025-06-16: From what I've seen, as recently as today, Opera Mini legitimately
+# makes requests from ASN39832 with a user agent starting with "Opera/9.". Every
+# other user agent pretending to be Opera is suspicious.
+networks:
+  asn-39832:
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS39832&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+
+conditions:
+  is-bot-opera-mini:
+      - &is-bot-opera-mini 'userAgent.startsWith("Opera/9.") && remoteAddress.network("asn-39832")'
