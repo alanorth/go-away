@@ -24,11 +24,16 @@ ENV CGO_ENABLED=0
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 ENV GOTOOLCHAIN=${GOTOOLCHAIN}
+ENV BUILDMODE=pie
 
-RUN go build -v \
+# riscv64 requires GCC for pie buildmode
+# see https://github.com/golang/go/issues/64875
+RUN if [[ "$GOARCH" == "riscv64" ]]; then export BUILDMODE=exe; fi && \
+    go build -v \
     -pgo=auto \
-    -trimpath -ldflags='-buildid= -bindnow' -buildmode pie \
+    -trimpath -ldflags='-buildid= -bindnow' -buildmode $BUILDMODE \
     -o "${GOBIN}/go-away" ./cmd/go-away
+
 RUN test -e "${GOBIN}/go-away"
 
 
