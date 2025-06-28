@@ -32,13 +32,13 @@ RUN go build -v \
 RUN test -e "${GOBIN}/go-away"
 
 
-FROM --platform=$TARGETPLATFORM ${from}
+FROM ${from}
 
 COPY --from=build /go/bin/go-away /bin/go-away
 COPY examples/snippets/ /snippets/
 COPY docker-entrypoint.sh /
 
-ENV TZ UTC
+ENV TZ=UTC
 
 ENV GOAWAY_METRICS_BIND=""
 ENV GOAWAY_DEBUG_BIND=""
