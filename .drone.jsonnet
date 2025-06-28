@@ -22,8 +22,8 @@ local Build(mirror, go, alpine, os, arch) = {
                 "apk update",
                 "apk add --no-cache git",
                 "mkdir .bin",
-                "go build -v -pgo=auto -v -trimpath -ldflags=-buildid= -o ./.bin/go-away ./cmd/go-away",
-                "go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime",
+                "go build -v -pgo=auto -v -trimpath -ldflags='-buildid= -bindnow' -buildmode pie -o ./.bin/go-away ./cmd/go-away",
+                "go build -v -trimpath -ldflags='-buildid= -bindnow' -buildmode pie -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime",
             ],
         },
         {

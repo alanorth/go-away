@@ -14,8 +14,10 @@ steps:
   - apk update
   - apk add --no-cache git
   - mkdir .bin
-  - go build -v -pgo=auto -v -trimpath -ldflags=-buildid= -o ./.bin/go-away ./cmd/go-away
-  - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
+  - go build -v -pgo=auto -v -trimpath -ldflags='-buildid= -bindnow' -buildmode pie
+    -o ./.bin/go-away ./cmd/go-away
+  - go build -v -trimpath -ldflags='-buildid= -bindnow' -buildmode pie -o ./.bin/test-wasm-runtime
+    ./cmd/test-wasm-runtime
   image: golang:1.24-alpine3.21
   mirror: https://mirror.gcr.io
   name: build
@@ -86,8 +88,10 @@ steps:
   - apk update
   - apk add --no-cache git
   - mkdir .bin
-  - go build -v -pgo=auto -v -trimpath -ldflags=-buildid= -o ./.bin/go-away ./cmd/go-away
-  - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
+  - go build -v -pgo=auto -v -trimpath -ldflags='-buildid= -bindnow' -buildmode pie
+    -o ./.bin/go-away ./cmd/go-away
+  - go build -v -trimpath -ldflags='-buildid= -bindnow' -buildmode pie -o ./.bin/test-wasm-runtime
+    ./cmd/test-wasm-runtime
   image: golang:1.24-alpine3.21
   mirror: https://mirror.gcr.io
   name: build
@@ -158,8 +162,10 @@ steps:
   - apk update
   - apk add --no-cache git
   - mkdir .bin
-  - go build -v -pgo=auto -v -trimpath -ldflags=-buildid= -o ./.bin/go-away ./cmd/go-away
-  - go build -v -o ./.bin/test-wasm-runtime ./cmd/test-wasm-runtime
+  - go build -v -pgo=auto -v -trimpath -ldflags='-buildid= -bindnow' -buildmode pie
+    -o ./.bin/go-away ./cmd/go-away
+  - go build -v -trimpath -ldflags='-buildid= -bindnow' -buildmode pie -o ./.bin/test-wasm-runtime
+    ./cmd/test-wasm-runtime
   image: golang:1.24-alpine3.21
   mirror: https://mirror.gcr.io
   name: build
@@ -503,6 +509,6 @@ trigger:
 type: docker
 ---
 kind: signature
-hmac: df53e4ea6f1c47df4d2a3f89b931b8513e83daa9c6c15baba2662d8112a721c8
+hmac: 9a3872c0b58810924c4342c9dbd338e16da20631c9a0848e3abd2bf6773f9ba6
 
 ...
