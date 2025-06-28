@@ -154,7 +154,9 @@ func main() {
 	var seed []byte
 
 	var kValue string
-	if kValue = os.Getenv("JWT_PRIVATE_KEY_SEED"); kValue != "" {
+	if kValue = os.Getenv("GOAWAY_JWT_PRIVATE_KEY_SEED"); kValue != "" {
+		// prefer first
+	} else if kValue = os.Getenv("JWT_PRIVATE_KEY_SEED"); kValue != "" {
 
 	} else if *jwtPrivateKeySeed != "" {
 		kValue = *jwtPrivateKeySeed
