@@ -9,17 +9,16 @@ mkdir -p .bin/ 2>/dev/null
 
 # Setup tinygo first
 if [[ ! -d .bin/tinygo ]]; then
-  git clone --depth=1 --branch v0.37.0 https://github.com/tinygo-org/tinygo.git .bin/tinygo
+  git clone --depth=1 --branch v0.38.0 https://github.com/tinygo-org/tinygo.git .bin/tinygo
   pushd .bin/tinygo
   git submodule update --init --recursive
 
   go mod download -x && go mod verify
 
-  make binaryen STATIC=1
-  make wasi-libc
-
   make llvm-source
   make llvm-build
+
+  make binaryen STATIC=1
 
   make build/release
 else
