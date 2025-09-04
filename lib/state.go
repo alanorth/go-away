@@ -111,13 +111,13 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 	state.privateKeyFingerprint = fp[:]
 
 	state.templates = make(map[string]*template.Template)
-	maps.Copy(state.templates, templates)
+	maps.Copy(state.templates, globalTemplates)
 
 	if state.templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"] == nil {
 
 		if data, err := os.ReadFile(state.opt.ChallengeTemplate); err == nil && len(data) > 0 {
 			name := path.Base(state.opt.ChallengeTemplate)
-			err := initTemplate(name, string(data))
+			err := initTemplate(state.templates, name, string(data))
 			if err != nil {
 				return nil, fmt.Errorf("error loading template %s: %w", state.opt.ChallengeTemplate, err)
 			}

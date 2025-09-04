@@ -11,11 +11,11 @@ import (
 	"git.gammaspectra.live/git/go-away/utils"
 )
 
-var templates map[string]*template.Template
+var globalTemplates map[string]*template.Template
 
 func init() {
 
-	templates = make(map[string]*template.Template)
+	globalTemplates = make(map[string]*template.Template)
 
 	dir, err := embed.TemplatesFs.ReadDir(".")
 	if err != nil {
@@ -29,14 +29,14 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		err = initTemplate(e.Name(), string(data))
+		err = initTemplate(globalTemplates, e.Name(), string(data))
 		if err != nil {
 			panic(err)
 		}
 	}
 }
 
-func initTemplate(name, data string) error {
+func initTemplate(templates map[string]*template.Template, name, data string) error {
 	tpl := template.New(name).Funcs(template.FuncMap{
 		"attr": func(s string) template.HTMLAttr {
 			return template.HTMLAttr(s)
