@@ -1,8 +1,10 @@
 package settings
 
 import (
-	"git.gammaspectra.live/git/go-away/utils"
 	"maps"
+	"net/http"
+
+	"git.gammaspectra.live/git/go-away/utils"
 )
 
 type Settings struct {
@@ -18,6 +20,8 @@ type Settings struct {
 	// Links to add to challenge/error pages like privacy/impressum.
 	Links []Link `yaml:"links"`
 
+	ChallengeHttpCode int `yaml:"challenge-http-code"`
+
 	ChallengeTemplate string `yaml:"challenge-template"`
 
 	// ChallengeTemplateOverrides Key/Value overrides for the current chosen template
@@ -31,6 +35,7 @@ type Link struct {
 
 var DefaultSettings = Settings{
 	Strings:           DefaultStrings,
+	ChallengeHttpCode: http.StatusTeapot,
 	ChallengeTemplate: "anubis",
 	ChallengeTemplateOverrides: func() map[string]string {
 		m := make(map[string]string)

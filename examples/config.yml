@@ -52,6 +52,9 @@ challenge-template-overrides:
   # Set logo on template if supported
   #Logo: "/my/custom/logo/path.png"
 
+# Change the default HTTP code sent when serving challenges.
+#challenge-http-code: 418
+
 # Advanced backend configuration
 # Backends setup via cmdline will be added here
 backends:

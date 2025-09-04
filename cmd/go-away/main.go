@@ -8,12 +8,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"git.gammaspectra.live/git/go-away/lib"
-	"git.gammaspectra.live/git/go-away/lib/policy"
-	"git.gammaspectra.live/git/go-away/lib/settings"
-	"git.gammaspectra.live/git/go-away/utils"
-	"github.com/goccy/go-yaml"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log/slog"
 	"net/http"
 	"net/http/pprof"
@@ -24,6 +18,13 @@ import (
 	"runtime/debug"
 	"strings"
 	"syscall"
+
+	"git.gammaspectra.live/git/go-away/lib"
+	"git.gammaspectra.live/git/go-away/lib/policy"
+	"git.gammaspectra.live/git/go-away/lib/settings"
+	"git.gammaspectra.live/git/go-away/utils"
+	"github.com/goccy/go-yaml"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var internalCmdName = "go-away"
@@ -83,6 +84,8 @@ func main() {
 	policyFile := flag.String("policy", "", "path to policy YAML file")
 	var policySnippets MultiVar
 	flag.Var(&policySnippets, "policy-snippets", "path to YAML snippets folder (can be specified multiple times)")
+
+	flag.IntVar(&opt.ChallengeHttpCode, "challenge-http-code", opt.ChallengeHttpCode, "default http-code to use when serving challenges (defaults to 418, I'm a Teapot)")
 
 	flag.StringVar(&opt.ChallengeTemplate, "challenge-template", opt.ChallengeTemplate, "name or path of the challenge template to use (anubis, forgejo)")
 
@@ -262,7 +265,7 @@ func main() {
 			PrivateKeySeed:        seed,
 			ClientIpHeader:        *clientIpHeader,
 			BackendIpHeader:       *backendIpHeader,
-			ChallengeResponseCode: http.StatusTeapot,
+			ChallengeResponseCode: opt.ChallengeHttpCode,
 		}
 
 		state, err := lib.NewState(*p, opt, stateSettings)
