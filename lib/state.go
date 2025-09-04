@@ -1,21 +1,12 @@
 package lib
 
 import (
-	http_cel "codeberg.org/gone/http-cel"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"git.gammaspectra.live/git/go-away/lib/challenge"
-	"git.gammaspectra.live/git/go-away/lib/policy"
-	"git.gammaspectra.live/git/go-away/lib/settings"
-	"git.gammaspectra.live/git/go-away/utils"
-	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/common/types"
-	"github.com/yl2chen/cidranger"
-	"golang.org/x/net/html"
 	"log/slog"
 	"net"
 	"net/http"
@@ -26,6 +17,16 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	http_cel "codeberg.org/gone/http-cel"
+	"git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/lib/policy"
+	"git.gammaspectra.live/git/go-away/lib/settings"
+	"git.gammaspectra.live/git/go-away/utils"
+	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/types"
+	"github.com/yl2chen/cidranger"
+	"golang.org/x/net/html"
 )
 
 type State struct {
@@ -117,6 +118,8 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 		} else {
 			return nil, fmt.Errorf("no template defined for %s", state.opt.ChallengeTemplate)
 		}
+	} else {
+		state.opt.ChallengeTemplate = "challenge-" + state.opt.ChallengeTemplate + ".gohtml"
 	}
 
 	state.networks = make(map[string]func() cidranger.Ranger)

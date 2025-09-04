@@ -2,12 +2,13 @@ package lib
 
 import (
 	"bytes"
-	"git.gammaspectra.live/git/go-away/embed"
-	"git.gammaspectra.live/git/go-away/lib/challenge"
-	"git.gammaspectra.live/git/go-away/utils"
 	"html/template"
 	"maps"
 	"net/http"
+
+	"git.gammaspectra.live/git/go-away/embed"
+	"git.gammaspectra.live/git/go-away/lib/challenge"
+	"git.gammaspectra.live/git/go-away/utils"
 )
 
 var templates map[string]*template.Template
@@ -104,7 +105,7 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 
 	buf := bytes.NewBuffer(make([]byte, 0, 8192))
 
-	err := templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"].Execute(buf, input)
+	err := templates[state.opt.ChallengeTemplate].Execute(buf, input)
 	if err != nil {
 		state.ErrorPage(w, r, http.StatusInternalServerError, err, "")
 	} else {
@@ -139,7 +140,7 @@ func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int
 
 	state.addCachedTags(data, r, input)
 
-	err2 := templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"].Execute(buf, input)
+	err2 := templates[state.opt.ChallengeTemplate].Execute(buf, input)
 	if err2 != nil {
 		// nested errors!
 		panic(err2)
