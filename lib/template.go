@@ -105,7 +105,7 @@ func (state *State) ChallengePage(w http.ResponseWriter, r *http.Request, status
 
 	buf := bytes.NewBuffer(make([]byte, 0, 8192))
 
-	err := templates[state.opt.ChallengeTemplate].Execute(buf, input)
+	err := state.templates[state.opt.ChallengeTemplate].Execute(buf, input)
 	if err != nil {
 		state.ErrorPage(w, r, http.StatusInternalServerError, err, "")
 	} else {
@@ -140,7 +140,7 @@ func (state *State) ErrorPage(w http.ResponseWriter, r *http.Request, status int
 
 	state.addCachedTags(data, r, input)
 
-	err2 := templates[state.opt.ChallengeTemplate].Execute(buf, input)
+	err2 := state.templates[state.opt.ChallengeTemplate].Execute(buf, input)
 	if err2 != nil {
 		// nested errors!
 		panic(err2)

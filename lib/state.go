@@ -7,7 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log/slog"
+	"maps"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -52,6 +54,8 @@ type State struct {
 	close chan struct{}
 
 	tagCache *utils.DecayMap[string, []html.Node]
+
+	templates map[string]*template.Template
 
 	Mux *http.ServeMux
 }
@@ -106,7 +110,10 @@ func NewState(p policy.Policy, opt settings.Settings, settings policy.StateSetti
 	fp := sha256.Sum256(state.privateKey)
 	state.privateKeyFingerprint = fp[:]
 
-	if templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"] == nil {
+	state.templates = make(map[string]*template.Template)
+	maps.Copy(state.templates, templates)
+
+	if state.templates["challenge-"+state.opt.ChallengeTemplate+".gohtml"] == nil {
 
 		if data, err := os.ReadFile(state.opt.ChallengeTemplate); err == nil && len(data) > 0 {
 			name := path.Base(state.opt.ChallengeTemplate)
