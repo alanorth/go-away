@@ -29,16 +29,19 @@ main {
 }
 
 ::selection {
-    background: #d3869b;
+    /* CGIAR complimentary highlight green */
+    background: #57FAD3;
 }
 
 body {
-    background: #1d2021;
-    color: #f9f5d7;
+    background: #FFFFFF;
+    /* CGIAR gray-800 */
+    color: #1D1D1D;
 }
 
 pre {
-    background-color: #3c3836;
+    /* CGIAR primary light */
+    background-color: #E2E0DF;
     padding: 1em;
     border: 0;
     font-family: "Noto Sans Mono", monospace;
@@ -47,8 +50,9 @@ pre {
 a,
 a:active,
 a:visited {
-    color: #b16286;
-    background-color: #282828;
+    color: #FFFFFF;
+    /* CGIAR primary green */
+    background-color: #033529;
 }
 
 h1,
@@ -60,48 +64,8 @@ h5 {
     font-family: "Noto Sans Display", serif;
 }
 
-blockquote {
-    border-left: 1px solid #bdae93;
-    margin: 0.5em 10px;
-    padding: 0.5em 10px;
-}
-
 footer {
     text-align: center;
-}
-
-@media (prefers-color-scheme: light) {
-    body {
-        background: #f9f5d7;
-        color: #1d2021;
-    }
-
-    pre {
-        background-color: #ebdbb2;
-        padding: 1em;
-        border: 0;
-    }
-
-    a,
-    a:active,
-    a:visited {
-        color: #b16286;
-        background-color: #fbf1c7;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4,
-    h5 {
-        margin-bottom: 0.1rem;
-    }
-
-    blockquote {
-        border-left: 1px solid #655c54;
-        margin: 0.5em 10px;
-        padding: 0.5em 10px;
-    }
 }
 
 body,
