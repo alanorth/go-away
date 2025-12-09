@@ -1,31 +1,28 @@
-/*
 @font-face {
-    font-family: "Geist";
+    font-family: "Noto Sans";
     font-style: normal;
     font-weight: 100 900;
     font-display: swap;
-    src: url("geist.woff2") format("woff2");
+    src: url("noto-sans.woff2") format("woff2");
 }
 
 @font-face {
-    font-family: "Podkova";
+    font-family: "Noto Sans Display";
     font-style: normal;
     font-weight: 400 800;
     font-display: swap;
-    src: url("podkova.woff2") format("woff2");
+    src: url("noto-sans-display.woff2") format("woff2");
 }
 
 @font-face {
-    font-family: "Iosevka Curly";
+    font-family: "Noto Sans Mono";
     font-style: monospace;
     font-display: swap;
-    src: url("iosevka-curly.woff2") format("woff2");
+    src: url("noto-sans-mono.woff2") format("woff2");
 }
-*/
 
 main {
-    /* See: https://getbootstrap.com/docs/5.3/content/reboot/#native-font-stack */
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif,
+    font-family: "Noto Sans", sans-serif;
     max-width: 50rem;
     padding: 2rem;
     margin: auto;
@@ -44,8 +41,7 @@ pre {
     background-color: #3c3836;
     padding: 1em;
     border: 0;
-    /* See: https://modernfontstacks.com/ */
-    font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-family: "Noto Sans Mono", monospace;
 }
 
 a,
@@ -61,7 +57,7 @@ h3,
 h4,
 h5 {
     margin-bottom: 0.1rem;
-    /*font-family: Podkova, serif;*/
+    font-family: "Noto Sans Display", serif;
 }
 
 blockquote {
