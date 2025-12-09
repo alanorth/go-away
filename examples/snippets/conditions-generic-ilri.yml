@@ -5,3 +5,14 @@ conditions:
     - 'userAgent.matches("\\+https?://")'
     - 'userAgent.contains("@")'
     - 'userAgent.matches("(?i)(bot|crawl|scrape|spider)")'
+
+  # Apparently all modern browsers request Sec-Fetch-Dest, Sec-Fetch-Mode, and
+  # Sec-Fetch-Site. So if you say you are Chrome, Firefox, or Safari and don't
+  # also set those headers you are a bot.
+  #
+  # See: https://lobste.rs/s/gig2wt/you_don_t_need_anubis
+  # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Dest
+  is-unrealistic-browser:
+    - 'userAgent.matches("(Chrome|Firefox|Safari)") && !("Sec-Fetch-Dest" in headers && headers["Sec-Fetch-Dest"].matches("^.+$"))'
+    - 'userAgent.matches("(Chrome|Firefox|Safari)") && !("Sec-Fetch-Mode" in headers && headers["Sec-Fetch-Mode"].matches("^.+$"))'
+    - 'userAgent.matches("(Chrome|Firefox|Safari)") && !("Sec-Fetch-Site" in headers && headers["Sec-Fetch-Site"].matches("^.+$"))'
