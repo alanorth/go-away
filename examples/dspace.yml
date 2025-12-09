@@ -73,13 +73,14 @@ rules:
       - *is-bot-opera-mini
     action: pass
 
+  # These are defined in examples/snippets/networks-other-ilri.yml
   - name: undesired-networks
     conditions:
-      - 'remoteAddress.network("asn-132203")'
-      - 'remoteAddress.network("asn-136907")'
-      - 'remoteAddress.network("asn-45102")'
-      - 'remoteAddress.network("asn-37963")'
-      - 'remoteAddress.network("asn-50245")'
+      - 'remoteAddress.network("tencent")'
+      - 'remoteAddress.network("huawei-cloud")'
+      - 'remoteAddress.network("alibaba-us")'
+      - 'remoteAddress.network("alibaba")'
+      - 'remoteAddress.network("serverel")'
       - 'remoteAddress.network("gptbot")'
     action: drop
 
