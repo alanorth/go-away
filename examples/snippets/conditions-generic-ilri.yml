@@ -1,5 +1,26 @@
 conditions:
-  # Override go-away's robot list
+  # Override go-away's list in examples/snippets/conditions-generic.yml
+  is-well-known-asset:
+    # general txt files or scraper
+    - 'path == "/robots.txt" || path == "/security.txt"'
+
+    # Sitemaps
+    # See: https://regex101.com/r/6xWiF4/2
+    - 'path.matches("^/sitemap.*?\\.xml$")'
+
+    # ads txt files
+    - 'path == "/app-ads.txt" || path == "/ads.txt"'
+
+    # generally requested by browsers
+    - 'path == "/favicon.ico"'
+
+    # used by some applications
+    - 'path == "/crossdomain.xml"'
+
+    # well-known paths
+    - 'path.startsWith("/.well-known/")'
+
+  # Override go-away's list in examples/snippets/conditions-generic.yml
   is-generic-robot-ua:
     - 'userAgent.matches("compatible[;)]") && !userAgent.contains("Trident/")'
     - 'userAgent.matches("\\+https?://")'
