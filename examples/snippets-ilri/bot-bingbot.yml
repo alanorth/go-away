@@ -1,0 +1,8 @@
+networks:
+  bingbot:
+    - url: https://www.bing.com/toolbox/bingbot.json
+      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
+
+conditions:
+  is-bot-bingbot:
+      - &is-bot-bingbot 'userAgent.contains("+http://www.bing.com/bingbot.htm") && remoteAddress.network("bingbot")'

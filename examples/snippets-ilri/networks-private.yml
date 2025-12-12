@@ -1,0 +1,22 @@
+networks:
+  localhost:
+    # localhost and loopback addresses
+    - prefixes:
+      - "127.0.0.0/8"
+      - "::1/128"
+  private:
+    # Private network CIDR blocks
+    - prefixes:
+        # private networks
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+        - "fc00::/7"
+        # CGNAT
+        - "100.64.0.0/10"
+
+conditions:
+  is-network-localhost:
+    - &is-network-localhost 'remoteAddress.network("localhost")'
+  is-network-private:
+    - &is-network-private 'remoteAddress.network("private")'

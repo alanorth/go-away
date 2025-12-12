@@ -1,0 +1,6 @@
+challenges:
+  dnsbl:
+    runtime: dnsbl
+    parameters:
+      dnsbl-decay: 1h
+      dnsbl-timeout: 1s

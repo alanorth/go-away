@@ -1,0 +1,73 @@
+conditions:
+  is-well-known-asset:
+    # general txt files or scraper
+    - 'path == "/robots.txt" || path == "/security.txt"'
+
+    # ILRI customization to match more sitemaps
+    # See: https://regex101.com/r/6xWiF4/2
+    - 'path.matches("^/sitemap.*?\\.xml$")'
+
+    # ads txt files
+    - 'path == "/app-ads.txt" || path == "/ads.txt"'
+
+    # generally requested by browsers
+    - 'path == "/favicon.ico"'
+
+    # used by some applications
+    - 'path == "/crossdomain.xml"'
+
+    # well-known paths
+    - 'path.startsWith("/.well-known/")'
+
+  is-git-ua:
+    - 'userAgent.startsWith("git/") || userAgent.contains("libgit")'
+    - 'userAgent.startsWith("go-git")'
+    - 'userAgent.startsWith("JGit/") || userAgent.startsWith("JGit-")'
+    # Golang proxy and initial fetch
+    - 'userAgent.startsWith("GoModuleMirror/")'
+    - 'userAgent.startsWith("Go-http-client/") && "go-get" in query && query["go-get"] == "1"'
+    - '"Git-Protocol" in headers && headers["Git-Protocol"] == "version=2"'
+
+  is-generic-browser:
+    - 'userAgent.startsWith("Mozilla/") || userAgent.startsWith("Opera/")'
+
+  is-generic-robot-ua:
+    - 'userAgent.matches("compatible[;)]") && !userAgent.contains("Trident/")'
+    - 'userAgent.matches("\\+https?://")'
+    - 'userAgent.contains("@")'
+    # ILRI customization to match more bot user agents
+    - 'userAgent.matches("(?i)(bot|crawl|scrape|spider)")'
+
+  is-tool-ua:
+    - 'userAgent.startsWith("python-requests/")'
+    - 'userAgent.startsWith("Python-urllib/")'
+    - 'userAgent.startsWith("python-httpx/")'
+    - 'userAgent.contains("aoihttp/")'
+    - 'userAgent.startsWith("http.rb/")'
+    - 'userAgent.startsWith("curl/")'
+    - 'userAgent.startsWith("Wget/")'
+    - 'userAgent.startsWith("libcurl/")'
+    - 'userAgent.startsWith("okhttp/")'
+    - 'userAgent.startsWith("Java/")'
+    - 'userAgent.startsWith("Apache-HttpClient//")'
+    - 'userAgent.startsWith("Go-http-client/")'
+    - 'userAgent.startsWith("node-fetch/")'
+    - 'userAgent.startsWith("reqwest/")'
+
+  # Checks to detect a headless chromium via headers only
+  is-headless-chromium:
+    - 'userAgent.contains("HeadlessChrome") || userAgent.contains("HeadlessChromium")'
+    - '"Sec-Ch-Ua" in headers && (headers["Sec-Ch-Ua"].contains("HeadlessChrome") || headers["Sec-Ch-Ua"].contains("HeadlessChromium"))'
+    #- '(userAgent.contains("Chrome/") || userAgent.contains("Chromium/")) && (!("Accept-Language" in headers) || !("Accept-Encoding" in headers))'
+
+  # ILRI customization
+  # Apparently all modern browsers request Sec-Fetch-Dest, Sec-Fetch-Mode, and
+  # Sec-Fetch-Site. So if you say you are Chrome, Firefox, or Safari and don't
+  # also set those headers you are a bot.
+  #
+  # See: https://lobste.rs/s/gig2wt/you_don_t_need_anubis
+  # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Dest
+  is-unrealistic-browser:
+    - 'userAgent.matches("(Chrome|Firefox|Safari)") && !("Sec-Fetch-Dest" in headers && headers["Sec-Fetch-Dest"].matches("^.+$"))'
+    - 'userAgent.matches("(Chrome|Firefox|Safari)") && !("Sec-Fetch-Mode" in headers && headers["Sec-Fetch-Mode"].matches("^.+$"))'
+    - 'userAgent.matches("(Chrome|Firefox|Safari)") && !("Sec-Fetch-Site" in headers && headers["Sec-Fetch-Site"].matches("^.+$"))'

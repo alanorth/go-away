@@ -1,0 +1,15 @@
+challenges:
+  js-pow-sha256:
+    runtime: js
+    parameters:
+      # specifies the folder path that assets are under
+      # can be either embedded or external path
+      # defaults to name of challenge
+      path: "js-pow-sha256"
+      # needs to be under static folder
+      js-loader: load.mjs
+      # needs to be under runtime folder
+      wasm-runtime: runtime.wasm
+      wasm-runtime-settings:
+        difficulty: 20
+      verify-probability: 0.02

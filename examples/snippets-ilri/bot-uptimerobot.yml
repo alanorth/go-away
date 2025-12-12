@@ -1,0 +1,8 @@
+networks:
+  uptimerobot:
+    - url: https://uptimerobot.com/inc/files/ips/IPv4andIPv6.txt
+      regex: "(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+(/[0-9]+)?|[0-9a-f:]+:.+)"
+
+conditions:
+  is-bot-uptimerobot:
+      - &is-bot-uptimerobot 'userAgent.contains("http://www.uptimerobot.com/") && remoteAddress.network("uptimerobot")'

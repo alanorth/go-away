@@ -1,0 +1,8 @@
+networks:
+  kagibot:
+    - url: https://kagi.com/bot
+      regex: "\\n(?P<prefix>[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+) "
+
+conditions:
+  is-bot-kagibot:
+      - &is-bot-kagibot 'userAgent.contains("+https://kagi.com/bot") && remoteAddress.network("kagibot")'

@@ -1,0 +1,8 @@
+networks:
+  googlebot:
+    - url: https://developers.google.com/static/search/apis/ipranges/googlebot.json
+      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
+
+conditions:
+  is-bot-googlebot:
+      - &is-bot-googlebot '(userAgent.contains("+http://www.google.com/bot.html") || userAgent.contains("Google-PageRenderer") || userAgent.contains("Google-InspectionTool") || userAgent.contains("Googlebot")) && remoteAddress.network("googlebot")'

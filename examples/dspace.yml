@@ -73,7 +73,7 @@ rules:
       - *is-bot-opera-mini
     action: pass
 
-  # These are defined in examples/snippets/networks-other-ilri.yml
+  # These are defined in examples/snippets/networks-other.yml
   - name: undesired-networks
     conditions:
       - 'remoteAddress.network("tencent")'
