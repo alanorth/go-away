@@ -48,6 +48,33 @@ networks:
     - asn: 37963
   serverel:
     - asn: 50245
+  hetzner:
+    - asn: 24940
+
+  ##
+  # Crawlers on Chinese operators scraping `/search` like crazy.
+  ##
+  chinese-crawlers:
+    - asn: 132525
+    - asn: 134810
+    - asn: 136190
+    - asn: 138169
+    - asn: 17816
+    - asn: 24444
+    - asn: 24445
+    - asn: 24547
+    - asn: 4134
+    - asn: 4808
+    - asn: 4812
+    - asn: 4837
+    - asn: 56040
+    - asn: 56041
+    - asn: 56042
+    - asn: 56044
+    - asn: 56045
+    - asn: 56046
+    - asn: 56047
+    - asn: 9808
 
   # See: https://platform.openai.com/docs/bots
   gptbot:

@@ -18,9 +18,9 @@ conditions:
   # Conditions will get included from snippets
 
   is-static-asset:
-    - 'path.startsWith("/favicon")'
-    - 'path == "/apple-touch-icon.png"'
     - 'path.startsWith("/assets/")'
+    # Most of these will be served from nginx directly but I will leave them here
+    # just in case.
     - 'path.matches("\\.(avif|css|gif|js|json|jpeg|jpg|manifest|mjs|mp4|png|svg|ttf|wasm|webm|webp|woff|woff2)$")'
 
   is-suspicious-crawler:
@@ -40,14 +40,18 @@ conditions:
     # Old Firefox (versions x, xx, and 10x/11x/12x), except version 128 ESR
     - '(userAgent.matches("Firefox/\\d{1,2}\\.") || userAgent.matches("Firefox/1[012]\\d\\.")) && !userAgent.matches("Firefox/128\\.")'
 
+  # DSpace search and browse pages are heavy
   is-heavy-resource:
     # DSpace 7+ top-level browse: https://demo.dspace.org/browse/dateissued
     # DSpace 8+ community/collection browse: https://demo.dspace.org/collections/6a259fbf-b49b-47c3-9122-748930752229/browse/dateissued
     - 'path.contains("/browse/")'
     # DSpace 7+ top-level search: https://demo.dspace.org/search?query=simmons
+    - 'path.contains("/search") && ("query" in query && query.query != "")'
+    # DSpace 7+ top-level search facets: https://demo.dspace.org/search?f.author=Simmons%2C%20Cameron%2Cequals&f.author=Ha%2C%20MT%2Cequals&spc.page=1
     # DSpace 9+ community/collection search: https://demo.dspace.org/communities/0958c910-2037-42a9-81c7-dca80e3892b4/search?f.author=Simmons%2C%20Cameron%2Cequals&spc.page=1
-    # Path must contain search AND have some query parameters (could be query or filters)
-    - 'path.contains("/search") && size(query) > 0'
+    # Path must contain "search" AND have an spc.page parameter. This seems to
+    # always be present for search queries and facet searches.
+    - 'path.contains("/search") && "spc.page" in query'
 
 # Rules are checked sequentially in order, from top to bottom
 rules:
@@ -71,9 +75,11 @@ rules:
       - *is-bot-yandexbot
       - *is-bot-uptimerobot
       - *is-bot-opera-mini
+      - *is-bot-facebook-share
+      - *is-bot-chatgpt-user
     action: pass
 
-  # These are defined in examples/snippets/networks-other.yml
+  # These are defined in examples/snippets-ilri/networks-other.yml
   - name: undesired-networks
     conditions:
       - 'remoteAddress.network("tencent")'
@@ -82,6 +88,17 @@ rules:
       - 'remoteAddress.network("alibaba")'
       - 'remoteAddress.network("serverel")'
       - 'remoteAddress.network("gptbot")'
+      - 'remoteAddress.network("aws-cloud")'
+      - 'remoteAddress.network("azure-cloud")'
+      - 'remoteAddress.network("cloudflare")'
+      - 'remoteAddress.network("digitalocean")'
+      - 'remoteAddress.network("google-cloud")'
+      - 'remoteAddress.network("hetzner")'
+      - 'remoteAddress.network("linode")'
+      - 'remoteAddress.network("oracle-cloud")'
+      - 'remoteAddress.network("vultr")'
+      # Chinese networks hitting /search hard
+      - 'remoteAddress.network("chinese-crawlers")'
     action: drop
 
   - name: undesired-crawlers
@@ -106,6 +123,7 @@ rules:
       - 'userAgent.contains("Amazonbot") || userAgent.contains("Google-Extended") || userAgent.contains("PanguBot") || userAgent.contains("AI2Bot") || userAgent.contains("Diffbot") || userAgent.contains("cohere-training-data-crawler") || userAgent.contains("Applebot-Extended")'
       # SEO / Ads and marketing
       - 'userAgent.contains("BLEXBot")'
+      - 'userAgent.contains("Scrapy")'
     action: drop
 
   - name: unknown-crawlers
@@ -114,95 +132,36 @@ rules:
       - 'userAgent == ""'
     action: deny
 
-  # check a sequence of challenges
   - name: suspicious-crawlers
-    conditions: ['($is-suspicious-crawler)']
-    action: none
-    children:
-      - name: 0
-        action: check
-        settings:
-          challenges: [js-refresh]
-      - name: 1
-        action: check
-        settings:
-          challenges: [preload-link, resource-load]
-      - name: 2
-        action: check
-        settings:
-          challenges: [header-refresh]
-
-  # DSpace 7+ sitemap
-  - name: sitemap
     conditions:
-      - 'path.matches("^/sitemap([0-9]+|_index)\\.xml$")'
-    action: pass
+      - '($is-suspicious-crawler)'
+      - '($is-unrealistic-browser)'
+    action: challenge
+    settings:
+      challenges: [js-pow-sha256]
 
-  # check a sequence of challenges
-  # A pass in child 0 goes to child 1
+  ###
+  # In theory "real" users will start being challenged here.
+  ###
+
+  # TEST
+  #- name: always-pow
+  #  conditions:
+  #    - 'path == "/items/bef99a30-aaeb-4ccd-af55-9adbe6e68f89"'
+  #  action: challenge
+  #  settings:
+  #    challenges: [js-pow-sha256]
+
   - name: heavy-operations
     conditions: ['($is-heavy-resource)']
-    action: none
-    children:
-      - name: 0
-        action: check
-        settings:
-          challenges: [preload-link, header-refresh, js-refresh]
-      - name: 1
-        action: check
-        settings:
-          challenges: [ resource-load, js-refresh ]
+    action: challenge
+    settings:
+      challenges: [js-pow-sha256]
 
-  # Allow loading of core pages without challenges
   - name: homesite
     conditions:
-      - 'path == "/"'
-      - 'path == "/home"'
-    action: pass
-
-  # check DNSBL and serve harder challenges
-  # todo: make this specific to score
-  - name: undesired-dnsbl
-    action: check
-    settings:
-      challenges: [dnsbl]
-      # if DNSBL fails, check additional challenges
-      fail: check
-      fail-settings:
-        challenges: [js-refresh]
-
-  - name: suspicious-fetchers
-    action: check
-    settings:
-      challenges: [js-refresh]
-    conditions:
-      - 'userAgent.contains("facebookexternalhit/") || userAgent.contains("facebookcatalog/")'
-
-  # Allow PUT/DELETE/PATCH/POST requests in general
-  - name: non-get-request
-    action: pass
-    conditions:
-      - '!(method == "HEAD" || method == "GET")'
-
-  - name: plaintext-browser
-    action: challenge
-    settings:
-      challenges: [meta-refresh, cookie]
-    conditions:
-      - 'userAgent.startsWith("Lynx/")'
-
-  # Comment this rule out to not challenge tool-like user agents
-  - name: standard-tools
-    action: challenge
-    settings:
-      challenges: [cookie]
-    conditions:
-      - '($is-tool-ua)'
-      - '!($is-generic-browser)'
-
-  # Allow loading of DSpace objects without challenges
-  - name: homesite-dspace-objects
-    conditions:
+      - 'path == "/" || path == "/home"'
+      # Allow loading of DSpace objects without challenges
       - 'path.startsWith("/bitstream/")'
       - 'path.startsWith("/bitstreams/")'
       - 'path.startsWith("/collections/")'
@@ -210,14 +169,29 @@ rules:
       - 'path.startsWith("/entities/")'
       - 'path.startsWith("/handle/")'
       - 'path.startsWith("/items/")'
-      - 'path.startsWith("/reload/")'
     action: pass
 
-  - name: standard-browser
-    action: challenge
-    settings:
-      challenges: [preload-link, meta-refresh, resource-load, js-refresh, js-pow-sha256]
-    conditions:
-      - '($is-generic-browser)'
+  #- name: plaintext-browser
+  #  action: challenge
+  #  settings:
+  #    challenges: [meta-refresh, cookie]
+  #  conditions:
+  #    - 'userAgent.startsWith("Lynx/")'
+
+  # Comment this rule out to not challenge tool-like user agents
+  #- name: standard-tools
+  #  action: challenge
+  #  settings:
+  #    challenges: [cookie]
+  #  conditions:
+  #    - '($is-tool-ua)'
+  #    - '!($is-generic-browser)'
+
+  #- name: standard-browser
+  #  action: challenge
+  #  settings:
+  #    challenges: [preload-link, meta-refresh, resource-load, js-refresh, js-pow-sha256]
+  #  conditions:
+  #    - '($is-generic-browser)'
 
 # If end of rules is reached, default is PASS
