@@ -1,0 +1,11 @@
+# We only want OpenAI bots related to user requests, not AI training.
+#
+# See: https://platform.openai.com/docs/bots
+networks:
+  chatgpt-user:
+    - url: https://openai.com/chatgpt-user.json
+      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
+
+conditions:
+  is-bot-chatgpt-user:
+      - &is-bot-chatgpt-user 'userAgent.contains("ChatGPT-User/") && remoteAddress.network("chatgpt-user")'
