@@ -38,18 +38,22 @@ networks:
 
 # ILRI customizations
 
-  tencent:
+  datacenters:
+  #tencent
     - asn: 132203
-  huawei-cloud:
+  #huawei-cloud
     - asn: 136907
-  alibaba-us:
+  #alibaba-us
     - asn: 45102
-  alibaba:
+  #alibaba
     - asn: 37963
-  serverel:
+  #serverel
     - asn: 50245
-  hetzner:
+  #hetzner
     - asn: 24940
+    - asn: 212317
+    - asn: 213230
+    - asn: 215859
 
   ##
   # Crawlers on Chinese operators scraping `/search` like crazy.

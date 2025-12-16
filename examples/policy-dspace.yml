@@ -82,21 +82,17 @@ rules:
   # These are defined in examples/snippets-ilri/networks-other.yml
   - name: undesired-networks
     conditions:
-      - 'remoteAddress.network("tencent")'
-      - 'remoteAddress.network("huawei-cloud")'
-      - 'remoteAddress.network("alibaba-us")'
-      - 'remoteAddress.network("alibaba")'
-      - 'remoteAddress.network("serverel")'
       - 'remoteAddress.network("gptbot")'
       - 'remoteAddress.network("aws-cloud")'
       - 'remoteAddress.network("azure-cloud")'
       - 'remoteAddress.network("cloudflare")'
       - 'remoteAddress.network("digitalocean")'
       - 'remoteAddress.network("google-cloud")'
-      - 'remoteAddress.network("hetzner")'
       - 'remoteAddress.network("linode")'
       - 'remoteAddress.network("oracle-cloud")'
       - 'remoteAddress.network("vultr")'
+      # Other datacenters
+      - 'remoteAddress.network("datacenters")'
       # Chinese networks hitting /search hard
       - 'remoteAddress.network("chinese-crawlers")'
     action: drop
