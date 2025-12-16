@@ -80,6 +80,7 @@ rules:
       - *is-bot-applebot
       - *is-bot-ccbot
       - *is-bot-altmetric
+      - *is-bot-claude-user
       - 'remoteAddress.network("good")'
     action: pass
 
@@ -114,7 +115,7 @@ rules:
       # Meta AI training; The Meta-ExternalAgent crawler crawls the web for use cases such as training AI models or improving products by indexing content directly.
       - 'userAgent.contains("meta-externalagent/") || userAgent.contains("meta-externalfetcher/") || userAgent.contains("FacebookBot")'
       # Anthropic AI training and usage
-      - 'userAgent.contains("ClaudeBot") || userAgent.contains("Claude-User")|| userAgent.contains("Claude-SearchBot")'
+      - 'userAgent.contains("ClaudeBot") || userAgent.contains("Claude-SearchBot")'
       # ChatGPT AI crawlers https://platform.openai.com/docs/bots
       - 'userAgent.contains("GPTBot") || userAgent.contains("OAI-SearchBot")'
       # Other AI crawlers

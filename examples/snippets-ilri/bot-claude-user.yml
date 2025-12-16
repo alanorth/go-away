@@ -1,0 +1,13 @@
+# We only want Claude bots related to user requests, not AI training. Anthropic
+# does not provide official lists of their user agents so we use darkvisitors.
+#
+# See: https://darkvisitors.com/operators/anthropic
+# See: https://platform.claude.com/docs/en/api/ip-addresses
+networks:
+  claude-user:
+    - prefixes:
+      - "160.79.104.0/21"
+
+conditions:
+  is-bot-claude-user:
+      - &is-bot-claude-user 'userAgent.contains("Claude-User/") && remoteAddress.network("claude-user")'
