@@ -1,0 +1,10 @@
+# See: +https://commoncrawl.org/bot.html
+
+networks:
+  ccbot:
+    - url: https://index.commoncrawl.org/ccbot.json
+      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
+
+conditions:
+  is-bot-ccbot:
+      - &is-bot-ccbot 'userAgent.contains("+https://commoncrawl.org/bot.html") && remoteAddress.network("ccbot")'

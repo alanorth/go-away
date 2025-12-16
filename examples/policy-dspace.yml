@@ -77,6 +77,8 @@ rules:
       - *is-bot-opera-mini
       - *is-bot-facebook-share
       - *is-bot-chatgpt-user
+      - *is-bot-applebot
+      - *is-bot-ccbot
     action: pass
 
   # These are defined in examples/snippets-ilri/networks-other.yml
@@ -111,8 +113,6 @@ rules:
       - 'userAgent.contains("meta-externalagent/") || userAgent.contains("meta-externalfetcher/") || userAgent.contains("FacebookBot")'
       # Anthropic AI training and usage
       - 'userAgent.contains("ClaudeBot") || userAgent.contains("Claude-User")|| userAgent.contains("Claude-SearchBot")'
-      # Common Crawl AI crawlers
-      - 'userAgent.contains("CCBot")'
       # ChatGPT AI crawlers https://platform.openai.com/docs/bots
       - 'userAgent.contains("GPTBot") || userAgent.contains("OAI-SearchBot") || userAgent.contains("ChatGPT-User")'
       # Other AI crawlers

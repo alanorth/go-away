@@ -1,0 +1,10 @@
+# See: https://support.apple.com/en-us/119829
+
+networks:
+  applebot:
+    - url: https://search.developer.apple.com/applebot.json
+      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
+
+conditions:
+  is-bot-applebot:
+      - &is-bot-applebot 'userAgent.contains("+http://www.apple.com/go/applebot") && remoteAddress.network("applebot")'
