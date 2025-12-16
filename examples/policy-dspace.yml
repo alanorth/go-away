@@ -100,7 +100,7 @@ rules:
       - 'remoteAddress.network("datacenters")'
       # Chinese networks hitting /search hard
       - 'remoteAddress.network("chinese-crawlers")'
-    action: drop
+    action: deny
 
   - name: undesired-crawlers
     conditions:
