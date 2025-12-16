@@ -79,6 +79,8 @@ rules:
       - *is-bot-chatgpt-user
       - *is-bot-applebot
       - *is-bot-ccbot
+      - *is-bot-altmetric
+      - 'remoteAddress.network("good")'
     action: pass
 
   # These are defined in examples/snippets-ilri/networks-other.yml

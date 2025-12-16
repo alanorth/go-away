@@ -1,0 +1,23 @@
+# Known good networks
+
+networks:
+  good:
+    - prefixes:
+      # 2025-08-08: CABI / Innodata
+      - "103.149.112.10/32"
+      # 2025-06-28: IWMI HQ
+      - "220.247.212.35/32"
+      # 2025-12-01: IWMI.org publications importer — unsure if this touches the
+      # frontend, but adding just in case.
+      - "34.168.54.236/32"
+      # 2025-06-28: ILRI Nairobi HQ
+      - "41.204.190.18/32"
+      # 2025-12-16: ILRI Addis HQ
+      - "196.188.105.129/32"
+      # 2025-05-02: ICARDA MEL — unsure if this touches the frontend, but adding
+      # just in case.
+      - "213.239.214.59/32"
+      # 2024-11-18: Allow Mendeley importer, since they are in Amazon and will
+      # otherwise be rate limited.
+      - "52.51.126.81/32"
+      - "52.51.126.200/32"
