@@ -4,8 +4,8 @@ conditions:
     - 'path == "/robots.txt" || path == "/security.txt"'
 
     # ILRI customization to match more sitemaps
-    # See: https://regex101.com/r/6xWiF4/2
-    - 'path.matches("^/sitemap.*?\\.xml$")'
+    # See: https://regex101.com/r/8olIoj/1
+    - 'path.matches("^/sitemap.*?\\.(html|xml)$")'
 
     # ads txt files
     - 'path == "/app-ads.txt" || path == "/ads.txt"'
