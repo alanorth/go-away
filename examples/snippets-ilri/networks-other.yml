@@ -54,6 +54,8 @@ networks:
     - asn: 212317
     - asn: 213230
     - asn: 215859
+  # Amazon-AES
+    - asn: 14618
 
   ##
   # Crawlers on Chinese operators scraping `/search` like crazy.
