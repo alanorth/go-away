@@ -56,6 +56,8 @@ networks:
     - asn: 215859
   # Amazon-AES
     - asn: 14618
+  # OVH
+    - asn: 16276
 
   ##
   # Crawlers on Chinese operators scraping `/search` like crazy.
