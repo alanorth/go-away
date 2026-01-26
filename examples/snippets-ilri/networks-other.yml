@@ -58,6 +58,8 @@ networks:
     - asn: 14618
   # OVH
     - asn: 16276
+  # BytePlus
+    - asn: 150436
 
   ##
   # Crawlers on Chinese operators scraping `/search` like crazy.
