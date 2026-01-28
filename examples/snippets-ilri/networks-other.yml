@@ -60,6 +60,16 @@ networks:
     - asn: 16276
   # BytePlus
     - asn: 150436
+  # ENZUINC-US - Enzu Inc
+    - asn: 18978
+  # CDNEXT - Datacamp Limited
+    - asn: 212238
+  # DZCRD-AS-AP DZCRD Networks Ltd
+    - asn: 132817
+  # ADCIL-ASN-01 - Ace Data Centers II
+    - asn: 401152
+  # LATITUDE-SH - Latitude.sh
+    - asn: 396356
 
   ##
   # Crawlers on Chinese operators scraping `/search` like crazy.
