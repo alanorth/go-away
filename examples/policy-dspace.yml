@@ -21,6 +21,7 @@ conditions:
     - 'path.startsWith("/assets/")'
     # Most of these will be served from nginx directly but I will leave them here
     # just in case.
+    # Note that we need to double escape the backslash in CEL expressions
     - 'path.matches("\\.(avif|css|gif|js|json|jpeg|jpg|manifest|mjs|mp4|png|svg|ttf|wasm|webm|webp|woff|woff2)$")'
 
   is-suspicious-crawler:
@@ -57,6 +58,7 @@ conditions:
 rules:
   - name: allow-well-known-resources
     conditions:
+      # See: examples/snippets-ilri/conditions-generic.yml
       - '($is-well-known-asset)'
     action: pass
 
