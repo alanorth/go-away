@@ -100,8 +100,8 @@ rules:
       - 'remoteAddress.network("vultr")'
       # Other datacenters
       - 'remoteAddress.network("datacenters")'
-      # Chinese networks hitting /search hard
-      - 'remoteAddress.network("chinese-crawlers")'
+      # Crawlers on Chinese networks hitting /search hard
+      - 'remoteAddress.network("chinese-networks")'
     action: deny
 
   - name: undesired-crawlers

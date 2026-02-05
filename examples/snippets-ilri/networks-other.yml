@@ -72,9 +72,9 @@ networks:
     - asn: 396356
 
   ##
-  # Crawlers on Chinese operators scraping `/search` like crazy.
+  # Crawlers on Chinese networks are scraping `/search` like crazy.
   ##
-  chinese-crawlers:
+  chinese-networks:
     - asn: 132525
     - asn: 134810
     - asn: 136190
