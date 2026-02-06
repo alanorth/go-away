@@ -67,7 +67,8 @@ networks:
   # DZCRD-AS-AP DZCRD Networks Ltd
     - asn: 132817
   # ADCIL-ASN-01 - Ace Data Centers II
-    - asn: 401152
+  # 2026-02-06: this is giving: failed to fetch ASN 401152: read tcp ...: i/o timeout
+  #  - asn: 401152
   # LATITUDE-SH - Latitude.sh
     - asn: 396356
 
