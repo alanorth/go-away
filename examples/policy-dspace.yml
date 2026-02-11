@@ -56,6 +56,14 @@ conditions:
 
 # Rules are checked sequentially in order, from top to bottom
 rules:
+  # TEST
+  - name: always-pow
+    conditions:
+      - 'path == "/always-pow"'
+    action: challenge
+    settings:
+      challenges: [js-pow-sha256]
+
   - name: allow-well-known-resources
     conditions:
       # See: examples/snippets-ilri/conditions-generic.yml
@@ -146,14 +154,6 @@ rules:
   ###
   # In theory "real" users will start being challenged here.
   ###
-
-  # TEST
-  #- name: always-pow
-  #  conditions:
-  #    - 'path == "/items/bef99a30-aaeb-4ccd-af55-9adbe6e68f89"'
-  #  action: challenge
-  #  settings:
-  #    challenges: [js-pow-sha256]
 
   - name: heavy-operations
     conditions: ['($is-heavy-resource)']
