@@ -68,13 +68,17 @@ networks:
     - asn: 132817
   # ADCIL-ASN-01 - Ace Data Centers II
   # 2026-02-06: this is giving: failed to fetch ASN 401152: read tcp ...: i/o timeout
-  #  - asn: 401152
+  # So we need to fetch it from RIPEstat
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS401152&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
   # LATITUDE-SH - Latitude.sh
     - asn: 396356
   # LONCONNECT - LonConnect Lt
     - asn: 212286
   # BITE-US - UAB "Bite Lietuva"
-    - asn: 210906
+  # 2026-02-11: fetch from RIPEstat due to timeouts
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS210906&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
   # GTT-BACKBONE - GTT Communications Inc.
     - asn: 3257
   # SERVERS-COM - Servers.com
@@ -82,7 +86,9 @@ networks:
   # XTOM - xTom Pty Ltd
     - asn: 8888
   # ABUL-14-7385 - Allstream Business US
-    - asn: 7385
+  # 2026-02-11: fetch from RIPEstat due to timeouts
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS7385&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
   # WEB2OBJECTS - Web2Objects LLC
     - asn: 62874
   # SERVER-MANIA - B2 Net Solutions Inc.
