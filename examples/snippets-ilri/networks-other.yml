@@ -71,6 +71,26 @@ networks:
   #  - asn: 401152
   # LATITUDE-SH - Latitude.sh
     - asn: 396356
+  # LONCONNECT - LonConnect Lt
+    - asn: 212286
+  # BITE-US - UAB "Bite Lietuva"
+    - asn: 210906
+  # GTT-BACKBONE - GTT Communications Inc.
+    - asn: 3257
+  # SERVERS-COM - Servers.com
+    - asn: 7979
+  # XTOM - xTom Pty Ltd
+    - asn: 8888
+  # ABUL-14-7385 - Allstream Business US
+    - asn: 7385
+  # WEB2OBJECTS - Web2Objects LLC
+    - asn: 62874
+  # SERVER-MANIA - B2 Net Solutions Inc.
+    - asn: 55286
+  # AS-VULTR - The Constant Company
+    - asn: 20473
+  # UK2NET-AS - THG HOSTING LIMITED
+    - asn: 13213
 
   ##
   # Crawlers on Chinese networks are scraping `/search` like crazy.
