@@ -83,6 +83,8 @@ rules:
       - *is-bot-ccbot
       - *is-bot-altmetric
       - *is-bot-claude-user
+      - *is-bot-perplexity-bot
+      - *is-bot-perplexity-user
       - 'remoteAddress.network("good")'
     action: pass
 

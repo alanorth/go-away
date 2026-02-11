@@ -1,0 +1,16 @@
+# We only want Perplexity bots related to user requests, not AI training.
+#
+# See: https://docs.perplexity.ai/docs/resources/perplexity-crawlers
+networks:
+  perplexity-bot:
+    - url: https://www.perplexity.ai/perplexitybot.json
+      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
+  perplexity-user:
+    - url: https://www.perplexity.ai/perplexity-user.json
+      jq-path: '(.prefixes[] | select(has("ipv4Prefix")) | .ipv4Prefix), (.prefixes[] | select(has("ipv6Prefix")) | .ipv6Prefix)'
+
+conditions:
+  is-bot-perplexity-bot:
+      - &is-bot-perplexity-bot 'userAgent.contains("PerplexityBot/") && remoteAddress.network("perplexity-bot")'
+  is-bot-perplexity-user:
+      - &is-bot-perplexity-user 'userAgent.contains("Perplexity-User/") && remoteAddress.network("perplexity-user")'
