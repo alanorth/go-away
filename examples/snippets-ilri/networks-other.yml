@@ -101,6 +101,13 @@ networks:
     - asn: 64249
   # VIVIDHOSTING - VIVID-HOSTING LLC
     - asn: 64200
+  # HostRoyale Technologies Pvt Ltd
+    - asn: 44144
+    - asn: 133499
+    - asn: 134450
+    - asn: 203020
+    - asn: 204287
+    - asn: 207990
 
   # See: https://platform.openai.com/docs/bots
   gptbot:
