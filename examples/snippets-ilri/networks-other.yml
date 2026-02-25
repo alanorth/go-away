@@ -99,6 +99,8 @@ networks:
     - asn: 13213
   # ENDOFFICE - Charles River Operation
     - asn: 64249
+  # VIVIDHOSTING - VIVID-HOSTING LLC
+    - asn: 64200
 
   # See: https://platform.openai.com/docs/bots
   gptbot:
