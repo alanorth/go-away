@@ -97,6 +97,8 @@ networks:
     - asn: 20473
   # UK2NET-AS - THG HOSTING LIMITED
     - asn: 13213
+  # ENDOFFICE - Charles River Operation
+    - asn: 64249
 
   # See: https://platform.openai.com/docs/bots
   gptbot:
