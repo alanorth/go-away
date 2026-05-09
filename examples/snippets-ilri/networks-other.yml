@@ -105,11 +105,16 @@ networks:
   # 2026-02-25: fetch from RIPEstat due to timeouts
     - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS44144&sourceapp=asn2ip.py
       jq-path: '.data .prefixes[] .prefix'
+    - asn: 39486
     - asn: 133499
     - asn: 134450
     - asn: 203020
     - asn: 204287
     - asn: 207990
+  # OSL-188 - OCULUS NETWORKS INC
+    - asn: 398781
+  # ALEXANDRE-ROUX-ASRINFOPRO Alexandre Roux
+    - asn: 203062
 
   # See: https://platform.openai.com/docs/bots
   gptbot:
