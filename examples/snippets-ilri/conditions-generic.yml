@@ -7,6 +7,9 @@ conditions:
     # See: https://regex101.com/r/8olIoj/1
     - 'path.matches("^/sitemap.*?\\.(html|xml)$")'
 
+    # ILRI customization to match web manifests
+    - 'path.matches("^/*.webmanifest$")'
+
     # ads txt files
     - 'path == "/app-ads.txt" || path == "/ads.txt"'
 
