@@ -8,7 +8,7 @@ conditions:
     - 'path.matches("^/sitemap.*?\\.(html|xml)$")'
 
     # ILRI customization to match web manifests
-    - 'path.matches("^/*.webmanifest$")'
+    - 'path.endsWith(".webmanifest")'
 
     # ads txt files
     - 'path == "/app-ads.txt" || path == "/ads.txt"'
