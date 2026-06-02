@@ -163,9 +163,24 @@ rules:
 
   - name: heavy-operations
     conditions: ['($is-heavy-resource)']
-    action: check
-    settings:
-      challenges: [js-pow-sha256]
+    action: none
+    children:
+      - name: 0
+        action: check
+        settings:
+          challenges: [js-refresh]
+      - name: 1
+        action: check
+        settings:
+          challenges: [preload-link, resource-load]
+      - name: 2
+        action: check
+        settings:
+          challenges: [header-refresh]
+      - name: 3
+        action: check
+        settings:
+          challenges: [js-pow-sha256]
 
   # Comment this rule out to not challenge tool-like user agents
   #- name: standard-tools
