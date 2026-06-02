@@ -46,14 +46,16 @@ conditions:
     - '(userAgent.matches("Firefox/\\d{1,2}\\.") || userAgent.matches("Firefox/1[01234]\\d\\.")) && !userAgent.matches("Firefox/1(15|40)\\.")'
 
   is-heavy-resource:
-    # Exact path match for one of the search pages AND some query parameters.
-    # Note: it seems ALL bots request at least one search facet ie f[0] so this
-    # should be reliable.
-    - 'path == "/datasets" && "f[0]" in query'
-    - 'path == "/publications" && "f[0]" in query'
-    - 'path == "/search" && "f[0]" in query'
-    - 'path == "/tools-methods-manuals" && "f[0]" in query'
-    - 'path == "/training" && "f[0]" in query'
+    # All pages with search functionality are heavy. Previously we checked if the
+    # request included some query parameters like 'f' or a facet like 'f[0]', but
+    # bots seem to be getting around those and now we just match any search. When
+    # a user is already on a search page they request via AJAX to '/ajax?q=', so
+    # this won't affect them.
+    - 'path.startsWith("/datasets")'
+    - 'path.startsWith("/publications")'
+    - 'path.startsWith("/search")'
+    - 'path.startsWith("/tools-methods-manuals")'
+    - 'path.startsWith("/training")'
 
 # Rules are checked sequentially in order, from top to bottom
 rules:
@@ -156,9 +158,8 @@ rules:
       challenges: [js-pow-sha256]
 
   ###
-  # In theory "real" users will start being challenged here, though in my exper-
-  # ience any requests landing on a search page with facets enabled are bots, as
-  # clients who are already on a search page will send facet requests via ajax.
+  # In theory "real" users will start being challenged here. Heavy operations are
+  # pages with search functions that return endless pages of results.
   ###
 
   - name: heavy-operations
