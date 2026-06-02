@@ -64,6 +64,8 @@ rules:
       - '($is-well-known-asset)'
       # Allow monitoring of search API
       - 'path == "/search_api/monitor/server"'
+      # Allow Google site verification
+      - 'path == "/google00bc96e34599ee92.html"'
     action: pass
 
   - name: allow-static-resources
