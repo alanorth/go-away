@@ -42,8 +42,8 @@ conditions:
     - 'userAgent.matches("^Mozilla/[1-4]")'
     # Old Chrome (versions x, xx, and 10x/11x/12x/13x). Version 139 was released in 2025-08
     - 'userAgent.matches("Chrome/\\d{1,2}\\.") || userAgent.matches("Chrome/1[0123]\\d\\.")'
-    # Old Firefox (versions x, xx, and 10x/11x/12x), except version 128 ESR
-    - '(userAgent.matches("Firefox/\\d{1,2}\\.") || userAgent.matches("Firefox/1[012]\\d\\.")) && !userAgent.matches("Firefox/128\\.")'
+    # Old Firefox (versions x, xx, and 10x/11x/12x/13x/14x), except ESR versions 115 and 140
+    - '(userAgent.matches("Firefox/\\d{1,2}\\.") || userAgent.matches("Firefox/1[01234]\\d\\.")) && !userAgent.matches("Firefox/1(15|40)\\.")'
 
   is-heavy-resource:
     # Exact path match for one of the search pages AND some query parameters.
