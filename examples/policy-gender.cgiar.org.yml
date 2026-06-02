@@ -25,7 +25,6 @@ conditions:
   # Conditions will get included from snippets
 
   is-static-asset:
-    - 'path.startsWith("/favicon")'
     # Note that we need to double escape the backslash in CEL expressions
     - 'path.matches("\\.(avif|css|gif|js|json|jpeg|jpg|manifest|mjs|mp4|png|svg|ttf|wasm|webm|webp|woff|woff2)$")'
 

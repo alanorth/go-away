@@ -14,7 +14,7 @@ conditions:
     - 'path == "/app-ads.txt" || path == "/ads.txt"'
 
     # generally requested by browsers
-    - 'path == "/favicon.ico"'
+    - 'path.startsWith("/favicon")'
 
     # used by some applications
     - 'path == "/crossdomain.xml"'
