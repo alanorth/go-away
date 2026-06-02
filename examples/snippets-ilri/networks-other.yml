@@ -86,9 +86,11 @@ networks:
     - asn: 24961
     - asn: 25180
     - asn: 26548
+    - asn: 27411
     - asn: 28753
     - asn: 28768
     - asn: 29802
+    - asn: 30058
     - asn: 30633
     - asn: 31898
     - asn: 32934
@@ -183,6 +185,10 @@ networks:
     - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS44144&sourceapp=asn2ip.py
       jq-path: '.data .prefixes[] .prefix'
     - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS44546&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS48955&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS50077&sourceapp=asn2ip.py
       jq-path: '.data .prefixes[] .prefix'
     - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS132965&sourceapp=asn2ip.py
       jq-path: '.data .prefixes[] .prefix'
