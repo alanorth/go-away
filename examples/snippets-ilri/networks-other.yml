@@ -38,85 +38,170 @@ networks:
 
 # ILRI customizations
 
+  # These come from the scripts/datacenter-networks.tsv file in our Ansible infr-
+  # astructure scripts:
+  #
+  #   $ awk '{print $1}' scripts/datacenter-networks.tsv | sort -n
+  #
+  # Those that cannot be looked up via go-away's built-in ASN lookup, for example
+  # due to persistent timeouts, must use another method via RIPE Stat.
+  #
+  # Last update: 2026-06-02
   datacenters:
-  #tencent
-    - asn: 132203
-  #huawei-cloud
-    - asn: 136907
-  #alibaba-us
-    - asn: 45102
-  #alibaba
-    - asn: 37963
-  #serverel
-    - asn: 50245
-  #hetzner
-    - asn: 24940
-    - asn: 212317
-    - asn: 213230
-    - asn: 215859
-  # Amazon-AES
-    - asn: 14618
-  # OVH
-    - asn: 16276
-  # BytePlus
-    - asn: 150436
-  # ENZUINC-US - Enzu Inc
-    - asn: 18978
-  # CDNEXT - Datacamp Limited
-    - asn: 212238
-  # DZCRD-AS-AP DZCRD Networks Ltd
-    - asn: 132817
-  # ADCIL-ASN-01 - Ace Data Centers II
-  # 2026-02-06: this is giving: failed to fetch ASN 401152: read tcp ...: i/o timeout
-  # So we need to fetch it from RIPEstat
-    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS401152&sourceapp=asn2ip.py
-      jq-path: '.data .prefixes[] .prefix'
-  # LATITUDE-SH - Latitude.sh
-    - asn: 396356
-  # LONCONNECT - LonConnect Lt
-    - asn: 212286
-  # BITE-US - UAB "Bite Lietuva"
-  # 2026-02-11: fetch from RIPEstat due to timeouts
-    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS210906&sourceapp=asn2ip.py
-      jq-path: '.data .prefixes[] .prefix'
-  # GTT-BACKBONE - GTT Communications Inc.
     - asn: 3257
-  # SERVERS-COM - Servers.com
+    - asn: 6142
+    - asn: 6939
+    - asn: 7203
     - asn: 7979
-  # XTOM - xTom Pty Ltd
+    - asn: 8075
     - asn: 8888
-  # ABUL-14-7385 - Allstream Business US
-  # 2026-02-11: fetch from RIPEstat due to timeouts
+    - asn: 9009
+    - asn: 10732
+    - asn: 11798
+    - asn: 12876
+    - asn: 13213
+    - asn: 13237
+    - asn: 13238
+    - asn: 13335
+    - asn: 13347
+    - asn: 14061
+    - asn: 14576
+    - asn: 14618
+    - asn: 16265
+    - asn: 16276
+    - asn: 16509
+    - asn: 16628
+    - asn: 17252
+    - asn: 18779
+    - asn: 18978
+    - asn: 19148
+    - asn: 20473
+    - asn: 20853
+    - asn: 21769
+    - asn: 21859
+    - asn: 22400
+    - asn: 23033
+    - asn: 23576
+    - asn: 24940
+    - asn: 24961
+    - asn: 25180
+    - asn: 26548
+    - asn: 28753
+    - asn: 28768
+    - asn: 29802
+    - asn: 30633
+    - asn: 31898
+    - asn: 32934
+    - asn: 33387
+    - asn: 36351
+    - asn: 36352
+    - asn: 37282
+    - asn: 37963
+    - asn: 38136
+    - asn: 40676
+    - asn: 42366
+    - asn: 45090
+    - asn: 45102
+    - asn: 46261
+    - asn: 46516
+    - asn: 46844
+    - asn: 47583
+    - asn: 50245
+    - asn: 50495
+    - asn: 51167
+    - asn: 51765
+    - asn: 52485
+    - asn: 54103
+    - asn: 54994
+    - asn: 55286
+    - asn: 58291
+    - asn: 60068
+    - asn: 60781
+    - asn: 61317
+    - asn: 62240
+    - asn: 62874
+    - asn: 64200
+    - asn: 64249
+    - asn: 64286
+    - asn: 132203
+    - asn: 132817
+    - asn: 133499
+    - asn: 133944
+    - asn: 134450
+    - asn: 136787
+    - asn: 136907
+    - asn: 139341
+    - asn: 150436
+    - asn: 197540
+    - asn: 200373
+    - asn: 201341
+    - asn: 202496
+    - asn: 203020
+    - asn: 203061
+    - asn: 203062
+    - asn: 204287
+    - asn: 205659
+    - asn: 205964
+    - asn: 207223
+    - asn: 207990
+    - asn: 208677
+    - asn: 209709
+    - asn: 210743
+    - asn: 212238
+    - asn: 212286
+    - asn: 212317
+    - asn: 213035
+    - asn: 213230
+    - asn: 213438
+    - asn: 215859
+    - asn: 262287
+    - asn: 263821
+    - asn: 393886
+    - asn: 394814
+    - asn: 396073
+    - asn: 396319
+    - asn: 396356
+    - asn: 396982
+    - asn: 397423
+    # Some networks reliably error when looked up via go-away, for example:
+    #
+    #   failed to fetch ASN 401152: read tcp ...: i/o timeout
+    #
+    # So we need to fetch them from RIPEstat.
+    #
+    # Last update: 2026-06-02
     - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS7385&sourceapp=asn2ip.py
       jq-path: '.data .prefixes[] .prefix'
-  # WEB2OBJECTS - Web2Objects LLC
-    - asn: 62874
-  # SERVER-MANIA - B2 Net Solutions Inc.
-    - asn: 55286
-  # AS-VULTR - The Constant Company
-    - asn: 20473
-  # UK2NET-AS - THG HOSTING LIMITED
-    - asn: 13213
-  # ENDOFFICE - Charles River Operation
-    - asn: 64249
-  # VIVIDHOSTING - VIVID-HOSTING LLC
-    - asn: 64200
-  # HostRoyale Technologies Pvt Ltd
-  # 2026-02-25: fetch from RIPEstat due to timeouts
-    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS44144&sourceapp=asn2ip.py
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS15003&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS19084&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS35830&sourceapp=asn2ip.py
       jq-path: '.data .prefixes[] .prefix'
     - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS39486&sourceapp=asn2ip.py
       jq-path: '.data .prefixes[] .prefix'
-    - asn: 133499
-    - asn: 134450
-    - asn: 203020
-    - asn: 204287
-    - asn: 207990
-  # OSL-188 - OCULUS NETWORKS INC
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS44144&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS44546&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS132965&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS142002&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS203999&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS209366&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS210906&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS394474&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
     - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS398781&sourceapp=asn2ip.py
       jq-path: '.data .prefixes[] .prefix'
-  # ALEXANDRE-ROUX-ASRINFOPRO Alexandre Roux
-    - asn: 203062
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS401152&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
+    - url: https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS401152&sourceapp=asn2ip.py
+      jq-path: '.data .prefixes[] .prefix'
 
   # See: https://platform.openai.com/docs/bots
   gptbot:
