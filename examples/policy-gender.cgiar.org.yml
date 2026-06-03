@@ -133,6 +133,8 @@ rules:
       # SEO / Ads and marketing
       - 'userAgent.contains("BLEXBot")'
       - 'userAgent.contains("Scrapy")'
+      # 16 million requests to one website with this user agent in the past 24 hours!
+      - 'userAgent.contains("Macintosh; Intel Mac") && userAgent.contains("Chrome/125.0.0.0")'
     action: drop
 
   - name: unknown-crawlers
